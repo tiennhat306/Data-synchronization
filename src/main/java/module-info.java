@@ -1,8 +1,9 @@
-module com.example.demo {
+module com.datasynchronization.datasynchronization {
     requires javafx.controls;
     requires javafx.fxml;
 
+    requires org.kordamp.bootstrapfx.core;
 
-    opens com.example.demo to javafx.fxml;
-    exports com.example.demo;
+    opens demo to javafx.fxml;
+    exports demo;
 }
