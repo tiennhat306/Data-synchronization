@@ -13,38 +13,38 @@ import java.util.Objects;
 public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id
-    @Column(name = "id")
+    @Column(name = "id", nullable = false)
     private int id;
     @Basic
-    @Column(name = "name")
+    @Column(name = "name", nullable = false)
     private String name;
     @Basic
-    @Column(name = "birthday")
+    @Column(name = "birthday", nullable = false)
     private Date birthday;
     @Basic
-    @Column(name = "gender")
+    @Column(name = "gender", nullable = false)
     private boolean gender;
     @Basic
     @Column(name = "avatar")
-    private byte[] avatar;
+    private String avatar;
     @Basic
-    @Column(name = "username", unique = true)
+    @Column(name = "username", unique = true, nullable = false)
     private String username;
     @Basic
-    @Column(name = "password")
+    @Column(name = "password", nullable = false)
     private String password;
     @Basic
-    @Column(name = "phone_number", unique = true)
+    @Column(name = "phone_number", unique = true, nullable = false)
     private String phoneNumber;
     @Basic
-    @Column(name = "email", unique = true)
+    @Column(name = "email", unique = true, nullable = false)
     private String email;
     @Basic
-    @Column(name = "role")
+    @Column(name = "role", nullable = false)
     private short role;
     @Basic
-    @Column(name = "status")
-    private byte status;
+    @Column(name = "status", nullable = false)
+    private boolean status;
     @Basic
     @Column(name = "user_path")
     private String userPath;
@@ -52,10 +52,10 @@ public class User {
     @Column(name = "refresh_token")
     private String refreshToken;
     @Basic
-    @Column(name = "created_at")
+    @Column(name = "created_at", nullable = false)
     private Timestamp createdAt;
     @Basic
-    @Column(name = "updated_at")
+    @Column(name = "updated_at", nullable = false)
     private Timestamp updatedAt;
     @OneToMany(mappedBy = "usersByOwnerId")
     private Collection<File> filesById;
@@ -98,11 +98,11 @@ public class User {
         this.gender = gender;
     }
 
-    public byte[] getAvatar() {
+    public String getAvatar() {
         return avatar;
     }
 
-    public void setAvatar(byte[] avatar) {
+    public void setAvatar(String avatar) {
         this.avatar = avatar;
     }
 
@@ -146,11 +146,11 @@ public class User {
         this.role = role;
     }
 
-    public byte getStatus() {
+    public boolean getStatus() {
         return status;
     }
 
-    public void setStatus(byte status) {
+    public void setStatus(boolean status) {
         this.status = status;
     }
 
@@ -186,19 +186,25 @@ public class User {
         this.updatedAt = updatedAt;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        User user = (User) o;
-        return id == user.id && gender == user.gender && role == user.role && status == user.status && Objects.equals(name, user.name) && Objects.equals(birthday, user.birthday) && Arrays.equals(avatar, user.avatar) && Objects.equals(username, user.username) && Objects.equals(password, user.password) && Objects.equals(phoneNumber, user.phoneNumber) && Objects.equals(email, user.email) && Objects.equals(userPath, user.userPath) && Objects.equals(refreshToken, user.refreshToken) && Objects.equals(createdAt, user.createdAt) && Objects.equals(updatedAt, user.updatedAt);
-    }
+//    @Override
+//    public boolean equals(Object o) {
+//        if (this == o) return true;
+//        if (o == null || getClass() != o.getClass()) return false;
+//        User user = (User) o;
+//        return id == user.id && gender == user.gender && role == user.role && status == user.status && Objects.equals(name, user.name) && Objects.equals(birthday, user.birthday) && Arrays.equals(avatar, user.avatar) && Objects.equals(username, user.username) && Objects.equals(password, user.password) && Objects.equals(phoneNumber, user.phoneNumber) && Objects.equals(email, user.email) && Objects.equals(userPath, user.userPath) && Objects.equals(refreshToken, user.refreshToken) && Objects.equals(createdAt, user.createdAt) && Objects.equals(updatedAt, user.updatedAt);
+//    }
+
+//    @Override
+//    public int hashCode() {
+//        int result = Objects.hash(id, name, birthday, gender, username, password, phoneNumber, email, role, status, userPath, refreshToken, createdAt, updatedAt);
+//        result = 31 * result + Arrays.hashCode(avatar);
+//        return result;
+//    }
+
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(id, name, birthday, gender, username, password, phoneNumber, email, role, status, userPath, refreshToken, createdAt, updatedAt);
-        result = 31 * result + Arrays.hashCode(avatar);
-        return result;
+        return Objects.hash(id, name, birthday, gender, avatar, username, password, phoneNumber, email, role, status, userPath, refreshToken, createdAt, updatedAt, filesById, filesById_0, foldersById, permissionsById);
     }
 
     public Collection<File> getFilesById() {

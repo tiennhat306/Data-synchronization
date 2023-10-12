@@ -14,46 +14,43 @@ import java.util.Objects;
 public class File {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id
-    @Column(name = "id")
+    @Column(name = "id", nullable = false)
     private int id;
     @Basic
-    @Column(name = "name")
+    @Column(name = "name", nullable = false)
     private String name;
     @Basic
-    @Column(name = "type_id")
+    @Column(name = "type_id" ,nullable = false)
     private int typeId;
     @Basic
-    @Column(name = "folder_id")
+    @Column(name = "folder_id" ,nullable = false)
     private int folderId;
     @Basic
-    @Column(name = "owner_id")
+    @Column(name = "owner_id" ,nullable = false)
     private int ownerId;
-    @Basic
-    @Column(name = "content")
-    private byte[] content;
     @Basic
     @Column(name = "size")
     private Integer size;
     @Basic
-    @Column(name = "created_at")
+    @Column(name = "created_at", nullable = false)
     private Timestamp createdAt;
     @Basic
-    @Column(name = "updated_at")
+    @Column(name = "updated_at", nullable = false)
     private Timestamp updatedAt;
     @Basic
     @Column(name = "updated_by")
     private Integer updatedBy;
-    @ManyToOne
-    @JoinColumn(name = "type_id", referencedColumnName = "id", nullable = false)
+    @ManyToOne(optional=false)
+    @JoinColumn(name = "type_id", referencedColumnName = "id", insertable=false, updatable=false)
     private Type typesByTypeId;
-    @ManyToOne
-    @JoinColumn(name = "folder_id", referencedColumnName = "id", nullable = false)
+    @ManyToOne(optional=false)
+    @JoinColumn(name = "folder_id", referencedColumnName = "id", insertable=false, updatable=false)
     private Folder foldersByFolderId;
-    @ManyToOne
-    @JoinColumn(name = "owner_id", referencedColumnName = "id", nullable = false)
+    @ManyToOne(optional=false)
+    @JoinColumn(name = "owner_id", referencedColumnName = "id", insertable=false, updatable=false)
     private User usersByOwnerId;
-    @ManyToOne
-    @JoinColumn(name = "updated_by", referencedColumnName = "id")
+    @ManyToOne(optional=false)
+    @JoinColumn(name = "updated_by", referencedColumnName = "id", insertable=false, updatable=false)
     private User usersByUpdatedBy;
     @OneToMany(mappedBy = "filesByFileId")
     private Collection<Permission> permissionsById;
@@ -98,14 +95,6 @@ public class File {
         this.ownerId = ownerId;
     }
 
-    public byte[] getContent() {
-        return content;
-    }
-
-    public void setContent(byte[] content) {
-        this.content = content;
-    }
-
     public Integer getSize() {
         return size;
     }
@@ -143,14 +132,7 @@ public class File {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         File file = (File) o;
-        return id == file.id && typeId == file.typeId && folderId == file.folderId && ownerId == file.ownerId && Objects.equals(name, file.name) && Arrays.equals(content, file.content) && Objects.equals(size, file.size) && Objects.equals(createdAt, file.createdAt) && Objects.equals(updatedAt, file.updatedAt) && Objects.equals(updatedBy, file.updatedBy);
-    }
-
-    @Override
-    public int hashCode() {
-        int result = Objects.hash(id, name, typeId, folderId, ownerId, size, createdAt, updatedAt, updatedBy);
-        result = 31 * result + Arrays.hashCode(content);
-        return result;
+        return id == file.id && typeId == file.typeId && folderId == file.folderId && ownerId == file.ownerId && Objects.equals(name, file.name) && Objects.equals(size, file.size) && Objects.equals(createdAt, file.createdAt) && Objects.equals(updatedAt, file.updatedAt) && Objects.equals(updatedBy, file.updatedBy);
     }
 
     public Type getTypesByTypeId() {

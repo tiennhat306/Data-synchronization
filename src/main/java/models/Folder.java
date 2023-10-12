@@ -12,24 +12,24 @@ import java.util.Objects;
 public class Folder {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id
-    @Column(name = "id")
+    @Column(name = "id", nullable = false)
     private int id;
     @Basic
-    @Column(name = "folder_name")
+    @Column(name = "folder_name", nullable = false)
     private String folderName;
     @Basic
-    @Column(name = "owner_id")
+    @Column(name = "owner_id" ,nullable = false)
     private int ownerId;
     @Basic
     @Column(name = "parent_id")
     private Integer parentId;
     @OneToMany(mappedBy = "foldersByFolderId")
     private Collection<File> filesById;
-    @ManyToOne
-    @JoinColumn(name = "owner_id", referencedColumnName = "id", nullable = false)
+    @ManyToOne(optional=false)
+    @JoinColumn(name = "owner_id", referencedColumnName = "id", insertable=false, updatable=false)
     private User usersByOwnerId;
-    @ManyToOne
-    @JoinColumn(name = "parent_id", referencedColumnName = "id")
+    @ManyToOne(optional=false)
+    @JoinColumn(name = "parent_id", referencedColumnName = "id", insertable=false, updatable=false)
     private Folder foldersByParentId;
     @OneToMany(mappedBy = "foldersByParentId")
     private Collection<Folder> foldersById;

@@ -11,28 +11,28 @@ import java.util.Objects;
 public class Permission {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id
-    @Column(name = "id")
+    @Column(name = "id", nullable = false)
     private int id;
     @Basic
-    @Column(name = "user_id")
+    @Column(name = "user_id", nullable = true)
     private Integer userId;
     @Basic
-    @Column(name = "file_id")
+    @Column(name = "file_id", nullable = true)
     private Integer fileId;
     @Basic
-    @Column(name = "folder_id")
+    @Column(name = "folder_id", nullable = true)
     private Integer folderId;
     @Basic
-    @Column(name = "permission_type")
+    @Column(name = "permission_type", nullable = false)
     private short permissionType;
-    @ManyToOne
-    @JoinColumn(name = "user_id", referencedColumnName = "id")
+    @ManyToOne(optional=false)
+    @JoinColumn(name = "user_id", referencedColumnName = "id", insertable=false, updatable=false)
     private User usersByUserId;
-    @ManyToOne
-    @JoinColumn(name = "file_id", referencedColumnName = "id")
+    @ManyToOne(optional=false)
+    @JoinColumn(name = "file_id", referencedColumnName = "id", insertable=false, updatable=false)
     private File filesByFileId;
-    @ManyToOne
-    @JoinColumn(name = "folder_id", referencedColumnName = "id")
+    @ManyToOne(optional=false)
+    @JoinColumn(name = "folder_id", referencedColumnName = "id", insertable=false, updatable=false)
     private Folder foldersByFolderId;
 
     public int getId() {
