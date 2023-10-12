@@ -28,16 +28,16 @@ public class User {
     @Column(name = "avatar")
     private byte[] avatar;
     @Basic
-    @Column(name = "username")
+    @Column(name = "username", unique = true)
     private String username;
     @Basic
     @Column(name = "password")
     private String password;
     @Basic
-    @Column(name = "phone_number")
+    @Column(name = "phone_number", unique = true)
     private String phoneNumber;
     @Basic
-    @Column(name = "email")
+    @Column(name = "email", unique = true)
     private String email;
     @Basic
     @Column(name = "role")

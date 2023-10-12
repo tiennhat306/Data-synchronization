@@ -13,7 +13,7 @@ public class Type {
     @Column(name = "id")
     private int id;
     @Basic
-    @Column(name = "name")
+    @Column(name = "name", unique = true)
     private String name;
     @Basic
     @Column(name = "image")

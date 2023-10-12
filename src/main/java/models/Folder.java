@@ -6,7 +6,9 @@ import java.util.Collection;
 import java.util.Objects;
 
 @Entity
-@Table(name = "folders", schema = "pbl4")
+@Table(name = "folders", schema = "pbl4", uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"folder_name", "parent_id"})
+})
 public class Folder {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id

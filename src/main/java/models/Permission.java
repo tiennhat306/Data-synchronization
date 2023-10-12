@@ -5,7 +5,9 @@ import jakarta.persistence.*;
 import java.util.Objects;
 
 @Entity
-@Table(name = "permissions", schema = "pbl4")
+@Table(name = "permissions", schema = "pbl4", uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"user_id", "file_id", "folder_id"})
+})
 public class Permission {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id

@@ -8,7 +8,9 @@ import java.util.Collection;
 import java.util.Objects;
 
 @Entity
-@Table(name = "files", schema = "pbl4")
+@Table(name = "files", schema = "pbl4", uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"name", "type_id", "folder_id"})
+})
 public class File {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id
