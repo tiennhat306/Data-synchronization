@@ -5,10 +5,11 @@ import jakarta.persistence.*;
 import java.sql.Date;
 import java.sql.Timestamp;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Objects;
 
 @Entity
-@Table(name = "users", schema = "pbl4", catalog = "")
+@Table(name = "users", schema = "pbl4")
 public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id
@@ -56,6 +57,14 @@ public class User {
     @Basic
     @Column(name = "updated_at")
     private Timestamp updatedAt;
+    @OneToMany(mappedBy = "usersByOwnerId")
+    private Collection<File> filesById;
+    @OneToMany(mappedBy = "usersByUpdatedBy")
+    private Collection<File> filesById_0;
+    @OneToMany(mappedBy = "usersByOwnerId")
+    private Collection<Folder> foldersById;
+    @OneToMany(mappedBy = "usersByUserId")
+    private Collection<Permission> permissionsById;
 
     public int getId() {
         return id;
@@ -190,5 +199,37 @@ public class User {
         int result = Objects.hash(id, name, birthday, gender, username, password, phoneNumber, email, role, status, userPath, refreshToken, createdAt, updatedAt);
         result = 31 * result + Arrays.hashCode(avatar);
         return result;
+    }
+
+    public Collection<File> getFilesById() {
+        return filesById;
+    }
+
+    public void setFilesById(Collection<File> filesById) {
+        this.filesById = filesById;
+    }
+
+    public Collection<File> getFilesById_0() {
+        return filesById_0;
+    }
+
+    public void setFilesById_0(Collection<File> filesById_0) {
+        this.filesById_0 = filesById_0;
+    }
+
+    public Collection<Folder> getFoldersById() {
+        return foldersById;
+    }
+
+    public void setFoldersById(Collection<Folder> foldersById) {
+        this.foldersById = foldersById;
+    }
+
+    public Collection<Permission> getPermissionsById() {
+        return permissionsById;
+    }
+
+    public void setPermissionsById(Collection<Permission> permissionsById) {
+        this.permissionsById = permissionsById;
     }
 }

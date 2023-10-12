@@ -5,7 +5,7 @@ import jakarta.persistence.*;
 import java.util.Objects;
 
 @Entity
-@Table(name = "permissions", schema = "pbl4", catalog = "")
+@Table(name = "permissions", schema = "pbl4")
 public class Permission {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id
@@ -23,6 +23,15 @@ public class Permission {
     @Basic
     @Column(name = "permission_type")
     private short permissionType;
+    @ManyToOne
+    @JoinColumn(name = "user_id", referencedColumnName = "id")
+    private User usersByUserId;
+    @ManyToOne
+    @JoinColumn(name = "file_id", referencedColumnName = "id")
+    private File filesByFileId;
+    @ManyToOne
+    @JoinColumn(name = "folder_id", referencedColumnName = "id")
+    private Folder foldersByFolderId;
 
     public int getId() {
         return id;
@@ -75,5 +84,29 @@ public class Permission {
     @Override
     public int hashCode() {
         return Objects.hash(id, userId, fileId, folderId, permissionType);
+    }
+
+    public User getUsersByUserId() {
+        return usersByUserId;
+    }
+
+    public void setUsersByUserId(User usersByUserId) {
+        this.usersByUserId = usersByUserId;
+    }
+
+    public File getFilesByFileId() {
+        return filesByFileId;
+    }
+
+    public void setFilesByFileId(File filesByFileId) {
+        this.filesByFileId = filesByFileId;
+    }
+
+    public Folder getFoldersByFolderId() {
+        return foldersByFolderId;
+    }
+
+    public void setFoldersByFolderId(Folder foldersByFolderId) {
+        this.foldersByFolderId = foldersByFolderId;
     }
 }

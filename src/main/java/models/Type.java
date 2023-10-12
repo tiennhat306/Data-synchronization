@@ -2,10 +2,11 @@ package models;
 
 import jakarta.persistence.*;
 
+import java.util.Collection;
 import java.util.Objects;
 
 @Entity
-@Table(name = "types", schema = "pbl4", catalog = "")
+@Table(name = "types", schema = "pbl4")
 public class Type {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id
@@ -17,6 +18,8 @@ public class Type {
     @Basic
     @Column(name = "image")
     private String image;
+    @OneToMany(mappedBy = "typesByTypeId")
+    private Collection<File> filesById;
 
     public int getId() {
         return id;
@@ -53,5 +56,13 @@ public class Type {
     @Override
     public int hashCode() {
         return Objects.hash(id, name, image);
+    }
+
+    public Collection<File> getFilesById() {
+        return filesById;
+    }
+
+    public void setFilesById(Collection<File> filesById) {
+        this.filesById = filesById;
     }
 }

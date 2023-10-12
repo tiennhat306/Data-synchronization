@@ -4,10 +4,11 @@ import jakarta.persistence.*;
 
 import java.sql.Timestamp;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Objects;
 
 @Entity
-@Table(name = "files", schema = "pbl4", catalog = "")
+@Table(name = "files", schema = "pbl4")
 public class File {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id
@@ -40,6 +41,20 @@ public class File {
     @Basic
     @Column(name = "updated_by")
     private Integer updatedBy;
+    @ManyToOne
+    @JoinColumn(name = "type_id", referencedColumnName = "id", nullable = false)
+    private Type typesByTypeId;
+    @ManyToOne
+    @JoinColumn(name = "folder_id", referencedColumnName = "id", nullable = false)
+    private Folder foldersByFolderId;
+    @ManyToOne
+    @JoinColumn(name = "owner_id", referencedColumnName = "id", nullable = false)
+    private User usersByOwnerId;
+    @ManyToOne
+    @JoinColumn(name = "updated_by", referencedColumnName = "id")
+    private User usersByUpdatedBy;
+    @OneToMany(mappedBy = "filesByFileId")
+    private Collection<Permission> permissionsById;
 
     public int getId() {
         return id;
@@ -134,5 +149,45 @@ public class File {
         int result = Objects.hash(id, name, typeId, folderId, ownerId, size, createdAt, updatedAt, updatedBy);
         result = 31 * result + Arrays.hashCode(content);
         return result;
+    }
+
+    public Type getTypesByTypeId() {
+        return typesByTypeId;
+    }
+
+    public void setTypesByTypeId(Type typesByTypeId) {
+        this.typesByTypeId = typesByTypeId;
+    }
+
+    public Folder getFoldersByFolderId() {
+        return foldersByFolderId;
+    }
+
+    public void setFoldersByFolderId(Folder foldersByFolderId) {
+        this.foldersByFolderId = foldersByFolderId;
+    }
+
+    public User getUsersByOwnerId() {
+        return usersByOwnerId;
+    }
+
+    public void setUsersByOwnerId(User usersByOwnerId) {
+        this.usersByOwnerId = usersByOwnerId;
+    }
+
+    public User getUsersByUpdatedBy() {
+        return usersByUpdatedBy;
+    }
+
+    public void setUsersByUpdatedBy(User usersByUpdatedBy) {
+        this.usersByUpdatedBy = usersByUpdatedBy;
+    }
+
+    public Collection<Permission> getPermissionsById() {
+        return permissionsById;
+    }
+
+    public void setPermissionsById(Collection<Permission> permissionsById) {
+        this.permissionsById = permissionsById;
     }
 }

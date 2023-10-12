@@ -2,10 +2,11 @@ package models;
 
 import jakarta.persistence.*;
 
+import java.util.Collection;
 import java.util.Objects;
 
 @Entity
-@Table(name = "folders", schema = "pbl4", catalog = "")
+@Table(name = "folders", schema = "pbl4")
 public class Folder {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id
@@ -20,6 +21,18 @@ public class Folder {
     @Basic
     @Column(name = "parent_id")
     private Integer parentId;
+    @OneToMany(mappedBy = "foldersByFolderId")
+    private Collection<File> filesById;
+    @ManyToOne
+    @JoinColumn(name = "owner_id", referencedColumnName = "id", nullable = false)
+    private User usersByOwnerId;
+    @ManyToOne
+    @JoinColumn(name = "parent_id", referencedColumnName = "id")
+    private Folder foldersByParentId;
+    @OneToMany(mappedBy = "foldersByParentId")
+    private Collection<Folder> foldersById;
+    @OneToMany(mappedBy = "foldersByFolderId")
+    private Collection<Permission> permissionsById;
 
     public int getId() {
         return id;
@@ -64,5 +77,45 @@ public class Folder {
     @Override
     public int hashCode() {
         return Objects.hash(id, folderName, ownerId, parentId);
+    }
+
+    public Collection<File> getFilesById() {
+        return filesById;
+    }
+
+    public void setFilesById(Collection<File> filesById) {
+        this.filesById = filesById;
+    }
+
+    public User getUsersByOwnerId() {
+        return usersByOwnerId;
+    }
+
+    public void setUsersByOwnerId(User usersByOwnerId) {
+        this.usersByOwnerId = usersByOwnerId;
+    }
+
+    public Folder getFoldersByParentId() {
+        return foldersByParentId;
+    }
+
+    public void setFoldersByParentId(Folder foldersByParentId) {
+        this.foldersByParentId = foldersByParentId;
+    }
+
+    public Collection<Folder> getFoldersById() {
+        return foldersById;
+    }
+
+    public void setFoldersById(Collection<Folder> foldersById) {
+        this.foldersById = foldersById;
+    }
+
+    public Collection<Permission> getPermissionsById() {
+        return permissionsById;
+    }
+
+    public void setPermissionsById(Collection<Permission> permissionsById) {
+        this.permissionsById = permissionsById;
     }
 }
