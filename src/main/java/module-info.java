@@ -1,10 +1,13 @@
 module com.datasynchronization.datasynchronization {
     requires javafx.controls;
     requires javafx.fxml;
+    requires java.naming;
 
     requires org.kordamp.bootstrapfx.core;
     requires jakarta.persistence;
     requires org.hibernate.orm.core;
+
+    opens models to org.hibernate.orm.core; // Mở gói 'models' cho Hibernate
 
     opens applications to javafx.fxml;
     exports applications;
