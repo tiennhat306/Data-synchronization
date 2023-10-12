@@ -3,7 +3,11 @@ module com.datasynchronization.datasynchronization {
     requires javafx.fxml;
 
     requires org.kordamp.bootstrapfx.core;
+    requires jakarta.persistence;
+    requires org.hibernate.orm.core;
 
-    opens demo to javafx.fxml;
-    exports demo;
+    opens applications to javafx.fxml;
+    exports applications;
+    opens controllers to javafx.fxml;
+    exports controllers;
 }
