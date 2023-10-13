@@ -6,6 +6,7 @@ module com.datasynchronization.datasynchronization {
     requires org.kordamp.bootstrapfx.core;
     requires jakarta.persistence;
     requires org.hibernate.orm.core;
+    requires org.apache.commons.net;
 
     opens models to org.hibernate.orm.core; // Mở gói 'models' cho Hibernate
 
