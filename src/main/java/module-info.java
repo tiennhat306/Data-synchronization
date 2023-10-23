@@ -7,6 +7,7 @@ module com.datasynchronization.datasynchronization {
     requires jakarta.persistence;
     requires org.hibernate.orm.core;
     requires org.apache.commons.net;
+    requires de.jensd.fx.glyphs.fontawesome;
 
     opens models to org.hibernate.orm.core; // Mở gói 'models' cho Hibernate
 
