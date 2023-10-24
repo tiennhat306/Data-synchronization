@@ -38,12 +38,20 @@ public class Item {
         return id.get();
     }
 
+    public SimpleIntegerProperty idProperty() {
+        return id;
+    }
+
     public void setId(int id) {
         this.id.set(id);
     }
 
     public int getTypeId() {
         return typeId.get();
+    }
+
+    public SimpleIntegerProperty typeIdProperty() {
+        return typeId;
     }
 
     public void setTypeId(int typeId) {
@@ -54,12 +62,20 @@ public class Item {
         return name.get();
     }
 
+    public SimpleStringProperty nameProperty() {
+        return name;
+    }
+
     public void setName(String name) {
         this.name.set(name);
     }
 
     public String getOwnerName() {
         return ownerName.get();
+    }
+
+    public SimpleStringProperty ownerNameProperty() {
+        return ownerName;
     }
 
     public void setOwnerName(String ownerName) {
@@ -70,6 +86,10 @@ public class Item {
         return dateModified.get();
     }
 
+    public SimpleObjectProperty<Date> dateModifiedProperty() {
+        return dateModified;
+    }
+
     public void setDateModified(Date dateModified) {
         this.dateModified.set(dateModified);
     }
@@ -78,12 +98,20 @@ public class Item {
         return lastModifiedBy.get();
     }
 
+    public SimpleStringProperty lastModifiedByProperty() {
+        return lastModifiedBy;
+    }
+
     public void setLastModifiedBy(String lastModifiedBy) {
         this.lastModifiedBy.set(lastModifiedBy);
     }
 
     public String getSize() {
         return size.get();
+    }
+
+    public SimpleStringProperty sizeProperty() {
+        return size;
     }
 
     public void setSize(String size) {
