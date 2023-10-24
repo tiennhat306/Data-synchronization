@@ -6,7 +6,6 @@
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ScrollPane?>
-<?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.image.Image?>
@@ -158,13 +157,6 @@
                      </children>
                   </HBox>
                   <TableView fx:id="dataTable" maxHeight="1080.0" maxWidth="1920.0" VBox.vgrow="ALWAYS">
-                     <columns>
-                        <TableColumn prefWidth="290.3999237418175" text="Tên" />
-                        <TableColumn minWidth="0.0" prefWidth="137.59994506835938" text="Chủ sở hữu" />
-                        <TableColumn prefWidth="103.20001220703125" text="Đã sửa đổi" />
-                        <TableColumn prefWidth="95.2000732421875" text="Người sửa đổi" />
-                        <TableColumn prefWidth="99.2000732421875" text="Kích thước tệp" />
-                     </columns>
                      <columnResizePolicy>
                         <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
                      </columnResizePolicy>
