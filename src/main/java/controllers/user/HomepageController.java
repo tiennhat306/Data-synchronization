@@ -72,6 +72,9 @@ public class HomepageController implements Initializable {
         SessionFactory sessionFactory = HibernateUtil.getSessionFactory();
         session = sessionFactory.openSession();
     }
+    public HomepageController(Session session) {
+        this.session = session;
+    }
 
     public void populateData() {
         TableColumn<Item, String> nameColumn = new TableColumn<>("Tên");
