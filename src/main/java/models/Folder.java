@@ -28,7 +28,7 @@ public class Folder {
     @ManyToOne(optional=false)
     @JoinColumn(name = "owner_id", referencedColumnName = "id", insertable=false, updatable=false)
     private User usersByOwnerId;
-    @ManyToOne(optional=false)
+    @ManyToOne(optional=true)
     @JoinColumn(name = "parent_id", referencedColumnName = "id", insertable=false, updatable=false)
     private Folder foldersByParentId;
     @OneToMany(mappedBy = "foldersByParentId")
