@@ -1,21 +1,17 @@
-package services.user;
+package services.server.user;
 
 import models.File;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
+import utils.HibernateUtil;
 
 import java.util.List;
 
 public class FileService {
-    private final Session session;
     public FileService() {
-        this.session = null;
-    }
-    public FileService(Session session) {
-        this.session = session;
     }
     public List<File> getAllFile(int folderId) {
-        try {
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
             //print session
             System.out.println("session: " + session);
 
@@ -29,7 +25,7 @@ public class FileService {
     }
 
     public File getFileById(int id) {
-        try {
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
             return session.find(File.class, id);
         } catch (Exception e) {
             e.printStackTrace();
@@ -38,7 +34,7 @@ public class FileService {
     }
     public boolean addFile(File file) {
         Transaction transaction = null;
-        try {
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
             transaction = session.beginTransaction();
             session.persist(file);
             transaction.commit();
@@ -50,7 +46,7 @@ public class FileService {
     }
     public boolean updateFile(File file) {
         Transaction transaction = null;
-        try {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()){
             transaction = session.beginTransaction();
             session.merge(file);
             transaction.commit();
@@ -62,7 +58,7 @@ public class FileService {
     }
     public boolean deleteFile(int id) {
         Transaction transaction = null;
-        try {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()){
             transaction = session.beginTransaction();
             File file = session.find(File.class, id);
             session.remove(file);
@@ -74,7 +70,7 @@ public class FileService {
         }
     }
     public List<File> getFilesByOwnerId(int userId) {
-        try {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()){
             return session.createQuery("select f from File f where f.ownerId = :userId", File.class)
                     .setParameter("userId", userId)
                     .list();
@@ -84,7 +80,7 @@ public class FileService {
         }
     }
     public List<File> getFilesByFolderId(int folderId) {
-        try {
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
             return session.createQuery("select f from File f where f.folderId = :folderId", File.class)
                     .setParameter("folderId", folderId)
                     .list();
@@ -94,7 +90,7 @@ public class FileService {
         }
     }
     public List<File> getFilesByType(int type_id) {
-        try {
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
             return session.createQuery("select f from File f where f.typeId = :type_id", File.class)
                     .setParameter("type_id", type_id)
                     .list();

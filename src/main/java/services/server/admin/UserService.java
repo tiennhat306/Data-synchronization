@@ -1,23 +1,19 @@
-package services.admin;
+package services.server.admin;
 
 import DTO.UserData;
 import models.User;
 import org.hibernate.Session;
+import utils.HibernateUtil;
 
 import java.util.ArrayList;
 import java.util.List;
 
 
 public class UserService {
-    private final Session session;
     public UserService() {
-        this.session = null;
-    }
-    public UserService(Session session) {
-        this.session = session;
     }
     public List<UserData> getAllUser() {
-        try {
+        try(Session session = HibernateUtil.getSessionFactory().openSession()){
             List<UserData> userDataList = new ArrayList<>();
             List<User> userList = session.createQuery("select u from User u where u.status = true", User.class).list();
             if(userList != null){
@@ -40,7 +36,7 @@ public class UserService {
         }
     }
     public User getUserById(int id) {
-        try {
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
             return session.find(User.class, id);
         } catch (Exception e) {
             e.printStackTrace();

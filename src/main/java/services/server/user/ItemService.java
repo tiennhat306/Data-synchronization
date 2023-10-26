@@ -1,26 +1,22 @@
-package services.user;
+package services.server.user;
 
+import DTO.Item;
 import javafx.util.Pair;
 import models.File;
 import models.Folder;
-import DTO.Item;
 import org.hibernate.Session;
+import utils.HibernateUtil;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
 public class ItemService {
-    private final Session session;
     public ItemService() {
-        this.session = null;
-    }
-    public ItemService(Session session) {
-        this.session = session;
     }
 
     public List<Item> getAllItem(int folderId){
-        try {
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
             List<Item> itemList = new ArrayList<>();
             List<Folder> folderList = session.createQuery("select fd from Folder fd where fd.parentId = :folderId", Folder.class)
                     .setParameter("folderId", folderId)
@@ -34,11 +30,11 @@ public class ItemService {
                     folderItem.setName(folder.getFolderName());
                     folderItem.setOwnerName(folder.getUsersByOwnerId().getName());
 
-                    FolderService folderService = new FolderService(session);
+                    FolderService folderService = new FolderService();
                     Pair<Date, Integer> updatedFolderInfo = folderService.getLastModifiedInfo(folder.getId());
                     folderItem.setDateModified(updatedFolderInfo.getKey());
 
-                    UserService userService = new UserService(session);
+                    UserService userService = new UserService();
                     folderItem.setLastModifiedBy(updatedFolderInfo.getValue() == null ? "" : userService.getUserById(updatedFolderInfo.getValue()).getName());
 
 

@@ -27,7 +27,7 @@ public class testConnect {
                     File file = (File) iterator.next();
                     String filePath = file.getName() + "." + file.getTypesByTypeId().getName();
                     Folder folder = file.getFoldersByFolderId();
-                    while (folder != null) {
+                    while (folder.getFoldersByParentId() != null) {
                         filePath = folder.getFolderName() + "/" + filePath;
                         folder = folder.getFoldersByParentId();
                     }

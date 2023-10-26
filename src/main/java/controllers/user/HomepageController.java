@@ -14,8 +14,7 @@ import models.Type;
 import models.User;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
-import services.user.FileService;
-import services.user.ItemService;
+import services.client.user.ItemService;
 import utils.HibernateUtil;
 
 import java.net.URL;
@@ -66,14 +65,7 @@ public class HomepageController implements Initializable {
     @FXML
     private Label userName;
 
-
-    private Session session;
     public HomepageController() {
-        SessionFactory sessionFactory = HibernateUtil.getSessionFactory();
-        session = sessionFactory.openSession();
-    }
-    public HomepageController(Session session) {
-        this.session = session;
     }
 
     public void populateData() {
@@ -108,8 +100,7 @@ public class HomepageController implements Initializable {
         //System.out.println("dataTable: " + dataTable);
 
 
-        ItemService itemService = new ItemService(session);
-        FileService fileService = new FileService(session);
+        ItemService itemService = new ItemService();
         List<Item> itemList = itemService.getAllItem(2);
 
         // log itemList

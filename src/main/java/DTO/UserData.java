@@ -5,6 +5,7 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 
 import java.util.Date;
+import java.util.LinkedHashMap;
 
 public class UserData {
     private final SimpleIntegerProperty id;
@@ -33,7 +34,29 @@ public class UserData {
         this.email = new SimpleStringProperty();
         this.role = new SimpleStringProperty();
     }
+    public UserData(LinkedHashMap<String, Object> userData){
+        this.id = new SimpleIntegerProperty((int)userData.get("id"));
+        this.name = new SimpleStringProperty((String) userData.get("name"));
+        this.gender = new SimpleStringProperty((String)userData.get("gender"));
+        this.birthday = new SimpleObjectProperty<>((Date) userData.get("birthday"));
+        this.phoneNumber = new SimpleStringProperty((String)userData.get("phoneNumber"));
+        this.email = new SimpleStringProperty((String)userData.get("email"));
+        this.role = new SimpleStringProperty((String)userData.get("role"));
+    }
 
+    public LinkedHashMap<String, Object> getUserData(){
+        LinkedHashMap<String, Object> userData = new LinkedHashMap<>();
+
+        userData.put("id", this.id.get());
+        userData.put("name", this.name.get());
+        userData.put("gender", this.gender.get());
+        userData.put("birthday", this.birthday.get());
+        userData.put("phoneNumber", this.phoneNumber.get());
+        userData.put("email", this.email.get());
+        userData.put("role", this.role.get());
+
+        return userData;
+    }
     public int getId() {
         return id.get();
     }

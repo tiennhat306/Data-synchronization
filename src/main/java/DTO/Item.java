@@ -1,6 +1,8 @@
 package DTO;
 
 import java.util.Date;
+import java.util.LinkedHashMap;
+
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -32,6 +34,30 @@ public class Item {
         this.dateModified = new SimpleObjectProperty<>();
         this.lastModifiedBy = new SimpleStringProperty();
         this.size = new SimpleStringProperty();
+    }
+
+    public Item(LinkedHashMap<String, Object> item){
+        this.id = new SimpleIntegerProperty((int)item.get("id"));
+        this.typeId = new SimpleIntegerProperty((int)item.get("typeId"));
+        this.name = new SimpleStringProperty((String) item.get("name"));
+        this.ownerName = new SimpleStringProperty((String)item.get("ownerName"));
+        this.dateModified = new SimpleObjectProperty<>((Date) item.get("dateModified"));
+        this.lastModifiedBy = new SimpleStringProperty((String)item.get("lastModifiedBy"));
+        this.size = new SimpleStringProperty((String)item.get("size"));
+    }
+
+    public LinkedHashMap<String, Object> getItem(){
+        LinkedHashMap<String, Object> item = new LinkedHashMap<>();
+
+        item.put("id", this.id.get());
+        item.put("typeId", this.typeId.get());
+        item.put("name", this.name.get());
+        item.put("ownerName", this.ownerName.get());
+        item.put("dateModified", this.dateModified.get());
+        item.put("lastModifiedBy", this.lastModifiedBy.get());
+        item.put("size", this.size.get());
+
+        return item;
     }
 
     public int getId() {

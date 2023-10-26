@@ -1,6 +1,5 @@
 package controllers.admin;
 
-import DTO.Item;
 import DTO.UserData;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView;
 import javafx.collections.FXCollections;
@@ -11,11 +10,7 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
-import models.User;
-import org.hibernate.Session;
-import org.hibernate.SessionFactory;
-import services.admin.UserService;
-import utils.HibernateUtil;
+import services.client.admin.UserService;
 
 import java.net.URL;
 import java.util.Date;
@@ -59,13 +54,7 @@ public class UserController implements Initializable {
     @FXML
     private HBox usersBtn;
 
-    private Session session;
     public UserController() {
-        SessionFactory sessionFactory = HibernateUtil.getSessionFactory();
-        this.session = sessionFactory.openSession();
-    }
-    public UserController(Session session) {
-        this.session = session;
     }
 
     @Override
@@ -90,7 +79,7 @@ public class UserController implements Initializable {
         emailColumn.setCellValueFactory(new PropertyValueFactory<UserData, String>("email"));
         roleColumn.setCellValueFactory(new PropertyValueFactory<UserData, String>("role"));
 
-        UserService userService = new UserService(session);
+        UserService userService = new UserService();
         List<UserData> userList = userService.getAllUser();
 
         System.out.println("userList: " + userList);

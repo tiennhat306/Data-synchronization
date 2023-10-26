@@ -1,23 +1,19 @@
-package services.user;
+package services.server.user;
 
 import javafx.util.Pair;
 import models.Folder;
 import org.hibernate.Session;
 import org.hibernate.query.Query;
+import utils.HibernateUtil;
 
 import java.util.Date;
 import java.util.List;
 
 public class FolderService {
-    private final Session session;
     public FolderService() {
-        this.session = null;
-    }
-    public FolderService(Session session) {
-        this.session = session;
     }
     public List<Folder> getAllFolder() {
-        try {
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
             return session.createQuery("select fd from Folder fd", Folder.class).list();
         } catch (Exception e) {
             e.printStackTrace();
@@ -25,7 +21,7 @@ public class FolderService {
         }
     }
     public Folder getFolderById(int id) {
-        try {
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
             return session.find(Folder.class, id);
         } catch (Exception e) {
             e.printStackTrace();
@@ -33,7 +29,7 @@ public class FolderService {
         }
     }
     public List<Folder> getFoldersByParentId(int id) {
-        try {
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
             return session.createQuery("select fd from Folder fd where fd.parentId = :id", Folder.class).setParameter("id", id).list();
         } catch (Exception e) {
             e.printStackTrace();
@@ -41,7 +37,7 @@ public class FolderService {
         }
     }
     public List<Folder> getFoldersByOwnerId(int id) {
-        try {
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
             return session.createQuery("select fd from Folder fd where fd.ownerId = :id", Folder.class).setParameter("id", id).list();
         } catch (Exception e) {
             e.printStackTrace();
@@ -49,7 +45,7 @@ public class FolderService {
         }
     }
     public long getSizeOfFolder(int id) {
-        try {
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
             return session.createQuery("select sum(f.size) from File f where f.folderId = :id", Long.class).setParameter("id", id).getSingleResult();
         } catch (Exception e) {
             e.printStackTrace();
@@ -57,7 +53,7 @@ public class FolderService {
         }
     }
     public int getNumberItemOfFolder(int id) {
-        try {
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
             assert session != null;
             Query<Integer> countFile = session.createQuery("select count(*) from File where folderId = :id", Integer.class).setParameter("id", id);
             Query<Integer> countFolder = session.createQuery("select count(*) from Folder where parentId = :id", Integer.class).setParameter("id", id);
@@ -90,7 +86,7 @@ public class FolderService {
 //    }
 
     public Pair<Date, Integer> getLastModifiedInfo(int id) {
-        try {
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
             Integer updatedBy = session.createQuery("select f.updatedBy from File f where f.folderId = :id order by f.updatedAt desc ", Integer.class)
                     .setParameter("id", id)
                     .setMaxResults(1)
