@@ -41,7 +41,7 @@ public class ConnectController implements Initializable {
     ServerCommunicationService server;
 
     public ConnectController() {
-        server = new ServerCommunicationService(9696);
+        server = new ServerCommunicationService();
         server.startListening();
     }
     public void populateConnectionData() {

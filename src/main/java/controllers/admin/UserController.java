@@ -88,7 +88,7 @@ public class UserController implements Initializable {
             userTable.setPlaceholder(new Label("Không có dữ liệu người dùng"));
         }
         else {
-            final ObservableList<UserData> users = FXCollections.observableArrayList(userList);
+            ObservableList<UserData> users = FXCollections.observableArrayList(userList);
             userTable.setItems(users);
         }
 

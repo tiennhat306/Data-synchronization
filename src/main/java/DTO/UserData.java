@@ -4,6 +4,8 @@ import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.LinkedHashMap;
 
@@ -35,10 +37,32 @@ public class UserData {
         this.role = new SimpleStringProperty();
     }
     public UserData(LinkedHashMap<String, Object> userData){
-        this.id = new SimpleIntegerProperty((int)userData.get("id"));
+        Object id = userData.get("id");
+        if(id instanceof Double){
+            this.id = new SimpleIntegerProperty(((Double) id).intValue());
+        } else {
+            this.id = new SimpleIntegerProperty((int) id);
+        }
         this.name = new SimpleStringProperty((String) userData.get("name"));
         this.gender = new SimpleStringProperty((String)userData.get("gender"));
-        this.birthday = new SimpleObjectProperty<>((Date) userData.get("birthday"));
+        Date birthday = new Date();
+
+        String dateString = (String) userData.get("birthday");
+        SimpleDateFormat inputDateFormat = new SimpleDateFormat("MMM d, yyyy");
+        SimpleDateFormat outputDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        try {
+            Date birthdayDate = inputDateFormat.parse(dateString);
+            String formattedDateStr = outputDateFormat.format(birthdayDate); // Chuyển đổi thành chuỗi "dd/MM/yyyy"
+            System.out.println(formattedDateStr);
+
+            // Chuyển đổi chuỗi thành Date
+            birthdayDate = outputDateFormat.parse(formattedDateStr);
+            System.out.println(birthdayDate);
+            birthday = birthdayDate;
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        this.birthday = new SimpleObjectProperty<>(birthday);
         this.phoneNumber = new SimpleStringProperty((String)userData.get("phoneNumber"));
         this.email = new SimpleStringProperty((String)userData.get("email"));
         this.role = new SimpleStringProperty((String)userData.get("role"));

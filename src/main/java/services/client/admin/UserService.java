@@ -26,13 +26,14 @@ public class UserService {
             SocketClientHelper socketClientHelper = new SocketClientHelper();
             socketClientHelper.sendRequest("GET_ALL_USER");
 
-            List<LinkedHashMap<String, Object>> userListFromJson = socketClientHelper.receiveLinkedHashMapList();
+            List<LinkedHashMap<String, Object>> userListFromJson = socketClientHelper.receiveObject(new TypeToken<ArrayList<LinkedHashMap<String, Object>>>(){}.getType());
             System.out.println("userListFromJson: " + userListFromJson);
             List<UserData> userList = new ArrayList<>();
-            for(LinkedHashMap<String, Object> userData : userListFromJson) {
+            for (LinkedHashMap<String, Object> userData : userListFromJson) {
                 userList.add(new UserData(userData));
             }
             System.out.println("userList from Service: " + userList);
+
             socketClientHelper.close();
             return userList;
         } catch (Exception e) {

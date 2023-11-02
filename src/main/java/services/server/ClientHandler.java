@@ -3,9 +3,12 @@ package services.server;
 import DTO.Connection;
 import DTO.Item;
 import DTO.UserData;
+import com.google.gson.reflect.TypeToken;
 import models.User;
 
 import java.io.*;
+import java.lang.reflect.Type;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -17,15 +20,18 @@ import services.server.user.ItemService;
 
 public class ClientHandler extends Thread{
     private Socket clientSocket;
-    private PrintWriter out;
+    //private PrintWriter out;
     private BufferedReader in;
-    Gson gson;
+    private Gson gson;
+    private String clientAddress;
 
     public ClientHandler(Socket clientSocket) {
         try{
             this.clientSocket = clientSocket;
+            clientAddress = clientSocket.getInetAddress().getHostAddress();
+            System.out.println("Client handler connected: " + clientAddress);
             this.in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-            this.out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream())), true);
+            //this.out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream())), true);
             gson = new Gson();
             start();
         } catch (IOException e) {
@@ -37,55 +43,49 @@ public class ClientHandler extends Thread{
     public void run() {
         try {
             // Process request
-            System.out.println("Client handler connected: " + clientSocket.getInetAddress());
-            String request = in.readLine();
+            String request = receiveRequest();
             System.out.println("Client request: " + request);
+            String response = "";
             switch (request) {
                 case "GET_ALL_USER" -> {
-                    List<UserData> userList = getUserList();
-                    List<LinkedHashMap<String, Object>> userLists = new ArrayList<>();
-                    for (UserData user : userList) {
-                        LinkedHashMap<String, Object> userDataToJson = user.getUserData();
-                        userLists.add(userDataToJson);
-                    }
-                    String userListJson = gson.toJson(userLists);
-                    System.out.println("userListJson" + userListJson);
-                    out.println(userListJson);
+                    response = getUserList();
+                    System.out.println(response);
+                    sendResponse(response);
+                    //out.println(userListJson);
                 }
                 case "GET_USER_BY_ID" -> {
                     int id = Integer.parseInt(in.readLine());
                     String userJson = gson.toJson(getUserById(id));
                     System.out.println(userJson);
-                    out.println(userJson);
-                    out.flush();
+                    //out.println(userJson);
                 }
                 case "GET_ALL_ITEM" -> {
                     int folderId = Integer.parseInt(in.readLine());
                     String itemListJson = gson.toJson(getItemList(folderId));
                     System.out.println(itemListJson);
-                    out.println(itemListJson);
-                    out.flush();
+
+                    //out.println(itemListJson);
                 }
                 default -> {
                     System.out.println("Unknown request: " + request);
-                    out.println("Unknown request: " + request);
+                    //out.println("Unknown request: " + request);
                 }
             }
+
         } catch (IOException e) {
             e.printStackTrace();
+        } finally {
+            try {
+                if(in != null) in.close();
+                //if(out != null) out.close();
+                if(clientSocket != null) clientSocket.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
-//        finally {
-//            try {
-//                if(in != null) in.close();
-//                if(out != null) out.close();
-//                if(clientSocket != null) clientSocket.close();
-//            } catch (IOException e) {
-//                e.printStackTrace();
-//            }
-//        }
     }
 
-    private List<UserData> getUserList() {
+    private String getUserList() {
         UserService userService = new UserService();
         System.out.println("Get all user");
         return userService.getAllUser();
@@ -105,7 +105,36 @@ public class ClientHandler extends Thread{
 //        return "Server response to client request: " + request;
 //    }
 
+    public void sendResponse(String request) {
+        try(Socket responseSocket = new Socket(clientAddress, 9696)){
+            PrintWriter responseOut = new PrintWriter(new BufferedWriter(new OutputStreamWriter(responseSocket.getOutputStream())), true);
+            responseOut.println(request);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void sendObject(Object obj) throws IOException {
+        String json = gson.toJson(obj);
+        sendResponse(json);
+    }
+
+    public String receiveRequest() throws IOException {
+        return in.readLine();
+    }
+
+    public <T> T receiveObject(Type clazz) throws IOException {
+        String json = receiveRequest();
+        return gson.fromJson(json, clazz);
+    }
+
+    public List<LinkedHashMap<String, Object>> receiveLinkedHashMapList() throws IOException {
+        Type type = new TypeToken<List<LinkedHashMap<String, Object>>>(){}.getType();
+        String json = receiveRequest();
+        return gson.fromJson(json, type);
+    }
+
     public Connection getConnection() {
-        return new Connection(clientSocket.getInetAddress().toString(), clientSocket.getPort());
+        return new Connection(clientAddress, clientSocket.getPort());
     }
 }

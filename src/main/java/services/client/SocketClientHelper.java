@@ -1,10 +1,12 @@
 package services.client;
 
+import applications.Server;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
 import java.io.*;
 import java.lang.reflect.Type;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -13,14 +15,14 @@ import java.util.List;
 public class SocketClientHelper {
     private Socket socket;
     private PrintWriter out;
-    private BufferedReader in;
+    //private BufferedReader in;
     private Gson gson;
 
     public SocketClientHelper(String host, int port) {
         try{
             socket = new Socket(host, port);
             out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())), true);
-            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            //in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             gson = new Gson();
         } catch (IOException e) {
             e.printStackTrace();
@@ -28,13 +30,13 @@ public class SocketClientHelper {
     }
 
     public SocketClientHelper() {
-        this("localhost", 9696);
+        this("localhost", 6969);
     }
 
     public void close() {
         try {
             if(out != null) out.close();
-            if(in != null) in.close();
+            //if(in != null) in.close();
             if(socket != null) socket.close();
         } catch (IOException e) {
             e.printStackTrace();
@@ -44,7 +46,6 @@ public class SocketClientHelper {
     public void sendRequest(String request) {
         System.out.println("Sending request: " + request);
         out.println(request);
-        out.flush();
     }
 
     public void sendObject(Object obj) {
@@ -52,12 +53,21 @@ public class SocketClientHelper {
         sendRequest(json);
     }
 
-    public String receiveResponse() throws IOException {
-        if(!in.ready()){
+    public String receiveResponse(){
+        try(ServerSocket responseSocket = new ServerSocket(9696)){
+            Socket responseClientSocket = responseSocket.accept();
+            BufferedReader in = new BufferedReader(new InputStreamReader(responseClientSocket.getInputStream()));
+
+            String response = in.readLine();
+
             in.close();
-            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            responseClientSocket.close();
+
+            return response;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
         }
-        return in.readLine();
     }
 
     public <T> T receiveObject(Type clazz) throws IOException {

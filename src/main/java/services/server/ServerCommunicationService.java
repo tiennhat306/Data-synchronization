@@ -3,8 +3,10 @@ package services.server;
 import DTO.Connection;
 
 import java.io.*;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.sql.SQLOutput;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -17,12 +19,18 @@ public class ServerCommunicationService {
     public ServerCommunicationService(int port) {
         try {
             serverSocket = new ServerSocket(port);
-            System.out.println("Server is listening on port " + port);
+            InetAddress address = InetAddress.getLocalHost();
+            System.out.println("TCP/Server running on: " + address + ", Port: " + serverSocket.getLocalPort());
             ServerCommunicationService.isRunning = true;
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
+
+    public ServerCommunicationService(){
+        this(6969);
+    }
+
 
     public void startListening() {
         Thread thread = new Thread(() -> {
@@ -44,10 +52,13 @@ public class ServerCommunicationService {
                 e.printStackTrace();
             } finally {
                 try {
-                    serverSocket.close();
-                    System.out.println("Server closed");
+                    if(serverSocket != null){
+                        serverSocket.close();
+                        System.out.println("Server socket closed");
+                    }
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    System.err.println("Could not close server socket");
+                    System.exit(1);
                 }
             }
         });

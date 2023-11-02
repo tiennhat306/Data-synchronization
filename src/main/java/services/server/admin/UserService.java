@@ -1,20 +1,22 @@
 package services.server.admin;
 
 import DTO.UserData;
+import com.google.gson.Gson;
 import models.User;
 import org.hibernate.Session;
 import utils.HibernateUtil;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 
 
 public class UserService {
     public UserService() {
     }
-    public List<UserData> getAllUser() {
+    public String getAllUser() {
         try(Session session = HibernateUtil.getSessionFactory().openSession()){
-            List<UserData> userDataList = new ArrayList<>();
+            List<LinkedHashMap<String, Object>> userLists = new ArrayList<>();
             List<User> userList = session.createQuery("select u from User u where u.status = true", User.class).list();
             if(userList != null){
                 for (User user : userList) {
@@ -26,10 +28,12 @@ public class UserService {
                     userdata.setPhoneNumber(user.getPhoneNumber());
                     userdata.setEmail(user.getEmail());
                     userdata.setRole(user.getRole() == 1 ? "Quản trị viên" : "Người dùng");
-                    userDataList.add(userdata);
+
+                    LinkedHashMap<String, Object> userDataToJson = userdata.getUserData();
+                    userLists.add(userDataToJson);
                 }
             }
-            return userDataList;
+            return new Gson().toJson(userLists);
         } catch (Exception e) {
             e.printStackTrace();
             return null;
