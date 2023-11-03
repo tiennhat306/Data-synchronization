@@ -1,7 +1,7 @@
 package services.server;
 
 import DTO.Connection;
-import DTO.Item;
+import models.File;
 import models.User;
 
 import java.io.*;
@@ -11,6 +11,8 @@ import java.util.List;
 
 import services.server.admin.UserService;
 import services.server.user.ItemService;
+
+import static applications.ServerApp.connections;
 
 public class ClientHandler extends Thread{
     private Socket clientSocket;
@@ -41,23 +43,23 @@ public class ClientHandler extends Thread{
             else {
                 System.out.println("Unknown request: " + obj);
             }
+            addConnection(request);
+
             switch (request) {
                 case "GET_ALL_USER" -> {
                     List<User> response = getUserList();
                     System.out.println(response);
                     sendResponse(response);
-                    //out.println(userListJson);
                 }
                 case "GET_USER_BY_ID" -> {
-                    //out.println(userJson);
                 }
                 case "GET_ALL_ITEM" -> {
-
-                    //out.println(itemListJson);
+                    String folderId = (String) receiveRequest();
+                    List<File> response = getItemList(Integer.parseInt(folderId));
+                    sendResponse(response);
                 }
                 default -> {
                     System.out.println("Unknown request: " + request);
-                    //out.println("Unknown request: " + request);
                 }
             }
 
@@ -78,7 +80,7 @@ public class ClientHandler extends Thread{
         System.out.println("Get all user");
         return userService.getAllUser();
     }
-    private List<Item> getItemList(int folderId) {
+    private List<File> getItemList(int folderId) {
         ItemService itemService = new ItemService();
         System.out.println("Get all item");
         return itemService.getAllItem(folderId);
@@ -89,7 +91,7 @@ public class ClientHandler extends Thread{
         return userService.getUserById(id);
     }
 
-    public void sendResponse(List<User> response) {
+    public void sendResponse(Object response) {
         Socket responseSocket = null;
         ObjectOutputStream responseOut = null;
         try{
@@ -114,7 +116,10 @@ public class ClientHandler extends Thread{
         return in.readObject();
     }
 
-    public Connection getConnection() {
-        return new Connection(clientAddress.toString(), clientSocket.getPort());
+    public void addConnection(String request) {
+        Connection connection = new Connection(clientAddress.getHostAddress(), request);
+        connections.add(connection);
+        System.out.println("Connection added: " + connection);
+        System.out.println("Connection list: " + connections);
     }
 }

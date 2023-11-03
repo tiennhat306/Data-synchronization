@@ -1,19 +1,12 @@
 package services.server;
 
-import DTO.Connection;
-
 import java.io.*;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.sql.SQLOutput;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 
 public class ServerCommunicationService {
     private ServerSocket serverSocket;
-    public static List<Connection> connections = new ArrayList<>();
     private static boolean isRunning = false;
 
     public ServerCommunicationService(int port) {
@@ -33,6 +26,7 @@ public class ServerCommunicationService {
 
 
     public void startListening() {
+        ServerCommunicationService.isRunning = true;
         Thread thread = new Thread(() -> {
             try{
                 while (ServerCommunicationService.isRunning) {
@@ -42,8 +36,7 @@ public class ServerCommunicationService {
                         System.out.println("New client connected: " + clientSocket.getInetAddress());
                         ClientHandler clientHandler = new ClientHandler(clientSocket);
                         System.out.println("Client handler connected: " + clientHandler);
-                        System.out.println("Client handler added to connections: " + clientHandler.getConnection());
-                        connections.add(clientHandler.getConnection());
+                        clientHandler.join();
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -72,9 +65,5 @@ public class ServerCommunicationService {
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
-
-    public List<Connection> getAllConnection() {
-        return connections;
     }
 }

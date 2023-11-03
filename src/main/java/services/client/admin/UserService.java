@@ -1,20 +1,7 @@
 package services.client.admin;
 
-import DTO.UserData;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 import models.User;
-import org.hibernate.Session;
 import services.client.SocketClientHelper;
-import utils.HibernateUtil;
-
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.lang.reflect.Type;
-import java.net.Socket;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 
 
@@ -25,14 +12,6 @@ public class UserService {
         try {
             SocketClientHelper socketClientHelper = new SocketClientHelper();
             socketClientHelper.sendRequest("GET_ALL_USER");
-
-            //List<LinkedHashMap<String, Object>> userListFromJson = socketClientHelper.receiveObject(new TypeToken<ArrayList<LinkedHashMap<String, Object>>>(){}.getType());
-//            System.out.println("userListFromJson: " + userListFromJson);
-//            List<User> userList = new ArrayList<>();
-//            for (LinkedHashMap<String, Object> userData : userListFromJson) {
-//                userList.add(new UserData(userData));
-//            }
-//            System.out.println("userList from Service: " + userList);
 
             Object obj = socketClientHelper.receiveResponse();
             List<User> userList = (List<User>) obj;
