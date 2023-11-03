@@ -1,6 +1,5 @@
 package controllers.admin;
 
-import DTO.UserData;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
