@@ -18,6 +18,7 @@ import services.client.user.ItemService;
 import utils.HibernateUtil;
 
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.ResourceBundle;
@@ -77,14 +78,6 @@ public class HomepageController implements Initializable {
 
         dataTable.getColumns().addAll(nameColumn, ownerNameColumn, dateModifiedColumn, lastModifiedByColumn, sizeColumn);
 
-//        final ObservableList<Item> data = FXCollections.observableArrayList(
-//                new Item(1, 1, "test", "test", new Date(), "test", "test"),
-//                new Item(2, 2, "test", "test", new Date(), "test", "test"),
-//                new Item(3, 3, "test", "test", new Date(), "test", "test"),
-//                new Item(4, 4, "test", "test", new Date(), "test", "test"),
-//                new Item(5, 5, "test", "test", new Date(), "test", "test")
-//        );
-
         nameColumn.setCellValueFactory(new PropertyValueFactory<Item, String>("name"));
         ownerNameColumn.setCellValueFactory(new PropertyValueFactory<Item, String>("ownerName"));
         dateModifiedColumn.setCellValueFactory(new PropertyValueFactory<Item, Date>("dateModified"));
@@ -101,7 +94,8 @@ public class HomepageController implements Initializable {
 
 
         ItemService itemService = new ItemService();
-        List<Item> itemList = itemService.getAllItem(2);
+        //List<Item> itemList = itemService.getAllItem(2);
+        List<Item> itemList = new ArrayList<>();
 
         // log itemList
         System.out.println("itemList: " + itemList);

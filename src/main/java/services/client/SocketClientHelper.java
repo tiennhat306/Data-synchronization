@@ -1,83 +1,59 @@
 package services.client;
 
-import applications.Server;
 import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 
 import java.io.*;
-import java.lang.reflect.Type;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.LinkedHashMap;
-import java.util.List;
+import java.net.UnknownHostException;
 
 
 public class SocketClientHelper {
     private Socket socket;
-    private PrintWriter out;
-    //private BufferedReader in;
-    private Gson gson;
+    private ObjectOutputStream out;
 
     public SocketClientHelper(String host, int port) {
         try{
             socket = new Socket(host, port);
-            out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())), true);
-            //in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            gson = new Gson();
+            out = new ObjectOutputStream(socket.getOutputStream());
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    public SocketClientHelper() {
-        this("localhost", 6969);
+    public SocketClientHelper() throws UnknownHostException {
+        this(InetAddress.getLocalHost().getHostAddress(), 6969);
     }
 
     public void close() {
         try {
             if(out != null) out.close();
-            //if(in != null) in.close();
             if(socket != null) socket.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    public void sendRequest(String request) {
+    public void sendRequest(Object request) throws IOException {
         System.out.println("Sending request: " + request);
-        out.println(request);
+        out.writeObject(request);
     }
 
-    public void sendObject(Object obj) {
-        String json = gson.toJson(obj);
-        sendRequest(json);
-    }
 
-    public String receiveResponse(){
+    public Object receiveResponse(){
         try(ServerSocket responseSocket = new ServerSocket(9696)){
             Socket responseClientSocket = responseSocket.accept();
-            BufferedReader in = new BufferedReader(new InputStreamReader(responseClientSocket.getInputStream()));
+            ObjectInputStream in = new ObjectInputStream(responseClientSocket.getInputStream());
+            Object response = in.readObject();
 
-            String response = in.readLine();
-
-            in.close();
-            responseClientSocket.close();
+            if(in != null) in.close();
+            if(responseClientSocket != null) responseClientSocket.close();
 
             return response;
-        } catch (IOException e) {
+        } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
             return null;
         }
-    }
-
-    public <T> T receiveObject(Type clazz) throws IOException {
-        String json = receiveResponse();
-        return gson.fromJson(json, clazz);
-    }
-
-    public List<LinkedHashMap<String, Object>> receiveLinkedHashMapList() throws IOException {
-        Type type = new TypeToken<List<LinkedHashMap<String, Object>>>(){}.getType();
-        String json = receiveResponse();
-        return gson.fromJson(json, type);
     }
 }

@@ -2,6 +2,7 @@ package models;
 
 import jakarta.persistence.*;
 
+import java.io.Serializable;
 import java.sql.Date;
 import java.sql.Timestamp;
 import java.util.Arrays;
@@ -10,7 +11,7 @@ import java.util.Objects;
 
 @Entity
 @Table(name = "users", schema = "pbl4")
-public class User {
+public class User implements Serializable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id
     @Column(name = "id", nullable = false)

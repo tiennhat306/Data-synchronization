@@ -21,19 +21,21 @@ import java.util.List;
 public class UserService {
     public UserService() {
     }
-    public List<UserData> getAllUser() {
+    public List<User> getAllUser() {
         try {
             SocketClientHelper socketClientHelper = new SocketClientHelper();
             socketClientHelper.sendRequest("GET_ALL_USER");
 
-            List<LinkedHashMap<String, Object>> userListFromJson = socketClientHelper.receiveObject(new TypeToken<ArrayList<LinkedHashMap<String, Object>>>(){}.getType());
-            System.out.println("userListFromJson: " + userListFromJson);
-            List<UserData> userList = new ArrayList<>();
-            for (LinkedHashMap<String, Object> userData : userListFromJson) {
-                userList.add(new UserData(userData));
-            }
-            System.out.println("userList from Service: " + userList);
+            //List<LinkedHashMap<String, Object>> userListFromJson = socketClientHelper.receiveObject(new TypeToken<ArrayList<LinkedHashMap<String, Object>>>(){}.getType());
+//            System.out.println("userListFromJson: " + userListFromJson);
+//            List<User> userList = new ArrayList<>();
+//            for (LinkedHashMap<String, Object> userData : userListFromJson) {
+//                userList.add(new UserData(userData));
+//            }
+//            System.out.println("userList from Service: " + userList);
 
+            Object obj = socketClientHelper.receiveResponse();
+            List<User> userList = (List<User>) obj;
             socketClientHelper.close();
             return userList;
         } catch (Exception e) {
@@ -41,21 +43,21 @@ public class UserService {
             return null;
         }
     }
-    public User getUserById(int id) {
-        try {
-            SocketClientHelper socketClientHelper = new SocketClientHelper();
-            // send request to server
-            socketClientHelper.sendRequest("GET_USER_BY_ID");
-            socketClientHelper.sendRequest(String.valueOf(id));
-
-            // receive response from server
-            User user = socketClientHelper.receiveObject(User.class);
-            socketClientHelper.close();
-            return user;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
+//    public User getUserById(int id) {
+//        try {
+//            SocketClientHelper socketClientHelper = new SocketClientHelper();
+//            // send request to server
+//            socketClientHelper.sendRequest("GET_USER_BY_ID");
+//            socketClientHelper.sendRequest(String.valueOf(id));
+//
+//            // receive response from server
+//            User user = socketClientHelper.receiveObject(User.class);
+//            socketClientHelper.close();
+//            return user;
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            return null;
+//        }
+//    }
 }
 

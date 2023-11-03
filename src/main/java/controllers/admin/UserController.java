@@ -2,6 +2,7 @@ package controllers.admin;
 
 import DTO.UserData;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -10,9 +11,11 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
+import models.User;
 import services.client.admin.UserService;
 
 import java.net.URL;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.ResourceBundle;
@@ -50,7 +53,7 @@ public class UserController implements Initializable {
     @FXML
     private Label userName;
     @FXML
-    private TableView<UserData> userTable;
+    private TableView<User> userTable;
     @FXML
     private HBox usersBtn;
 
@@ -63,24 +66,45 @@ public class UserController implements Initializable {
     }
 
     public void populateData() {
-        TableColumn<UserData, String> nameColumn = new TableColumn<>("Tên");
-        TableColumn<UserData, String> genderColumn = new TableColumn<>("Giới tính");
-        TableColumn<UserData, Date> birthdayColumn = new TableColumn<>("Ngày sinh");
-        TableColumn<UserData, String> phoneNumberColumn = new TableColumn<>("Số điện thoại");
-        TableColumn<UserData, String> emailColumn = new TableColumn<>("Email");
-        TableColumn<UserData, String> roleColumn = new TableColumn<>("Chức vụ");
+        TableColumn<User, String> nameColumn = new TableColumn<>("Tên");
+        TableColumn<User, String> genderColumn = new TableColumn<>("Giới tính");
+        TableColumn<User, Date> birthdayColumn = new TableColumn<>("Ngày sinh");
+        TableColumn<User, String> phoneNumberColumn = new TableColumn<>("Số điện thoại");
+        TableColumn<User, String> emailColumn = new TableColumn<>("Email");
+        TableColumn<User, String> roleColumn = new TableColumn<>("Chức vụ");
 
         userTable.getColumns().addAll(nameColumn, genderColumn, birthdayColumn, phoneNumberColumn, emailColumn, roleColumn);
 
-        nameColumn.setCellValueFactory(new PropertyValueFactory<UserData, String>("name"));
-        genderColumn.setCellValueFactory(new PropertyValueFactory<UserData, String>("gender"));
-        birthdayColumn.setCellValueFactory(new PropertyValueFactory<UserData, Date>("birthday"));
-        phoneNumberColumn.setCellValueFactory(new PropertyValueFactory<UserData, String>("phoneNumber"));
-        emailColumn.setCellValueFactory(new PropertyValueFactory<UserData, String>("email"));
-        roleColumn.setCellValueFactory(new PropertyValueFactory<UserData, String>("role"));
+        nameColumn.setCellValueFactory(new PropertyValueFactory<User, String>("name"));
+        //genderColumn.setCellValueFactory(new PropertyValueFactory<User, String>("gender"));
+        genderColumn.setCellValueFactory(column -> {
+            return column.getValue().getGender() ? new SimpleStringProperty("Nam") : new SimpleStringProperty("Nữ");
+        });
+        birthdayColumn.setCellFactory(column -> {
+            return new TableCell<User, Date>() {
+                private final SimpleDateFormat format = new SimpleDateFormat("dd/MM/yyyy");
+                @Override
+                protected void updateItem(Date item, boolean empty) {
+                    super.updateItem(item, empty);
+                    if(empty) {
+                        setText(null);
+                    }
+                    else {
+                        setText(format.format(item));
+                    }
+                }
+            };
+        });
+        birthdayColumn.setCellValueFactory(new PropertyValueFactory<User, Date>("birthday"));
+        phoneNumberColumn.setCellValueFactory(new PropertyValueFactory<User, String>("phoneNumber"));
+        emailColumn.setCellValueFactory(new PropertyValueFactory<User, String>("email"));
+        //roleColumn.setCellValueFactory(new PropertyValueFactory<User, String>("role"));
+        roleColumn.setCellValueFactory(column -> {
+            return column.getValue().getRole() == 1 ? new SimpleStringProperty("Quản trị viên") : new SimpleStringProperty("Người dùng");
+        });
 
         UserService userService = new UserService();
-        List<UserData> userList = userService.getAllUser();
+        List<User> userList = userService.getAllUser();
 
         System.out.println("userList: " + userList);
 
@@ -88,7 +112,7 @@ public class UserController implements Initializable {
             userTable.setPlaceholder(new Label("Không có dữ liệu người dùng"));
         }
         else {
-            ObservableList<UserData> users = FXCollections.observableArrayList(userList);
+            ObservableList<User> users = FXCollections.observableArrayList(userList);
             userTable.setItems(users);
         }
 
