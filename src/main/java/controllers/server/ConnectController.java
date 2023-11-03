@@ -2,24 +2,21 @@ package controllers.server;
 
 import DTO.Connection;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.control.Label;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
 import services.server.ServerCommunicationService;
 
 import java.net.URL;
-import java.util.List;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.ResourceBundle;
 
-public class ConnectController implements Initializable {
+import static applications.ServerApp.connections;
 
+public class ConnectController implements Initializable {
     @FXML
     private HBox connectionBtn;
     @FXML
@@ -46,24 +43,35 @@ public class ConnectController implements Initializable {
     }
     public void populateConnectionData() {
         TableColumn<Connection, String> addressColumn = new TableColumn<>("Máy kết nối");
-        TableColumn<Connection, Integer> portColumn = new TableColumn<>("Cổng");
+        TableColumn<Connection, String> requestColumn = new TableColumn<>("Yêu cầu");
+        TableColumn<Connection, Date> requestTimeColumn = new TableColumn<Connection, Date>("Thời gian yêu cầu");
 
-        connectionTable.getColumns().addAll(addressColumn, portColumn);
+        connectionTable.getColumns().addAll(addressColumn, requestColumn, requestTimeColumn);
 
         addressColumn.setCellValueFactory(new PropertyValueFactory<Connection, String>("address"));
-        portColumn.setCellValueFactory(new PropertyValueFactory<Connection, Integer>("port"));
+        requestColumn.setCellValueFactory(new PropertyValueFactory<Connection, String>("request"));
+        requestTimeColumn.setCellFactory(column -> {
+            return new TableCell<Connection, Date>() {
+                private final SimpleDateFormat format = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+                @Override
+                protected void updateItem(Date item, boolean empty) {
+                    super.updateItem(item, empty);
+                    if(empty) {
+                        setText(null);
+                    }
+                    else {
+                        setText(format.format(item));
+                    }
+                }
+            };
+        });
+        requestTimeColumn.setCellValueFactory(new PropertyValueFactory<Connection, Date>("requestTime"));
 
-        List<Connection> connections = null;
-        connections = server.getAllConnection();
         System.out.println("connectionList: " + connections);
 
-        if(connections == null || connections.size() == 0) {
-            connectionTable.setPlaceholder(new Label("Không có kết nối"));
-        }
-        else {
-            final ObservableList<Connection> items = FXCollections.observableArrayList(connections);
-            connectionTable.setItems(items);
-        }
+        connectionTable.setItems(connections);
+
+
 
     }
     @Override

@@ -1,15 +1,20 @@
 package applications;
 
+import DTO.Connection;
 import javafx.application.Application;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 import utils.HibernateUtil;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ServerApp extends Application {
-
+    public static ObservableList<Connection> connections = FXCollections.observableArrayList();
     public static void main(String[] args) {
         launch(args);
     }

@@ -1,35 +1,52 @@
 package DTO;
 
-import javafx.beans.property.SimpleIntegerProperty;
-import javafx.beans.property.SimpleStringProperty;
+import java.util.Date;
 
 public class Connection {
-    private final SimpleStringProperty address;
-    private final SimpleIntegerProperty port;
-    public Connection(String address, int port) {
-        this.address = new SimpleStringProperty(address);
-        this.port = new SimpleIntegerProperty(port);
+    private String address;
+    private String request;
+    private Date requestTime;
+
+    public Connection(String address, String request) {
+        this.address = address;
+        this.request = request;
+        this.requestTime = new Date();
     }
-    public Connection() {
-        this.address = new SimpleStringProperty();
-        this.port = new SimpleIntegerProperty();
+
+    public Connection(){
+        this.address = null;
+        this.request = null;
+        this.requestTime = new Date();
     }
+
     public String getAddress() {
-        return address.get();
-    }
-    public SimpleStringProperty addressProperty() {
         return address;
     }
+
     public void setAddress(String address) {
-        this.address.set(address);
+        this.address = address;
     }
-    public int getPort() {
-        return port.get();
+
+    public String getRequest() {
+        return request;
     }
-    public SimpleIntegerProperty portProperty() {
-        return port;
+
+    public void setRequest(String request) {
+        this.request = request;
     }
-    public void setPort(int port) {
-        this.port.set(port);
+
+    public Date getRequestTime() {
+        return requestTime;
     }
+
+    public void setRequestTime(Date requestTime) {
+        this.requestTime = requestTime;
+    }
+
+    @Override
+    public String toString() {
+        return "Connection{" + "address=" + address + ", request=" + request + ", requestTime=" + requestTime + '}';
+    }
+
+
 }
