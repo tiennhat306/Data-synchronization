@@ -1,12 +1,12 @@
 package services.server.user;
 
-import DTO.Item;
 import javafx.util.Pair;
 import models.File;
 import models.Folder;
 import org.hibernate.Session;
 import utils.HibernateUtil;
 
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -15,34 +15,38 @@ public class ItemService {
     public ItemService() {
     }
 
-    public List<Item> getAllItem(int folderId){
+    public List<File> getAllItem(int folderId){
         try(Session session = HibernateUtil.getSessionFactory().openSession()) {
-            List<Item> itemList = new ArrayList<>();
+            List<File> itemList = new ArrayList<>();
             List<Folder> folderList = session.createQuery("select fd from Folder fd where fd.parentId = :folderId", Folder.class)
                     .setParameter("folderId", folderId)
                     .list();
             System.out.println("folderList: " + folderList);
             if(folderList != null) {
                 for (Folder folder : folderList) {
-                    Item folderItem = new Item();
-                    folderItem.setId(folder.getId());
-                    folderItem.setTypeId(0);
-                    folderItem.setName(folder.getFolderName());
-                    folderItem.setOwnerName(folder.getUsersByOwnerId().getName());
+                    File folderToFile = new File();
+                    folderToFile.setId(folder.getId());
+                    folderToFile.setName(folder.getFolderName());
+                    folderToFile.setTypeId(1);
+                    folderToFile.setFolderId(folder.getParentId());
+                    folderToFile.setFoldersByFolderId(folder.getFoldersByParentId());
+                    folderToFile.setOwnerId(folder.getOwnerId());
+                    folderToFile.setUsersByOwnerId(folder.getUsersByOwnerId());
 
                     FolderService folderService = new FolderService();
-                    Pair<Date, Integer> updatedFolderInfo = folderService.getLastModifiedInfo(folder.getId());
-                    folderItem.setDateModified(updatedFolderInfo.getKey());
+                    Pair<Timestamp, Integer> updatedFolderInfo = folderService.getLastModifiedInfo(folder.getId());
+                    folderToFile.setUpdatedAt(updatedFolderInfo.getKey() != null? updatedFolderInfo.getKey() : null);
 
                     UserService userService = new UserService();
-                    folderItem.setLastModifiedBy(updatedFolderInfo.getValue() == null ? "" : userService.getUserById(updatedFolderInfo.getValue()).getName());
+                    folderToFile.setUpdatedBy(updatedFolderInfo.getValue() == null ? null : updatedFolderInfo.getValue());
+                    folderToFile.setUsersByUpdatedBy(updatedFolderInfo.getValue() == null ? null : userService.getUserById(updatedFolderInfo.getValue()));
 
 
                     int countItem = folderService.getNumberItemOfFolder(folder.getId());
-                    folderItem.setSize(countItem + " mục");
+                    folderToFile.setSize(Short.MIN_VALUE + countItem);
 
-                    System.out.println("folderItem: " + folderItem);
-                    itemList.add(folderItem);
+                    System.out.println("folderItem: " + folderToFile);
+                    itemList.add(folderToFile);
                 }
             }
 
@@ -51,30 +55,7 @@ public class ItemService {
                     .list();
             System.out.println("fileList: " + fileList);
             if(fileList != null) {
-                for (File file : fileList) {
-                    Item fileItem = new Item();
-                    fileItem.setId(file.getId());
-                    fileItem.setTypeId(file.getTypeId());
-                    fileItem.setName(file.getName() + "." + file.getTypesByTypeId().getName());
-                    fileItem.setOwnerName(file.getUsersByOwnerId().getName());
-                    fileItem.setDateModified(file.getUpdatedAt());
-                    fileItem.setLastModifiedBy(file.getUpdatedBy() == null ? "" : file.getUsersByUpdatedBy().getName());
-
-                    String sizeString = "";
-                    long size = file.getSize();
-                    if (size < 1024) {
-                        sizeString = size + " B";
-                    } else if (size < 1024 * 1024) {
-                        sizeString = size / 1024 + " KB";
-                    } else if (size < 1024 * 1024 * 1024) {
-                        sizeString = size / 1024 / 1024 + " MB";
-                    } else {
-                        sizeString = size / 1024 / 1024 / 1024 + " GB";
-                    }
-                    fileItem.setSize(sizeString);
-                    System.out.println("fileItem: " + fileItem);
-                    itemList.add(fileItem);
-                }
+                itemList.addAll(fileList);
             }
 
             return itemList;

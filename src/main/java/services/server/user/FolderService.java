@@ -6,6 +6,7 @@ import org.hibernate.Session;
 import org.hibernate.query.Query;
 import utils.HibernateUtil;
 
+import java.sql.Timestamp;
 import java.util.Date;
 import java.util.List;
 
@@ -55,62 +56,45 @@ public class FolderService {
     public int getNumberItemOfFolder(int id) {
         try(Session session = HibernateUtil.getSessionFactory().openSession()) {
             assert session != null;
-            Query<Integer> countFile = session.createQuery("select count(*) from File where folderId = :id", Integer.class).setParameter("id", id);
-            Query<Integer> countFolder = session.createQuery("select count(*) from Folder where parentId = :id", Integer.class).setParameter("id", id);
-            return countFile.getSingleResult() + countFolder.getSingleResult();
+            Query<Long> countFile = session.createQuery("select count(*) from File where folderId = :id", Long.class).setParameter("id", id);
+            Query<Long> countFolder = session.createQuery("select count(*) from Folder where parentId = :id", Long.class).setParameter("id", id);
+
+            int fileCount = countFile.getSingleResult().intValue();
+            int folderCount = countFolder.getSingleResult().intValue();
+
+            return fileCount + folderCount;
         } catch (Exception e) {
             e.printStackTrace();
             return 0;
         }
     }
 
-//    public Date getDateModified(int id) {
-//        try {
-//            Query<Date> query = session.createQuery("select max(f.updatedAt) from File f where f.folderId = :id", Date.class).setParameter("id", id);
-//            Date dateOfFiles = query.getSingleResult();
-//
-//            List<Folder> folderList = session.createQuery("from Folder where parentId = :id", Folder.class).setParameter("id", id).list();
-//            Date dateOfFolders = null;
-//            for (Folder folder : folderList) {
-//                Date date = getDateModified(folder.getId());
-//                if (dateOfFolders == null || dateOfFolders.compareTo(date) < 0) {
-//                    dateOfFolders = date;
-//                }
-//            }
-//
-//            return dateOfFiles == null ? dateOfFolders : dateOfFiles.compareTo(dateOfFolders) > 0 ? dateOfFiles : dateOfFolders;
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//            return null;
-//        }
-//    }
-
-    public Pair<Date, Integer> getLastModifiedInfo(int id) {
+    public Pair<Timestamp, Integer> getLastModifiedInfo(int id) {
         try(Session session = HibernateUtil.getSessionFactory().openSession()) {
-            Integer updatedBy = session.createQuery("select f.updatedBy from File f where f.folderId = :id order by f.updatedAt desc ", Integer.class)
+            Integer lastUpdatedPersonOfFiles = session.createQuery("select f.updatedBy from File f where f.folderId = :id order by f.updatedAt desc ", Integer.class)
                     .setParameter("id", id)
                     .setMaxResults(1)
                     .uniqueResult();
-            Date dateOfFiles = session.createQuery("select max(f.updatedAt) from File f where f.folderId = :id", Date.class).setParameter("id", id).getSingleResult();
+            Timestamp lastUpdatedTimeOfFiles = session.createQuery("select max(f.updatedAt) from File f where f.folderId = :id", Timestamp.class).setParameter("id", id).getSingleResult();
 
             List<Folder> folderList = session.createQuery("select fd from Folder fd where fd.parentId = :id", Folder.class).setParameter("id", id).list();
-            Integer updatedByFolder = null;
-            Date dateOfFolders = null;
+            Integer lastUpdatedPersonOfFolders = null;
+            Timestamp lastUpdatedTimeOfFolders = null;
             for (Folder folder : folderList) {
-                Pair<Date, Integer> updatedFolderInfo = getLastModifiedInfo(folder.getId());
-                if (updatedFolderInfo == null || updatedFolderInfo.getKey() == null || updatedFolderInfo.getValue() == null) continue;
-                if (dateOfFolders == null || dateOfFolders.compareTo(updatedFolderInfo.getKey()) < 0) {
-                    dateOfFolders = updatedFolderInfo.getKey();
-                    updatedByFolder = updatedFolderInfo.getValue();
+                Pair<Timestamp, Integer> updatedFolderInfo = getLastModifiedInfo(folder.getId());
+                if (updatedFolderInfo == null || updatedFolderInfo.getKey() == null) continue;
+                if (lastUpdatedTimeOfFolders == null || lastUpdatedTimeOfFolders.compareTo(updatedFolderInfo.getKey()) < 0) {
+                    lastUpdatedTimeOfFolders = updatedFolderInfo.getKey();
+                    lastUpdatedPersonOfFolders = updatedFolderInfo.getValue();
                 }
             }
 
-            if (dateOfFiles == null) {
-                return new Pair<>(dateOfFolders, updatedByFolder);
-            } else if (dateOfFolders == null) {
-                return new Pair<>(dateOfFiles, updatedBy);
+            if (lastUpdatedTimeOfFiles == null) {
+                return new Pair<>(lastUpdatedTimeOfFolders, lastUpdatedPersonOfFolders);
+            } else if (lastUpdatedTimeOfFolders == null) {
+                return new Pair<>(lastUpdatedTimeOfFiles, lastUpdatedPersonOfFiles);
             } else {
-                return dateOfFiles.compareTo(dateOfFolders) > 0 ? new Pair<>(dateOfFiles, updatedBy) : new Pair<>(dateOfFolders, updatedByFolder);
+                return lastUpdatedTimeOfFiles.compareTo(lastUpdatedTimeOfFolders) > 0 ? new Pair<>(lastUpdatedTimeOfFiles, lastUpdatedPersonOfFiles) : new Pair<>(lastUpdatedTimeOfFolders, lastUpdatedPersonOfFolders);
             }
         } catch (Exception e) {
             e.printStackTrace();
