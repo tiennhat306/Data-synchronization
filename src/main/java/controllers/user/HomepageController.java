@@ -1,6 +1,7 @@
 package controllers.user;
 
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -9,16 +10,14 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
-import DTO.Item;
+import models.File;
 import models.Type;
 import models.User;
-import org.hibernate.Session;
-import org.hibernate.SessionFactory;
-import services.user.FileService;
-import services.user.ItemService;
-import utils.HibernateUtil;
+import services.client.user.ItemService;
 
 import java.net.URL;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.ResourceBundle;
@@ -36,7 +35,7 @@ public class HomepageController implements Initializable {
     @FXML
     private Button createFolderBtn;
     @FXML
-    private TableView<Item> dataTable;
+    private TableView<File> dataTable;
     @FXML
     private Label documentOwnerName;
     @FXML
@@ -66,53 +65,69 @@ public class HomepageController implements Initializable {
     @FXML
     private Label userName;
 
-
-    private Session session;
     public HomepageController() {
-        SessionFactory sessionFactory = HibernateUtil.getSessionFactory();
-        session = sessionFactory.openSession();
-    }
-    public HomepageController(Session session) {
-        this.session = session;
     }
 
     public void populateData() {
-        TableColumn<Item, String> nameColumn = new TableColumn<>("Tên");
-        TableColumn<Item, String> ownerNameColumn = new TableColumn<>("Chủ sở hữu");
-        TableColumn<Item, Date> dateModifiedColumn = new TableColumn<>("Đã sửa đổi");
-        TableColumn<Item, String> lastModifiedByColumn = new TableColumn<>("Người sửa đổi");
-        TableColumn<Item, String> sizeColumn = new TableColumn<>("Kích thước");
+        TableColumn<File, String> nameColumn = new TableColumn<>("Tên");
+        TableColumn<File, String> ownerNameColumn = new TableColumn<>("Chủ sở hữu");
+        TableColumn<File, Date> dateModifiedColumn = new TableColumn<>("Đã sửa đổi");
+        TableColumn<File, String> lastModifiedByColumn = new TableColumn<>("Người sửa đổi");
+        TableColumn<File, String> sizeColumn = new TableColumn<>("Kích thước");
 
         dataTable.getColumns().addAll(nameColumn, ownerNameColumn, dateModifiedColumn, lastModifiedByColumn, sizeColumn);
 
-//        final ObservableList<Item> data = FXCollections.observableArrayList(
-//                new Item(1, 1, "test", "test", new Date(), "test", "test"),
-//                new Item(2, 2, "test", "test", new Date(), "test", "test"),
-//                new Item(3, 3, "test", "test", new Date(), "test", "test"),
-//                new Item(4, 4, "test", "test", new Date(), "test", "test"),
-//                new Item(5, 5, "test", "test", new Date(), "test", "test")
-//        );
+        nameColumn.setCellValueFactory(column -> {
+            return new SimpleStringProperty(column.getValue().getName() + (column.getValue().getTypeId() != 1 ? "." + column.getValue().getTypesByTypeId().getName() : ""));
+        });
+        ownerNameColumn.setCellValueFactory(column -> {
+            return new SimpleStringProperty(column.getValue().getUsersByOwnerId().getName());
+        });
+        dateModifiedColumn.setCellFactory(column -> {
+            return new TableCell<File, Date>() {
+                private final SimpleDateFormat format = new SimpleDateFormat("dd/MM/yyyy HH:mm");
+                @Override
+                protected void updateItem(Date item, boolean empty) {
+                    super.updateItem(item, empty);
+                    if(empty) {
+                        setText(null);
+                    }
+                    else {
+                        setText(format.format(item));
+                    }
+                }
+            };
+        });
+        dateModifiedColumn.setCellValueFactory(new PropertyValueFactory<File, Date>("updatedAt"));
+        lastModifiedByColumn.setCellValueFactory(column -> {
+            return new SimpleStringProperty(column.getValue().getUsersByUpdatedBy() == null ? "" : column.getValue().getUsersByUpdatedBy().getName());
+        });
+        sizeColumn.setCellValueFactory(column -> {
+            int size = column.getValue().getSize();
+            String sizeStr = "";
+            if(size < 0){
+                sizeStr = (size - Short.MIN_VALUE) + " mục";
+            }
+            else if(size < 1024) {
+                sizeStr = size + " bytes";
+            }
+            else if(size < 1024 * 1024) {
+                sizeStr = size / 1024 + " KB";
+            }
+            else if(size < 1024 * 1024 * 1024) {
+                sizeStr = size / (1024 * 1024) + " MB";
+            }
+            else {
+                sizeStr = size / (1024 * 1024 * 1024) + " GB";
+            }
+            return new SimpleStringProperty(sizeStr);
+        });
 
-        nameColumn.setCellValueFactory(new PropertyValueFactory<Item, String>("name"));
-        ownerNameColumn.setCellValueFactory(new PropertyValueFactory<Item, String>("ownerName"));
-        dateModifiedColumn.setCellValueFactory(new PropertyValueFactory<Item, Date>("dateModified"));
-        lastModifiedByColumn.setCellValueFactory(new PropertyValueFactory<Item, String>("lastModifiedBy"));
-        sizeColumn.setCellValueFactory(new PropertyValueFactory<Item, String>("size"));
-
-        //dataTable.setItems(data);
-
-        // log data
-        //System.out.println("data: " + data);
-
-        // log dataTable
-        //System.out.println("dataTable: " + dataTable);
 
 
-        ItemService itemService = new ItemService(session);
-        FileService fileService = new FileService(session);
-        List<Item> itemList = itemService.getAllItem(2);
+        ItemService itemService = new ItemService();
+        List<File> itemList = itemService.getAllItem(2);
 
-        // log itemList
         System.out.println("itemList: " + itemList);
 
         if(itemList == null) {
@@ -120,7 +135,7 @@ public class HomepageController implements Initializable {
             dataTable.setPlaceholder(new Label("Không có dữ liệu"));
         }
         else {
-            final ObservableList<Item> items = FXCollections.observableArrayList(itemList);
+            final ObservableList<File> items = FXCollections.observableArrayList(itemList);
             dataTable.setItems(items);
             System.out.println("not null");
         }

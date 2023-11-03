@@ -1,21 +1,17 @@
-package services.user;
+package services.server.user;
 
 import models.User;
 import org.hibernate.Session;
+import utils.HibernateUtil;
 
 import java.util.List;
 
 
 public class UserService {
-    private final Session session;
     public UserService() {
-        this.session = null;
-    }
-    public UserService(Session session) {
-        this.session = session;
     }
     public List<User> getAllUser() {
-        try {
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
             return session.createQuery("select u from User u", User.class).list();
         } catch (Exception e) {
             e.printStackTrace();
@@ -23,7 +19,7 @@ public class UserService {
         }
     }
     public User getUserById(int id) {
-        try {
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
             return session.find(User.class, id);
         } catch (Exception e) {
             e.printStackTrace();

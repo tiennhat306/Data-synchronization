@@ -1,4 +1,4 @@
-package services.user;
+package services.server.user;
 
 public class PermissionService {
 }
