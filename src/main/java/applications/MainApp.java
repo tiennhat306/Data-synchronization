@@ -13,7 +13,7 @@ public class MainApp extends Application {
 //        Scene scene = new Scene(userLoader.load(), 960, 540);
 ////        scene.getStylesheets().add(Objects.requireNonNull(MainApp.class.getResource("/assets/css/style_hmm.css")).toExternalForm());
 //        stage.setTitle("Client");
-        FXMLLoader adminLoader = new FXMLLoader(MainApp.class.getResource("/view/admin/dashboard.fxml"));
+        FXMLLoader adminLoader = new FXMLLoader(MainApp.class.getResource("/view/user/dashboard.fxml"));
         Scene scene = new Scene(adminLoader.load(), 960, 540);
         stage.setTitle("Admin - Client");
         stage.setScene(scene);
