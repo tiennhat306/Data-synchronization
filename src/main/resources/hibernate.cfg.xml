@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE hibernate-configuration PUBLIC
+        "-//Hibernate/Hibernate Configuration DTD 3.0//EN"
+        "http://www.hibernate.org/dtd/hibernate-configuration-3.0.dtd">
+<hibernate-configuration>
+    <session-factory>
+        <property name="hibernate.connection.driver_class">com.mysql.cj.jdbc.Driver</property>
+        <property name="hibernate.connection.url">jdbc:mysql://localhost:3306/pbl4</property>
+        <property name="hibernate.connection.username">root</property>
+        <property name="hibernate.connection.password">vothedat123</property>
+
+        <property name="hibernate.hbm2ddl.auto">validate</property>
+        <property name="hibernate.dialect">
+            org.hibernate.dialect.MySQLDialect
+        </property>
+        <!-- Show all executed SQL to stdout -->
+        <property name="show_sql">true</property>
+
+        <!-- List mapping annotation classes -->
+        <mapping class="models.File"/>
+        <mapping class="models.Folder"/>
+        <mapping class="models.Permission"/>
+        <mapping class="models.Type"/>
+        <mapping class="models.User"/>
+    </session-factory>
+</hibernate-configuration>
