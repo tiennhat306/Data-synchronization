@@ -13,8 +13,6 @@ module com.datasynchronization.datasynchronization {
 
     opens applications to javafx.fxml;
     exports applications;
-    opens controllers to javafx.fxml;
-    exports controllers;
     opens controllers.user to javafx.fxml;
     exports controllers.user;
     opens controllers.admin to javafx.fxml;
