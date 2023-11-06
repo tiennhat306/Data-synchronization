@@ -110,13 +110,6 @@ public class HomepageController implements Initializable {
 		dataTable.getColumns().addAll(nameColumn, ownerNameColumn, dateModifiedColumn, lastModifiedByColumn,
 				sizeColumn);
 
-//        final ObservableList<Item> data = FXCollections.observableArrayList(
-//                new Item(1, 1, "test", "test", new Date(), "test", "test"),
-//                new Item(2, 2, "test", "test", new Date(), "test", "test"),
-//                new Item(3, 3, "test", "test", new Date(), "test", "test"),
-//                new Item(4, 4, "test", "test", new Date(), "test", "test"),
-//                new Item(5, 5, "test", "test", new Date(), "test", "test")
-//        );
 
 		nameColumn.setCellValueFactory(new PropertyValueFactory<Item, String>("name"));
 		ownerNameColumn.setCellValueFactory(new PropertyValueFactory<Item, String>("ownerName"));
@@ -124,13 +117,6 @@ public class HomepageController implements Initializable {
 		lastModifiedByColumn.setCellValueFactory(new PropertyValueFactory<Item, String>("lastModifiedBy"));
 		sizeColumn.setCellValueFactory(new PropertyValueFactory<Item, String>("size"));
 
-		// dataTable.setItems(data);
-
-		// log data
-		// System.out.println("data: " + data);
-
-		// log dataTable
-		// System.out.println("dataTable: " + dataTable);
 
 		ItemService itemService = new ItemService(session);
 		FileService fileService = new FileService(session);
