@@ -1,0 +1,125 @@
+package services.server;
+
+import DTO.Connection;
+import models.File;
+import models.User;
+
+import java.io.*;
+import java.net.InetAddress;
+import java.net.Socket;
+import java.util.List;
+
+import services.server.admin.UserService;
+import services.server.user.ItemService;
+
+import static applications.ServerApp.connections;
+
+public class ClientHandler extends Thread{
+    private Socket clientSocket;
+    private ObjectInputStream in;
+    private InetAddress clientAddress;
+
+    public ClientHandler(Socket clientSocket) {
+        try{
+            this.clientSocket = clientSocket;
+            clientAddress = clientSocket.getInetAddress();
+            System.out.println("Client handler connected: " + clientSocket);
+            this.in = new ObjectInputStream(clientSocket.getInputStream());
+            start();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void run() {
+        try {
+            Object obj = in.readObject();
+            String request = "";
+            if(obj instanceof String) {
+                request = (String) obj;
+                System.out.println("Client request: " + request);
+            }
+            else {
+                System.out.println("Unknown request: " + obj);
+            }
+            addConnection(request);
+
+            switch (request) {
+                case "GET_ALL_USER" -> {
+                    List<User> response = getUserList();
+                    System.out.println(response);
+                    sendResponse(response);
+                }
+                case "GET_USER_BY_ID" -> {
+                }
+                case "GET_ALL_ITEM" -> {
+                    String folderId = (String) receiveRequest();
+                    List<File> response = getItemList(Integer.parseInt(folderId));
+                    sendResponse(response);
+                }
+                default -> {
+                    System.out.println("Unknown request: " + request);
+                }
+            }
+
+        } catch (IOException | ClassNotFoundException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if(in != null) in.close();
+                if(clientSocket != null) clientSocket.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private List<User> getUserList() {
+        UserService userService = new UserService();
+        System.out.println("Get all user");
+        return userService.getAllUser();
+    }
+    private List<File> getItemList(int folderId) {
+        ItemService itemService = new ItemService();
+        System.out.println("Get all item");
+        return itemService.getAllItem(folderId);
+    }
+    private User getUserById(int id) {
+        UserService userService = new UserService();
+        System.out.println("Get user by id");
+        return userService.getUserById(id);
+    }
+
+    public void sendResponse(Object response) {
+        Socket responseSocket = null;
+        ObjectOutputStream responseOut = null;
+        try{
+            responseSocket = new Socket(clientAddress, 9696);
+            responseOut = new ObjectOutputStream(responseSocket.getOutputStream());
+            responseOut.writeObject(response);
+            responseOut.flush();
+            responseOut.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if(responseOut != null) responseOut.close();
+                if(responseSocket != null) responseSocket.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public Object receiveRequest() throws IOException, ClassNotFoundException {
+        return in.readObject();
+    }
+
+    public void addConnection(String request) {
+        Connection connection = new Connection(clientAddress.getHostAddress(), request);
+        connections.add(connection);
+        System.out.println("Connection added: " + connection);
+        System.out.println("Connection list: " + connections);
+    }
+}

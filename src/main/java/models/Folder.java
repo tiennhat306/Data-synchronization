@@ -2,6 +2,7 @@ package models;
 
 import jakarta.persistence.*;
 
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.Objects;
 
@@ -9,7 +10,7 @@ import java.util.Objects;
 @Table(name = "folders", schema = "pbl4", uniqueConstraints = {
         @UniqueConstraint(columnNames = {"folder_name", "parent_id"})
 })
-public class Folder {
+public class Folder implements Serializable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id
     @Column(name = "id", nullable = false)

@@ -2,13 +2,14 @@ package models;
 
 import jakarta.persistence.*;
 
+import java.io.Serializable;
 import java.util.Objects;
 
 @Entity
 @Table(name = "permissions", schema = "pbl4", uniqueConstraints = {
         @UniqueConstraint(columnNames = {"user_id", "file_id", "folder_id"})
 })
-public class Permission {
+public class Permission implements Serializable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id
     @Column(name = "id", nullable = false)
