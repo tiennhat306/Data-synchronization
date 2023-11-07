@@ -144,7 +144,7 @@ public class ClientHandler implements Runnable{
                 System.out.println("Thêm file " + fileName + " thành công");
                 response = true;
                 Thread receiveFileThread = new Thread(() -> {
-                    receiveFile(rs);
+                    receiveFile(rs, size);
                 });
                 receiveFileThread.start();
             } else {
@@ -158,20 +158,19 @@ public class ClientHandler implements Runnable{
         }
     }
 
-    private void receiveFile(String filePath){
-        try{
-            // Đọc dữ liệu tệp
-            InputStream fileInputStream = clientSocket.getInputStream();
-            byte[] buffer = new byte[1024];
-            int bytesRead;
-            FileOutputStream fileOutputStream = new FileOutputStream(filePath);
+    private void receiveFile(String filePath, int size){
+        byte[] buffer = new byte[1024];
 
-            while ((bytesRead = fileInputStream.read(buffer)) != -1) {
+        try(FileOutputStream fileOutputStream = new FileOutputStream(filePath);
+            InputStream fileInputStream = clientSocket.getInputStream()) {
+            int bytesRead;
+            //while ((bytesRead = fileInputStream.read(buffer)) != -1) {
+            while(size > 0 && (bytesRead = fileInputStream.read(buffer, 0, Math.min(buffer.length, size))) != -1) {
                 fileOutputStream.write(buffer, 0, bytesRead);
+                size -= bytesRead;
             }
 
-            fileOutputStream.close();
-
+            System.out.println("File uploaded: " + filePath);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -195,8 +194,8 @@ public class ClientHandler implements Runnable{
         }
 
         // receive file and folder
-        String child_type;
-        while((child_type = (String) receiveRequest()) != null){
+        String child_type = (String) receiveRequest();
+        while(!child_type.equals("END_FOLDER")){
             if(child_type.equals("folder")){
                 String folderNameOfChild = (String) receiveRequest();
                 int ownerIdOfChild = Integer.parseInt((String) receiveRequest());
@@ -212,6 +211,7 @@ public class ClientHandler implements Runnable{
 
                 response = uploadFile(fileName, ownerIdOfFile, parentIdOfFile, sizeOfFile);
             }
+            child_type = (String) receiveRequest();
         }
 
         return response;

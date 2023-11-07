@@ -58,34 +58,30 @@ public class SocketClientHelper {
     }
 
     public void sendFile(String fileName, int ownerId, int folderId, int size, String filePath) throws IOException {
-//        sendRequest("file");
-//        sendRequest(fileName);
-//        sendRequest(String.valueOf(ownerId));
-//        sendRequest(String.valueOf(folderId));
-//        sendRequest(String.valueOf(size));
+        File file = new File(filePath);
+        byte[] buffer = new byte[1024];
 
-        byte[] data = Files.readAllBytes(Paths.get(filePath));
+        try(FileInputStream fileInputStream = new FileInputStream(file);
+            OutputStream fileOutputStream = socket.getOutputStream()) {
+            int bytesRead;
+            while ((bytesRead = fileInputStream.read(buffer)) != -1) {
+                fileOutputStream.write(buffer, 0, bytesRead);
+                fileOutputStream.flush();
+            }
 
-        OutputStream fileOutputStream = socket.getOutputStream();
-        fileOutputStream.write(data, 0, data.length);
-        fileOutputStream.flush();
-        System.out.println("File uploaded: " + fileName);
+            System.out.println("File uploaded: " + fileName);
+        }
     }
 
 
 
     public void sendFolder(String folderName, int ownerId, int parentId , String folderPath) throws IOException {
-//        sendRequest("folder");
-//        sendRequest(folderName);
-//        sendRequest(String.valueOf(ownerId));
-//        sendRequest(String.valueOf(parentId));
-
         File folder = new File(folderPath);
 
         int folderId = Integer.parseInt((String) receiveResponse());
 
         File[] listOfFiles = folder.listFiles();
-        boolean response = folderId != -1;
+        boolean response = (folderId != -1);
         if(listOfFiles != null){
             for (File file : listOfFiles) {
                 if (file.isDirectory()) {
@@ -104,21 +100,7 @@ public class SocketClientHelper {
                     sendFile(file.getName(), ownerId, folderId, size ,file.getAbsolutePath());
                 }
             }
-
+            sendRequest("END_FOLDER");
         }
     }
-
-//    public void receiveFile(String filePath) throws IOException {
-//        InputStream fileInputStream = socket.getInputStream();
-//        byte[] buffer = new byte[1024];
-//        int bytesRead;
-//        FileOutputStream fileOutputStream = new FileOutputStream(filePath);
-//
-//        while ((bytesRead = fileInputStream.read(buffer)) != -1) {
-//            fileOutputStream.write(buffer, 0, bytesRead);
-//        }
-//
-//        fileOutputStream.close();
-//        System.out.println("File received and stored: " + filePath);
-//    }
 }
