@@ -57,12 +57,12 @@ public class SocketClientHelper {
         }
     }
 
-    public boolean sendFile(String fileName, int ownerId, int folderId, int size, String filePath) throws IOException {
-        sendRequest("file");
-        sendRequest(fileName);
-        sendRequest(String.valueOf(ownerId));
-        sendRequest(String.valueOf(folderId));
-        sendRequest(String.valueOf(size));
+    public void sendFile(String fileName, int ownerId, int folderId, int size, String filePath) throws IOException {
+//        sendRequest("file");
+//        sendRequest(fileName);
+//        sendRequest(String.valueOf(ownerId));
+//        sendRequest(String.valueOf(folderId));
+//        sendRequest(String.valueOf(size));
 
         byte[] data = Files.readAllBytes(Paths.get(filePath));
 
@@ -70,31 +70,41 @@ public class SocketClientHelper {
         fileOutputStream.write(data, 0, data.length);
         fileOutputStream.flush();
         System.out.println("File uploaded: " + fileName);
-
-        boolean response = (boolean) receiveResponse();
-        return response;
     }
 
+
+
     public void sendFolder(String folderName, int ownerId, int parentId , String folderPath) throws IOException {
-        sendRequest("folder");
-        sendRequest(folderName);
-        sendRequest(String.valueOf(ownerId));
-        sendRequest(String.valueOf(parentId));
+//        sendRequest("folder");
+//        sendRequest(folderName);
+//        sendRequest(String.valueOf(ownerId));
+//        sendRequest(String.valueOf(parentId));
 
         File folder = new File(folderPath);
 
         int folderId = Integer.parseInt((String) receiveResponse());
 
         File[] listOfFiles = folder.listFiles();
+        boolean response = folderId != -1;
         if(listOfFiles != null){
             for (File file : listOfFiles) {
-                if (file.isFile()) {
-                    int size = (int) file.length();
-                    sendFile(file.getName(), ownerId, folderId, size ,file.getAbsolutePath());
-                } else if (file.isDirectory()) {
+                if (file.isDirectory()) {
+                    sendRequest("folder");
+                    sendRequest(file.getName());
+                    sendRequest(String.valueOf(ownerId));
+                    sendRequest(String.valueOf(folderId));
                     sendFolder(file.getName(), ownerId, folderId ,file.getAbsolutePath());
+                } else { // if (file.isFile())
+                    sendRequest("file");
+                    sendRequest(file.getName());
+                    sendRequest(String.valueOf(ownerId));
+                    sendRequest(String.valueOf(folderId));
+                    int size = (int) file.length();
+                    sendRequest(String.valueOf(size));
+                    sendFile(file.getName(), ownerId, folderId, size ,file.getAbsolutePath());
                 }
             }
+
         }
     }
 

@@ -58,17 +58,17 @@ public class ItemService {
             SocketClientHelper socketClientHelper = new SocketClientHelper();
             // send request to server
             socketClientHelper.sendRequest("UPLOAD_FILE");
-//            socketClientHelper.sendRequest(fileName);
-//            // send owner
-//            socketClientHelper.sendRequest(String.valueOf(ownerId));
-//            // send current folder Id to server to create new folder
-//            socketClientHelper.sendRequest(String.valueOf(folderId));
-//            // send file size
-//            socketClientHelper.sendRequest(String.valueOf(size));
-            // send file
 
-            boolean response = socketClientHelper.sendFile(fileName, ownerId, folderId, size, filePath);
+            socketClientHelper.sendRequest("file");
+            socketClientHelper.sendRequest(fileName);
+            socketClientHelper.sendRequest(String.valueOf(ownerId));
+            socketClientHelper.sendRequest(String.valueOf(folderId));
+            socketClientHelper.sendRequest(String.valueOf(size));
 
+            socketClientHelper.sendFile(fileName, ownerId, folderId, size, filePath);
+
+            boolean response = (boolean) socketClientHelper.receiveResponse();
+            System.out.println("Response: " + response);
             socketClientHelper.close();
             return response;
         } catch (Exception e) {
@@ -77,21 +77,21 @@ public class ItemService {
         }
     }
 
-    public boolean uploadFolder(String folderName, int ownerId, int folderId, String folderPath){
+    public boolean uploadFolder(String folderName, int ownerId, int parentId, String folderPath){
         try {
             SocketClientHelper socketClientHelper = new SocketClientHelper();
             // send request to server
             socketClientHelper.sendRequest("UPLOAD_FOLDER");
-//            socketClientHelper.sendRequest(folderName);
-//            socketClientHelper.sendRequest(String.valueOf(ownerId));
-//            socketClientHelper.sendRequest(String.valueOf(folderId));
 
-//            java.io.File folder = new java.io.File(folderPath);
-            socketClientHelper.sendFolder(folderName, ownerId, folderId, folderPath);
-            socketClientHelper.sendRequest("END");
+            socketClientHelper.sendRequest("folder");
+            socketClientHelper.sendRequest(folderName);
+            socketClientHelper.sendRequest(String.valueOf(ownerId));
+            socketClientHelper.sendRequest(String.valueOf(parentId));
 
-            Object obj = socketClientHelper.receiveResponse();
-            boolean response = (boolean) obj;
+            socketClientHelper.sendFolder(folderName, ownerId, parentId, folderPath);
+
+            boolean response = (boolean) socketClientHelper.receiveResponse();
+            System.out.println("Response: " + response);
 
             socketClientHelper.close();
             return response;

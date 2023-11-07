@@ -62,22 +62,22 @@
     <left>
         <VBox prefHeight="488.0" prefWidth="169.0" spacing="5.0" BorderPane.alignment="CENTER">
          <children>
-            <Button fx:id="createFolderBtn" mnemonicParsing="false" text="Thư mục mới" onAction="#createFolderButtonClicked">
+            <Button fx:id="createFolderBtn" mnemonicParsing="false" onAction="#createFolderButtonClicked" text="Thư mục mới">
                <graphic>
                   <FontAwesomeIconView glyphName="PLUS" />
                </graphic>
             </Button>
-            <Button fx:id="uploadFileBtn" layoutX="10.0" layoutY="10.0" mnemonicParsing="false" text="Tải tệp lên" onAction="#handleUploadFileButtonAction">
+            <Button fx:id="uploadFileBtn" layoutX="10.0" layoutY="10.0" mnemonicParsing="false" onAction="#handleUploadFileButtonAction" text="Tải tệp lên">
                <graphic>
                   <FontAwesomeIconView glyphName="PLUS" />
                </graphic>
             </Button>
-            <Button fx:id="uploadFolderBtn" layoutX="10.0" layoutY="229.0" mnemonicParsing="false" text="Tải thư mục lên" onAction="#handleUploadFolderButtonAction">
+            <Button fx:id="uploadFolderBtn" layoutX="10.0" layoutY="229.0" mnemonicParsing="false" onAction="#handleUploadFolderButtonAction" text="Tải thư mục lên">
                <graphic>
                   <FontAwesomeIconView glyphName="PLUS" />
                </graphic>
             </Button>
-            <Button fx:id="downloadBtn" layoutX="10.0" layoutY="229.0" mnemonicParsing="false" text="Tải xuống" onAction="#downloadFileClicked">
+            <Button fx:id="downloadBtn" layoutX="10.0" layoutY="229.0" mnemonicParsing="false" onAction="#downloadFileClicked" text="Tải xuống">
                <graphic>
                   <FontAwesomeIconView glyphName="PLUS" />
                </graphic>

@@ -88,17 +88,17 @@ public class ClientHandler implements Runnable{
                     }
                 }
                 case "UPLOAD_FOLDER" -> {
-//                    String folderName = (String) receiveRequest();
-//                    int ownerId = Integer.parseInt((String) receiveRequest());
-//                    int currentFolderId = Integer.parseInt((String) receiveRequest());
-//                    String rs = uploadFolder(folderName, ownerId, currentFolderId);
-                    String type_response = (String) receiveRequest();
-                    boolean response = false;
-                    while(!type_response.equals("END")){
-                        response = uploadFolder(type_response);
-                        type_response = (String) receiveRequest();
+                    String type_request = (String) receiveRequest();
+                    if(type_request.equals("folder")){
+                        String folderName = (String) receiveRequest();
+                        int ownerId = Integer.parseInt((String) receiveRequest());
+                        int currentFolderId = Integer.parseInt((String) receiveRequest());
+                        boolean response = uploadFolder(folderName, ownerId, currentFolderId);
+
+                        sendResponse(response);
+                    } else {
+                        System.out.println("Unknown request: " + type_request);
                     }
-                    sendResponse(response);
                 }
                 default -> {
                     System.out.println("Unknown request: " + request);
@@ -129,25 +129,33 @@ public class ClientHandler implements Runnable{
         return itemService.getAllItem(folderId);
     }
     
-    private boolean uploadFile(String fileName, int ownerId, int folderId, int size) throws IOException {
-        int indexOfDot = fileName.indexOf(".");
-        String nameOfFile = fileName.substring(0, indexOfDot); // Characters before the first period
-        String typeOfFile = fileName.substring(indexOfDot + 1); // Characters after the first period
-        // Send the two parts to the server
-        System.out.println(nameOfFile);
-        System.out.println(typeOfFile);
-        FileService fileService = new FileService();
-        String rs = fileService.uploadFile(nameOfFile, fileService.getFileTypeId(typeOfFile), folderId, ownerId, size);
-        boolean response = false;
-        if(!rs.equals("")){
-            System.out.println("Thêm file " + fileName + " thành công");
-            receiveFile(rs);
-            response = true;
-        } else {
-            System.out.println("Thêm file " + fileName + " thất bại");
+    private boolean uploadFile(String fileName, int ownerId, int folderId, int size){
+        try{
+            int indexOfDot = fileName.indexOf(".");
+            String nameOfFile = fileName.substring(0, indexOfDot); // Characters before the first period
+            String typeOfFile = fileName.substring(indexOfDot + 1); // Characters after the first period
+            // Send the two parts to the server
+            System.out.println(nameOfFile);
+            System.out.println(typeOfFile);
+            FileService fileService = new FileService();
+            String rs = fileService.uploadFile(nameOfFile, fileService.getFileTypeId(typeOfFile), folderId, ownerId, size);
+            boolean response = false;
+            if(!rs.equals("")){
+                System.out.println("Thêm file " + fileName + " thành công");
+                response = true;
+                Thread receiveFileThread = new Thread(() -> {
+                    receiveFile(rs);
+                });
+                receiveFileThread.start();
+            } else {
+                System.out.println("Thêm file " + fileName + " thất bại");
+            }
+            System.out.println("Response: " + response);
+            return response;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
         }
-        System.out.println("Response: " + response);
-        return response;
     }
 
     private void receiveFile(String filePath){
@@ -163,51 +171,50 @@ public class ClientHandler implements Runnable{
             }
 
             fileOutputStream.close();
+
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
     
-    private boolean uploadFolder(String type_request) throws IOException, ClassNotFoundException {
-        String type = type_request;
-        if(type.equals("folder")){
-            System.out.println("Upload folder");
+    private boolean uploadFolder(String folderName, int ownerId, int parentId) throws IOException, ClassNotFoundException {
+        System.out.println("Upload folder");
 
-            String folderName = (String) receiveRequest();
-            int ownerId = Integer.parseInt((String) receiveRequest());
-            int parentId = Integer.parseInt((String) receiveRequest());
+        FolderService folderService = new FolderService();
+        int rs = folderService.uploadFolder(folderName, ownerId, parentId);
 
-            FolderService folderService = new FolderService();
-            int rs = folderService.uploadFolder(folderName, ownerId, parentId);
-            if(rs != -1){
-                System.out.println("Thêm folder "+ folderName + " thành công");
-            } else {
-                System.out.println("Thêm folder "+ folderName + " thất bại");
-            }
-            // send folder id to client
-            sendResponse(String.valueOf(rs));
-
-            return rs!=-1;
-        } else if(type.equals("file")) {
-            System.out.println("Upload file");
-
-            String fileName = (String) receiveRequest();
-            int ownerId = Integer.parseInt((String) receiveRequest());
-            int parentId = Integer.parseInt((String) receiveRequest());
-            int size = Integer.parseInt((String) receiveRequest());
-
-            boolean response = uploadFile(fileName, ownerId, parentId, size);
-//            FolderService folderService = new FolderService();
-//            boolean rs =  folderService.uploadFolder(folderName, ownerId, parentId);
-            if(response){
-                System.out.println("Thêm file "+ fileName + " thành công");
-            } else {
-                System.out.println("Thêm file "+ fileName + " thất bại");
-            }
-            return response;
+        boolean response = false;
+        // send folder id to client
+        sendResponse(String.valueOf(rs));
+        if(rs != -1){
+            System.out.println("Thêm folder "+ folderName + " thành công");
+            response = true;
+        } else {
+            System.out.println("Thêm folder "+ folderName + " thất bại");
+            return false;
         }
 
-        return true;
+        // receive file and folder
+        String child_type;
+        while((child_type = (String) receiveRequest()) != null){
+            if(child_type.equals("folder")){
+                String folderNameOfChild = (String) receiveRequest();
+                int ownerIdOfChild = Integer.parseInt((String) receiveRequest());
+                int parentIdOfChild = Integer.parseInt((String) receiveRequest());
+                response = uploadFolder(folderNameOfChild, ownerIdOfChild, parentIdOfChild);
+            } else if(child_type.equals("file")){
+                System.out.println("Upload file");
+
+                String fileName = (String) receiveRequest();
+                int ownerIdOfFile = Integer.parseInt((String) receiveRequest());
+                int parentIdOfFile = Integer.parseInt((String) receiveRequest());
+                int sizeOfFile = Integer.parseInt((String) receiveRequest());
+
+                response = uploadFile(fileName, ownerIdOfFile, parentIdOfFile, sizeOfFile);
+            }
+        }
+
+        return response;
     }
     
     private User getUserById(int id) {
