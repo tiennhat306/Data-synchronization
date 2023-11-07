@@ -8,6 +8,7 @@ module com.datasynchronization.datasynchronization {
     requires org.hibernate.orm.core;
     requires org.apache.commons.net;
     requires de.jensd.fx.glyphs.fontawesome;
+    requires java.desktop;
 
     opens models to org.hibernate.orm.core, javafx.base; // Mở gói 'models' cho Hibernate
 
@@ -18,8 +19,6 @@ module com.datasynchronization.datasynchronization {
     opens controllers.admin to javafx.fxml;
     exports controllers.admin;
     opens DTO to javafx.base, org.hibernate.orm.core;
-    opens controllers.create to javafx.fxml;
-    exports controllers.create;
     opens controllers.server to javafx.fxml;
     exports controllers.server;
     exports DTO;

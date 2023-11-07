@@ -1,6 +1,5 @@
 package controllers.user;
 
-import controllers.create.NewFolderFormController;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -20,17 +19,10 @@ import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import models.Type;
 import models.User;
-import org.hibernate.Session;
-import org.hibernate.SessionFactory;
 import services.client.user.ItemService;
-import services.user.FileService;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -81,11 +73,14 @@ public class HomepageController implements Initializable {
 	@FXML
 	private Label userName;
 
-	public static String fileName;
+	private int currentFolderId = 2;
+	private ObservableList<models.File> items = FXCollections.observableArrayList();
+
+	private String fileName;
 	
 	public static File fileFullContent;
 
-	public static String folderName;
+	private String folderName;
 
 
     public HomepageController() {
@@ -112,7 +107,7 @@ public class HomepageController implements Initializable {
                 @Override
                 protected void updateItem(Date item, boolean empty) {
                     super.updateItem(item, empty);
-                    if(empty) {
+                    if(empty || item == null) {
                         setText(null);
                     }
                     else {
@@ -146,29 +141,52 @@ public class HomepageController implements Initializable {
             return new SimpleStringProperty(sizeStr);
         });
 
-
-
-        ItemService itemService = new ItemService();
-        List<models.File> itemList = itemService.getAllItem(2);
-
-        System.out.println("itemList: " + itemList);
-
-        if(itemList == null) {
-            System.out.println("null");
-            dataTable.setPlaceholder(new Label("Không có dữ liệu"));
-        }
-        else {
-            final ObservableList<models.File> items = FXCollections.observableArrayList(itemList);
-            dataTable.setItems(items);
-            System.out.println("not null");
-        }
-
+		fillData();
     }
+
+	private void fillData() {
+		ItemService itemService = new ItemService();
+		List<models.File> itemList = itemService.getAllItem(currentFolderId);
+
+		System.out.println("itemList: " + itemList);
+
+		if(itemList == null) {
+			System.out.println("null");
+			dataTable.setPlaceholder(new Label("Không có dữ liệu"));
+		}
+		else {
+			items.clear();
+			items.addAll(itemList);
+			dataTable.setItems(items);
+			System.out.println("not null");
+		}
+	}
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         populateData();
     }
+
+//	public void sendFileNameToServer() {
+//		if (fileName != null) {
+//			ItemService itemService = new ItemService();
+//			boolean rs = itemService.uploadItem(fileName);
+//			if(rs) fillData();
+//		} else {
+//			System.out.println("Không có fileName nào để gửi.");
+//		}
+//	}
+
+//	public void sendFolderNameToServer() {
+//		if (folderName != null) {
+//			ItemService itemService = new ItemService();
+//			boolean rs = itemService.uploadItem(folderName);
+//			if(rs) fillData();
+//		} else {
+//			System.out.println("Không có folderName nào để gửi.");
+//		}
+//	}
+
 
 	@FXML
 	public void handleUploadFileButtonAction() {
@@ -176,14 +194,14 @@ public class HomepageController implements Initializable {
 		FileChooser fileChooser = new FileChooser();
 		fileChooser.setTitle("Choose a file to upload");
 
-		// Set file extension filters if needed
-		FileChooser.ExtensionFilter txtFilter = new FileChooser.ExtensionFilter("Text files (*.txt)", "*.txt");
-		FileChooser.ExtensionFilter jpegFilter = new FileChooser.ExtensionFilter("JPEG files (*.jpg)", "*.jpg");
-		FileChooser.ExtensionFilter pngFilter = new FileChooser.ExtensionFilter("PNG files (*.png)", "*.png");
-		FileChooser.ExtensionFilter pdfFilter = new FileChooser.ExtensionFilter("PDF files (*.pdf)", "*.pdf");
-		FileChooser.ExtensionFilter docxFilter = new FileChooser.ExtensionFilter("DOCX files (*.docx)", "*.docx");
-
-		fileChooser.getExtensionFilters().addAll(txtFilter, jpegFilter, pngFilter, pdfFilter, docxFilter);
+//		// Set file extension filters if needed
+//		FileChooser.ExtensionFilter txtFilter = new FileChooser.ExtensionFilter("Text files (*.txt)", "*.txt");
+//		FileChooser.ExtensionFilter jpegFilter = new FileChooser.ExtensionFilter("JPEG files (*.jpg)", "*.jpg");
+//		FileChooser.ExtensionFilter pngFilter = new FileChooser.ExtensionFilter("PNG files (*.png)", "*.png");
+//		FileChooser.ExtensionFilter pdfFilter = new FileChooser.ExtensionFilter("PDF files (*.pdf)", "*.pdf");
+//		FileChooser.ExtensionFilter docxFilter = new FileChooser.ExtensionFilter("DOCX files (*.docx)", "*.docx");
+//
+//		fileChooser.getExtensionFilters().addAll(txtFilter, jpegFilter, pngFilter, pdfFilter, docxFilter);
 
 		// Show the file dialog and get the selected file
 		File selectedFile = fileChooser.showOpenDialog(null);
@@ -191,40 +209,62 @@ public class HomepageController implements Initializable {
 		if (selectedFile != null) {
 			// Get the selected file's name
 			fileName = selectedFile.getName();
+			String filePath = selectedFile.getAbsolutePath();
 
 			// Create a new Item with the file name and add it to the dataTable
-			models.File item = new models.File();
-			item.setName(fileName);
-			dataTable.getItems().add(item);
+//			models.File item = new models.File();
+//			String SERVER_PATH = "D:\\User\\Desktop\\Server";
+//			item.setName(fileName);
+//			dataTable.getItems().add(item);
 
 			// Specify the destination folder where you want to upload the file
-			File uploadFolder = new File("uploads");
-
-			if (!uploadFolder.exists()) {
-				uploadFolder.mkdirs(); // Create the "uploads" folder if it doesn't exist
-			}
+//			File uploadFolder = new File(SERVER_PATH);
+//
+//			if (!uploadFolder.exists()) {
+//				uploadFolder.mkdirs(); // Create the "uploads" folder if it doesn't exist
+//			}
 
 			// Construct the destination file path in the "uploads" folder
-			String uploadedFilePath = "uploads" + File.separator + fileName;
-			File destinationFile = new File(uploadedFilePath);
+//			String uploadedFilePath = SERVER_PATH + File.separator + fileName;
+//			File destinationFile = new File(uploadedFilePath);
 
-			try {
-				// Read the content of the selected file and write it to the destination
-				byte[] fileContent = Files.readAllBytes(selectedFile.toPath());
-				Files.write(destinationFile.toPath(), fileContent);
+			// Create a Task to upload and save the file
+//			Task<Void> uploadTask = new Task<Void>() {
+//				@Override
+//				protected Void call() {
+//					ItemService itemService = new ItemService();
+//					System.out.println("File: " + fileName + " - " + currentFolderId + " - " + selectedFile.length() + " - " + filePath);
+//					boolean rs = itemService.uploadFile(fileName, 1, currentFolderId, (int)selectedFile.length(), filePath);
+//					if(rs) fillData();
+//					fillData();
+//					return null;
+//				}
+//			};
+//
+//			// Set up task completion handling
+//			uploadTask.setOnSucceeded(event -> {
+//				System.out.println("File uploaded and saved.");
+//				// Add any UI update code here if needed.
+//			});
+//
+//			uploadTask.setOnFailed(event -> {
+//				System.out.println("Failed to upload and save the file.");
+//				// Add error handling code here if needed.
+//			});
+//
+//			// Start the task in a new thread
+//			Thread uploadThread = new Thread(uploadTask);
+//			uploadThread.setDaemon(true);
+//			uploadThread.start();
 
-				// You can now use 'destinationFile' to handle the uploaded file, e.g., save its
-				// path to the database or process it further.
-				// Add your code here to perform any additional actions you need.
-			} catch (IOException e) {
-				e.printStackTrace();
-				// Handle any errors that may occur during the copy process
-			}
+			ItemService itemService = new ItemService();
+			System.out.println("File: " + fileName + " - " + currentFolderId + " - " + selectedFile.length() + " - " + filePath);
+			boolean rs = itemService.uploadFile(fileName, 1, currentFolderId, (int)selectedFile.length(), filePath);
+			if(rs) fillData();
 		} else {
 			System.out.println("Hãy chọn file cần upload");
 		}
 	}
-
 
 	@FXML
 	public void handleUploadFolderButtonAction() {
@@ -237,74 +277,147 @@ public class HomepageController implements Initializable {
 		if (selectedFolder != null && selectedFolder.isDirectory()) {
 			// Get the selected folder's name
 			folderName = selectedFolder.getName();
+			String folderPath = selectedFolder.getAbsolutePath();
 
 			// For the TableView, you can create an Item object and add it to the dataTable
-			models.File item = new models.File(); // Assuming you have an Item class
-			item.setName(folderName);
-			dataTable.getItems().add(item);
+//			models.File item = new models.File();
+//			String SERVER_PATH = "D:\\User\\Desktop\\Server";
+//			item.setName(folderName);
+//			dataTable.getItems().add(item);
 
 			// Specify the destination folder where you want to upload the folder
-			File uploadFolder = new File("uploads" + File.separator + folderName);
-
-			if (!uploadFolder.exists()) {
-				uploadFolder.mkdirs(); // Create the destination folder if it doesn't exist
-			}
+//			File uploadFolder = new File(SERVER_PATH + File.separator + folderName);
+//
+//			if (!uploadFolder.exists()) {
+//				uploadFolder.mkdirs(); // Create the destination folder if it doesn't exist
+//			}
 
 			// Call a method to upload the entire folder and its contents
-			uploadFolderContents(selectedFolder, uploadFolder);
+			//uploadFolderContents(selectedFolder, uploadFolder);
+
+			// Create a Task to upload and save the file
+//			Task<Void> uploadTask = new Task<Void>() {
+//				@Override
+//				protected Void call() {
+//					ItemService itemService = new ItemService();
+//					boolean response = itemService.uploadFolder(folderName, 1, currentFolderId, folderPath);
+//					if(response) fillData();
+//					return null;
+//				}
+//			};
+//
+//			// Set up task completion handling
+//			uploadTask.setOnSucceeded(event -> {
+//				System.out.println("Folder uploaded and saved.");
+//				// Add any UI update code here if needed.
+//			});
+//
+//			uploadTask.setOnFailed(event -> {
+//				System.out.println("Failed to upload and save the folder.");
+//				// Add error handling code here if needed.
+//			});
+//
+//			// Start the task in a new thread
+//			Thread uploadThread = new Thread(uploadTask);
+//			uploadThread.setDaemon(true);
+//			uploadThread.start();
+
+			ItemService itemService = new ItemService();
+			boolean response = itemService.uploadFolder(folderName, 1, currentFolderId, folderPath);
+			if(response) fillData();
 		} else {
 			System.out.println("Hãy chọn thư mục cần upload");
 		}
 	}
 
 	@FXML
+	public void handleOpenButtonAction(ActionEvent event) {
+//		// Get the selected item from the DataTable
+//		models.File selectedItem = dataTable.getSelectionModel().getSelectedItem();
+//
+//		if (selectedItem != null) {
+//			// Get the file name associated with the selected item
+//			String fileName = selectedItem.getName();
+//			// Construct the file path
+//			File data = fetchDataFromDatabase(selectedItem.getName().toString());
+//			// Use the custom method to open the file
+//			try {
+//				Desktop.getDesktop().open(data);
+//			} catch (IOException e) {
+//				// TODO Auto-generated catch block
+//				e.printStackTrace();
+//			}
+//		} else {
+//			System.out.println("No item selected in the DataTable.");
+//		}
+	}
+
+	@FXML
 	public void downloadFileClicked(ActionEvent event) {
 		// Get the selected item from the DataTable
-		models.File selectedItem = dataTable.getSelectionModel().getSelectedItem();
-
-		if (selectedItem != null) {
-			// Assuming you have a method to retrieve data from the database
-			String data = fetchDataFromDatabase(selectedItem.getId()); // Replace with your data retrieval logic
-
-			if (data != null && !data.isEmpty()) {
-				try {
-					File downloadDirectory = new File(System.getProperty("user.home") + File.separator + "Downloads");
-					if (!downloadDirectory.exists()) {
-						downloadDirectory.mkdirs();
-					}
-
-					// Create a file with a unique name
-					String fileName = selectedItem.getName();
-					File downloadFile = new File(downloadDirectory, fileName);
-
-					try (PrintWriter writer = new PrintWriter(downloadFile)) {
-						writer.write(data);
-					}
-
-					System.out.println("Data downloaded successfully to the default downloads directory.");
-				} catch (IOException e) {
-					e.printStackTrace();
-					// Handle any errors that may occur during the download process
-				}
-			} else {
-				System.out.println("No data found for the selected item.");
-			}
-		} else {
-			System.out.println("No item selected in the DataTable.");
-		}
+//		models.File selectedItem = dataTable.getSelectionModel().getSelectedItem();
+//
+//		if (selectedItem != null) {
+//			// Assuming you have a method to retrieve data from the database
+//			File data = fetchDataFromDatabase(selectedItem.getName().toString());
+//
+//			if (data != null) {
+//				try {
+//					// Get the default "Downloads" directory in the user's home folder
+//					File downloadDirectory = new File(System.getProperty("user.home") + File.separator + "Downloads");
+//
+//					if (!downloadDirectory.exists()) {
+//						downloadDirectory.mkdirs();
+//					}
+//
+//					// Create a file with a unique name in the "Downloads" directory
+//					String fileName = selectedItem.getName(); // Replace "extension" with the actual file extension
+//					File downloadFile = new File(downloadDirectory, fileName);
+//
+//					// Use FileInputStream and FileOutputStream to copy the file content
+//					try (FileInputStream inputStream = new FileInputStream(data);
+//						 FileOutputStream outputStream = new FileOutputStream(downloadFile)) {
+//						byte[] buffer = new byte[1024];
+//						int length;
+//						while ((length = inputStream.read(buffer)) > 0) {
+//							outputStream.write(buffer, 0, length);
+//						}
+//					}
+//
+//					System.out.println("Data downloaded successfully to the default downloads directory.");
+//				} catch (IOException e) {
+//					e.printStackTrace();
+//					// Handle any errors that may occur during the download process
+//				}
+//			} else {
+//				System.out.println("No data found for the selected item.");
+//			}
+//		} else {
+//			System.out.println("No item selected in the DataTable.");
+//		}
 	}
 
-	private String fetchDataFromDatabase(int itemId) {
-		// Replace this with your database retrieval logic
-		// Return the data as a string
-		return "Data retrieved from the database for Item " + itemId;
-	}
 
+//	private File fetchDataFromDatabase(String fileName) {
+//		String SERVER_PATH = "D:\\User\\Desktop\\Server";
+//		String path = SERVER_PATH;
+//
+//		// Define the source path where the file is stored on the server
+//		String sourceFilePath = path + File.separator + fileName;
+//
+//		File sourceFile = new File(sourceFilePath);
+//
+//		if(sourceFile.exists()) {
+//			return sourceFile;
+//		}
+//
+//		return null;
+//	}
 
 	@FXML
 	public void createFolderButtonClicked(ActionEvent event) {
 		try {
-			FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/create/createfolderform.fxml"));
+			FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/user/create_folder_form.fxml"));
 			Parent root = loader.load();
 			NewFolderFormController controller = loader.getController();
 
@@ -315,27 +428,55 @@ public class HomepageController implements Initializable {
 			folderName = controller.getFolderName();
 
 			if (folderName != null && !folderName.isEmpty()) {
-				// Create a new folder with the provided name inside the "uploads" directory
-				File uploadFolder = new File("uploads");
+//				// Create a new folder with the provided name inside the "uploads" directory
+//				String SERVER_PATH = "D:\\User\\Desktop\\Server";
+//				File uploadFolder = new File(SERVER_PATH);
+//
+//				if (!uploadFolder.exists()) {
+//					uploadFolder.mkdirs(); // Create the "uploads" folder if it doesn't exist
+//				}
+//
+//				// Construct the destination folder path in the "uploads" directory
+//				String destinationFolderPath = SERVER_PATH + File.separator + folderName;
+//				File destinationFolder = new File(destinationFolderPath);
+//
+//				if (!destinationFolder.exists()) {
+//					destinationFolder.mkdirs(); // Create a folder with the same name in "uploads"
+//				}
 
-				if (!uploadFolder.exists()) {
-					uploadFolder.mkdirs(); // Create the "uploads" folder if it doesn't exist
-				}
+//				// Add the newly created folder to your dataTable or take any other necessary actions
+//				models.File item = new models.File();
+//				item.setName(folderName);
+//				dataTable.getItems().add(item);
 
-				// Construct the destination folder path in the "uploads" directory
-				String destinationFolderPath = "uploads" + File.separator + folderName;
-				File destinationFolder = new File(destinationFolderPath);
-
-				if (!destinationFolder.exists()) {
-					destinationFolder.mkdirs(); // Create a folder with the same name in "uploads"
-				}
-
-				// Add the newly created folder to your dataTable or take any other necessary
-				// actions
-				models.File item = new models.File();
-				item.setName(folderName);
-				dataTable.getItems().add(item);
-
+				// Create a Task to upload and save the folder
+//				Task<Void> uploadTask = new Task<Void>() {
+//					@Override
+//					protected Void call() {
+//						ItemService itemService = new ItemService();
+//						boolean rs = itemService.createFolder(folderName, 1, currentFolderId);
+//						return null;
+//					}
+//				};
+//
+//				// Set up task completion handling
+//				uploadTask.setOnSucceeded(uploadEvent -> {
+//					System.out.println("Folder uploaded and saved.");
+//					// Add any UI update code here if needed.
+//				});
+//
+//				uploadTask.setOnFailed(failedEvent -> {
+//					System.out.println("Failed to upload and save the folder.");
+//					// Add error handling code here if needed.
+//				});
+//
+//				// Start the task in a new thread
+//				Thread uploadThread = new Thread(uploadTask);
+//				uploadThread.setDaemon(true);
+//				uploadThread.start();
+				ItemService itemService = new ItemService();
+				boolean rs = itemService.createFolder(folderName, 1, currentFolderId);
+				if(rs) fillData();
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -343,30 +484,30 @@ public class HomepageController implements Initializable {
 	}
 
 	// Recursive method to upload folder and its contents
-	private void uploadFolderContents(File sourceFolder, File destinationFolder) {
-		if (sourceFolder.isDirectory()) {
-			if (!destinationFolder.exists()) {
-				destinationFolder.mkdirs(); // Create the destination folder if it doesn't exist
-			}
-
-			String[] files = sourceFolder.list();
-			if (files != null) {
-				for (String file : files) {
-					File srcFile = new File(sourceFolder, file);
-					File destFile = new File(destinationFolder, file);
-
-					uploadFolderContents(srcFile, destFile); // Recursively copy subfolders and files
-				}
-			}
-		} else {
-			try {
-				Files.copy(sourceFolder.toPath(), destinationFolder.toPath(), StandardCopyOption.REPLACE_EXISTING);
-				// You can now use 'destinationFolder' to handle the uploaded file, e.g., save
-				// its path to the database or process it further.
-			} catch (IOException e) {
-				e.printStackTrace();
-				// Handle any errors that may occur during the copy process
-			}
-		}
-	}
+//	private void uploadFolderContents(File sourceFolder, File destinationFolder) {
+//		if (sourceFolder.isDirectory()) {
+//			if (!destinationFolder.exists()) {
+//				destinationFolder.mkdirs(); // Create the destination folder if it doesn't exist
+//			}
+//
+//			String[] files = sourceFolder.list();
+//			if (files != null) {
+//				for (String file : files) {
+//					File srcFile = new File(sourceFolder, file);
+//					File destFile = new File(destinationFolder, file);
+//
+//					uploadFolderContents(srcFile, destFile); // Recursively copy subfolders and files
+//				}
+//			}
+//		} else {
+//			try {
+//				Files.copy(sourceFolder.toPath(), destinationFolder.toPath(), StandardCopyOption.REPLACE_EXISTING);
+//				// You can now use 'destinationFolder' to handle the uploaded file, e.g., save
+//				// its path to the database or process it further.
+//			} catch (IOException e) {
+//				e.printStackTrace();
+//				// Handle any errors that may occur during the copy process
+//			}
+//		}
+//	}
 }

@@ -1,11 +1,13 @@
 package services.server.user;
 
+import applications.ServerApp;
 import javafx.util.Pair;
 import models.Folder;
 import org.hibernate.Session;
 import org.hibernate.query.Query;
 import utils.HibernateUtil;
 
+import java.io.File;
 import java.sql.Timestamp;
 import java.util.Date;
 import java.util.List;
@@ -99,6 +101,73 @@ public class FolderService {
         } catch (Exception e) {
             e.printStackTrace();
             return null;
+        }
+    }
+
+    public void createFolderIfNotExist(String path) {
+        File file = new File(path);
+        if (!file.exists()) {
+            file.mkdir();
+        }
+    }
+    public String getPath(int id) {
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
+            Folder folder = session.find(Folder.class, id);
+            if (folder == null) return null;
+            String path = folder.getFolderName();
+            folder = folder.getFoldersByParentId();
+            while(folder.getFoldersByParentId() != null ) {
+                path = folder.getFolderName() + File.separator + path;
+                folder = folder.getFoldersByParentId();
+            }
+            return path;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public boolean createFolder(String folderName, int ownerId, int parentId){
+        try(Session session = HibernateUtil.getSessionFactory().openSession()){
+            session.beginTransaction();
+            Folder folder = new Folder();
+
+            folder.setFolderName(folderName);
+            folder.setOwnerId(ownerId);
+            folder.setParentId(parentId);
+
+            session.persist(folder);
+            session.getTransaction().commit();
+
+            String path = ServerApp.SERVER_PATH + File.separator + getPath(folder.getId());
+            createFolderIfNotExist(path);
+
+            return true;
+        } catch (Exception e){
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public int uploadFolder(String folderName, int ownerId, int parentId) {
+        try(Session session = HibernateUtil.getSessionFactory().openSession()){
+            session.beginTransaction();
+            Folder folder = new Folder();
+
+            folder.setFolderName(folderName);
+            folder.setOwnerId(ownerId);
+            folder.setParentId(parentId);
+
+            session.persist(folder);
+            session.getTransaction().commit();
+
+            String path = ServerApp.SERVER_PATH + File.separator + getPath(folder.getId());
+            createFolderIfNotExist(path);
+
+            return folder.getId();
+        } catch (Exception e){
+            e.printStackTrace();
+            return -1;
         }
     }
 }

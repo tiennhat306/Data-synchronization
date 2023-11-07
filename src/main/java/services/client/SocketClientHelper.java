@@ -5,6 +5,8 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 
 public class SocketClientHelper {
@@ -54,4 +56,59 @@ public class SocketClientHelper {
             return null;
         }
     }
+
+    public boolean sendFile(String fileName, int ownerId, int folderId, int size, String filePath) throws IOException {
+        sendRequest("file");
+        sendRequest(fileName);
+        sendRequest(String.valueOf(ownerId));
+        sendRequest(String.valueOf(folderId));
+        sendRequest(String.valueOf(size));
+
+        byte[] data = Files.readAllBytes(Paths.get(filePath));
+
+        OutputStream fileOutputStream = socket.getOutputStream();
+        fileOutputStream.write(data, 0, data.length);
+        fileOutputStream.flush();
+        System.out.println("File uploaded: " + fileName);
+
+        boolean response = (boolean) receiveResponse();
+        return response;
+    }
+
+    public void sendFolder(String folderName, int ownerId, int parentId , String folderPath) throws IOException {
+        sendRequest("folder");
+        sendRequest(folderName);
+        sendRequest(String.valueOf(ownerId));
+        sendRequest(String.valueOf(parentId));
+
+        File folder = new File(folderPath);
+
+        int folderId = Integer.parseInt((String) receiveResponse());
+
+        File[] listOfFiles = folder.listFiles();
+        if(listOfFiles != null){
+            for (File file : listOfFiles) {
+                if (file.isFile()) {
+                    int size = (int) file.length();
+                    sendFile(file.getName(), ownerId, folderId, size ,file.getAbsolutePath());
+                } else if (file.isDirectory()) {
+                    sendFolder(file.getName(), ownerId, folderId ,file.getAbsolutePath());
+                }
+            }
+        }
+    }
+
+//    public void receiveFile(String filePath) throws IOException {
+//        InputStream fileInputStream = socket.getInputStream();
+//        byte[] buffer = new byte[1024];
+//        int bytesRead;
+//        FileOutputStream fileOutputStream = new FileOutputStream(filePath);
+//
+//        while ((bytesRead = fileInputStream.read(buffer)) != -1) {
+//            fileOutputStream.write(buffer, 0, bytesRead);
+//        }
+//
+//        fileOutputStream.close();
+//        System.out.println("File received and stored: " + filePath);
+//    }
 }
