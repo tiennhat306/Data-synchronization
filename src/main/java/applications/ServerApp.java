@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ServerApp extends Application {
+    public static String SERVER_PATH = "D:\\User\\Desktop\\Server";
     public static ObservableList<Connection> connections = FXCollections.observableArrayList();
     public static void main(String[] args) {
         launch(args);

@@ -1,10 +1,14 @@
 package services.server.user;
 
+import applications.ServerApp;
 import models.File;
+import models.Folder;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 import utils.HibernateUtil;
 
+import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.List;
 
 public class FileService {
@@ -98,5 +102,125 @@ public class FileService {
             e.printStackTrace();
             return null;
         }
+    }
+
+    /// The dat
+    public boolean checkExistedFile(String name) {
+        try(Session session = HibernateUtil.getSessionFactory().openSession()){
+            session.beginTransaction();
+
+            String sqlQuery = "Select count(*) from files f where f.name = :name";
+            int result = Integer.parseInt(session.createNativeQuery(sqlQuery, String.class).setParameter("name", name)
+                    .getSingleResult().toString());
+            session.getTransaction().commit();
+            session.close();
+            return result == 0;
+        } catch (Exception e){
+            e.printStackTrace();
+            return true;
+        }
+
+    }
+
+    public int getFileTypeId(String typeName) {
+        try(Session session = HibernateUtil.getSessionFactory().openSession()){
+            return session.createQuery("select t.id from Type t where t.name = :name", Integer.class)
+                    .setParameter("name", typeName)
+                    .getSingleResult();
+        } catch (Exception e){
+            e.printStackTrace();
+            return 0;
+        }
+
+
+    }
+
+    public List<String> getListFileName() {
+        try(Session session = HibernateUtil.getSessionFactory().openSession()){
+            session.beginTransaction();
+
+            List<String> result = new ArrayList<String>();
+
+            String sqlQuery = "SELECT files.name FROM files";
+
+            result = session.createNativeQuery(sqlQuery, String.class).getResultList();
+
+            session.getTransaction().commit();
+            session.close();
+            return result;
+        } catch (Exception e){
+            e.printStackTrace();
+            return null;
+        }
+
+
+    }
+
+    public List<String> updateListFileName() {
+        try(Session session = HibernateUtil.getSessionFactory().openSession()){
+            session.beginTransaction();
+
+            List<String> result = new ArrayList<String>();
+
+            String sqlQuery = "SELECT files.name FROM files";
+
+            result = session.createNativeQuery(sqlQuery, String.class).getResultList();
+
+            session.getTransaction().commit();
+            session.close();
+            return result;
+        } catch (Exception e){
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public String uploadFile(String fileName, int fileType, int folderId, int ownerId, int size) {
+        try(Session session = HibernateUtil.getSessionFactory().openSession()){
+            session.beginTransaction();
+            File file = new File();
+            // Set the properties of the File entity
+            file.setName(fileName);
+            file.setTypeId(fileType);
+            file.setFolderId(folderId);
+            file.setOwnerId(ownerId);
+            file.setSize(size);
+            file.setCreatedAt(new Timestamp(System.currentTimeMillis()));
+            file.setUpdatedAt(new Timestamp(System.currentTimeMillis()));
+            file.setUpdatedBy(ownerId);
+
+            // Persist the File entity
+            session.persist(file);
+            session.getTransaction().commit();
+
+            FolderService folderService = new FolderService();
+            String path = ServerApp.SERVER_PATH + java.io.File.separator + folderService.getPath(folderId);
+            folderService.createFolderIfNotExist(path);
+
+            TypeService typeService = new TypeService();
+            String filePath = path + java.io.File.separator + fileName + "." + typeService.getTypeName(fileType);
+            java.io.File fileItem = new java.io.File(filePath);
+            if(fileItem.exists()){
+                boolean rs = fileItem.delete();
+                if(rs){
+                    System.out.println("Xóa file để ghi đè thành công");
+                } else {
+                    System.out.println("Xóa file để ghi đè thất bại");
+                }
+            }
+            System.out.println("File path: " + filePath);
+            return filePath;
+        } catch (Exception e){
+            e.printStackTrace();
+            return "";
+        }
+    }
+
+    public String convertFileListToString(List<File> fileList) {
+        StringBuilder builder = new StringBuilder();
+        for (File file : fileList) {
+            builder.append(file.getName()).append(';'); // Use a suitable delimiter
+        }
+        return builder.toString();
     }
 }

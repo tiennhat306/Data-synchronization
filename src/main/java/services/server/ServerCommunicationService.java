@@ -4,9 +4,13 @@ import java.io.*;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 public class ServerCommunicationService {
     private ServerSocket serverSocket;
+    private int noOfThreads = 0;
     private static boolean isRunning = false;
 
     public ServerCommunicationService(int port) {
@@ -28,15 +32,27 @@ public class ServerCommunicationService {
     public void startListening() {
         ServerCommunicationService.isRunning = true;
         Thread thread = new Thread(() -> {
+            ThreadPoolExecutor executor = new ThreadPoolExecutor(10, // corePoolSize
+                    100, // maximumPoolSize
+                    10, // thread timeout
+                    TimeUnit.SECONDS, new ArrayBlockingQueue<>(8) // queueCapacity
+            );
             try{
                 while (ServerCommunicationService.isRunning) {
                     Socket clientSocket = serverSocket.accept();
 
-                    try (clientSocket) {
+                    try {
                         System.out.println("New client connected: " + clientSocket.getInetAddress());
-                        ClientHandler clientHandler = new ClientHandler(clientSocket);
+                        int dataPort = 6969 + noOfThreads + 1;
+                        System.out.println(dataPort);
+                        // Create new worker thread for new connection
+                        //Worker w = new Worker(clientSocket, dataPort);
+                        System.out.println("New connection received. Worker was created.");
+                        //w.start();
+                        ClientHandler clientHandler = new ClientHandler(clientSocket, noOfThreads++);
                         System.out.println("Client handler connected: " + clientHandler);
-                        clientHandler.join();
+                        ////clientHandler.join();
+                        executor.execute(clientHandler);
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
