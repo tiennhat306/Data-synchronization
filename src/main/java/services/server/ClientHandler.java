@@ -238,7 +238,21 @@ public class ClientHandler implements Runnable{
     }
 
     private void receiveFile(String filePath, int size){
-        byte[] buffer = new byte[1024];
+//        byte[] buffer = new byte[1024];
+//
+//        try(FileOutputStream fileOutputStream = new FileOutputStream(filePath);
+//            InputStream fileInputStream = clientSocket.getInputStream()) {
+//            int bytesRead;
+//            //while ((bytesRead = fileInputStream.read(buffer)) != -1) {
+//            while(size > 0 && (bytesRead = fileInputStream.read(buffer, 0, Math.min(buffer.length, size))) != -1) {
+//                fileOutputStream.write(buffer, 0, bytesRead);
+//                size -= bytesRead;
+//            }
+//
+//            System.out.println("File uploaded: " + filePath);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
 
         try(FileOutputStream fileOutputStream = new FileOutputStream(filePath)) {
             InputStream fileInputStream = clientSocket.getInputStream();

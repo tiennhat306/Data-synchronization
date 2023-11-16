@@ -8,6 +8,7 @@ import java.nio.file.Paths;
 
 public class SocketClientHelper {
     private Socket socket;
+    private ObjectInputStream in;
     private ObjectOutputStream out;
     private ObjectInputStream in;
 
@@ -17,7 +18,8 @@ public class SocketClientHelper {
             InetSocketAddress address = new InetSocketAddress(host, port);
             socket.connect(address, 20000);
             socket.setSoTimeout(10000);
-            socket.setSoLinger(true, 5000);
+            //socket.setSoLinger(true, 5000);
+            System.out.println("Connected to server: " + socket.getInetAddress());
             out = new ObjectOutputStream(socket.getOutputStream());
             in = new ObjectInputStream(socket.getInputStream());
         } catch (IOException e) {
@@ -48,7 +50,9 @@ public class SocketClientHelper {
 
     public Object receiveResponse(){
         try{
-            return in.readObject();
+            Object response = in.readObject();
+
+            return response;
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
             return null;
@@ -67,6 +71,7 @@ public class SocketClientHelper {
             fileOutputStream.flush();
             System.out.println("File uploaded: " + filePath);
         }
+
     }
 
     public void sendFolder(int ownerId, String folderPath) throws IOException {
