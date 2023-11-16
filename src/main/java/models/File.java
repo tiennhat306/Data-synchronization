@@ -2,6 +2,7 @@ package models;
 
 import jakarta.persistence.*;
 
+import java.io.Serializable;
 import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.Collection;
@@ -11,7 +12,7 @@ import java.util.Objects;
 @Table(name = "files", schema = "pbl4", uniqueConstraints = {
         @UniqueConstraint(columnNames = {"name", "type_id", "folder_id"})
 })
-public class File {
+public class File implements Serializable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id
     @Column(name = "id", nullable = false)
@@ -35,7 +36,7 @@ public class File {
     @Column(name = "created_at", nullable = false)
     private Timestamp createdAt;
     @Basic
-    @Column(name = "updated_at", nullable = false)
+    @Column(name = "updated_at")
     private Timestamp updatedAt;
     @Basic
     @Column(name = "updated_by")

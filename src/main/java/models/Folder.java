@@ -2,6 +2,7 @@ package models;
 
 import jakarta.persistence.*;
 
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.Objects;
 
@@ -9,7 +10,7 @@ import java.util.Objects;
 @Table(name = "folders", schema = "pbl4", uniqueConstraints = {
         @UniqueConstraint(columnNames = {"folder_name", "parent_id"})
 })
-public class Folder {
+public class Folder implements Serializable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id
     @Column(name = "id", nullable = false)
@@ -28,7 +29,7 @@ public class Folder {
     @ManyToOne(optional=false)
     @JoinColumn(name = "owner_id", referencedColumnName = "id", insertable=false, updatable=false)
     private User usersByOwnerId;
-    @ManyToOne(optional=false)
+    @ManyToOne(optional=true)
     @JoinColumn(name = "parent_id", referencedColumnName = "id", insertable=false, updatable=false)
     private Folder foldersByParentId;
     @OneToMany(mappedBy = "foldersByParentId")
