@@ -342,7 +342,6 @@ public class HomepageController implements Initializable {
 
 	@FXML
 	public void handleUploadFileButtonAction() {
-		// Create a FileChooser
 		FileChooser fileChooser = new FileChooser();
 		fileChooser.setTitle("Choose a file to upload");
 		fileChooser.setInitialDirectory(new File(System.getProperty("user.home")));
@@ -351,7 +350,6 @@ public class HomepageController implements Initializable {
 
 		if (selectedFiles != null) {
 			for(File file : selectedFiles){
-				// Get the selected file's name
 				String fileName = file.getName();
 				String filePath = file.getAbsolutePath();
 				System.out.println("filePath: " + filePath);
@@ -366,8 +364,11 @@ public class HomepageController implements Initializable {
 
 				uploadFileTask.setOnSucceeded(e -> {
 					boolean response = uploadFileTask.getValue();
-					if(response) fillData();
-					else System.out.println("Upload file thành công");
+					if(response) {
+						fillData();
+						System.out.println("Upload file thành công");
+					}
+					else System.out.println("Upload file thất bại");
 				});
 
 				uploadFileTask.setOnFailed(e -> {
@@ -386,12 +387,10 @@ public class HomepageController implements Initializable {
 	public void handleUploadFolderButtonAction() {
 		DirectoryChooser directoryChooser = new DirectoryChooser();
 		directoryChooser.setTitle("Choose a folder to upload");
-		
-		// Show the folder dialog and get the selected folder
+
 		File selectedFolder = directoryChooser.showDialog(null);
 
 		if (selectedFolder != null && selectedFolder.isDirectory()) {
-			// Get the selected folder's name
 			String folderName = selectedFolder.getName();
 			String folderPath = selectedFolder.getAbsolutePath();
 
@@ -406,8 +405,11 @@ public class HomepageController implements Initializable {
 
 			uploadFolderTask.setOnSucceeded(e -> {
 				boolean response = uploadFolderTask.getValue();
-				if(response) fillData();
-				else System.out.println("Upload folder thành công");
+				if(response) {
+					fillData();
+					System.out.println("Upload folder thành công");
+				}
+				else System.out.println("Upload folder thất bại");
 			});
 
 			uploadFolderTask.setOnFailed(e -> {
@@ -470,8 +472,8 @@ public class HomepageController implements Initializable {
 
 		synchronizeTask.setOnSucceeded(e -> {
 			boolean response = synchronizeTask.getValue();
-			if(response) fillData();
-			else System.out.println("Đồng bộ thành công");
+			if(response) System.out.println("Đồng bộ thành công");
+			else System.out.println("Đồng bộ thất bại");
 		});
 
 		synchronizeTask.setOnFailed(e -> {
