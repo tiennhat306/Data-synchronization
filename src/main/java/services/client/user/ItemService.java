@@ -3,6 +3,7 @@ package services.client.user;
 import models.File;
 import services.client.SocketClientHelper;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
@@ -65,7 +66,7 @@ public class ItemService {
             socketClientHelper.sendRequest(String.valueOf(folderId));
             socketClientHelper.sendRequest(String.valueOf(size));
 
-            socketClientHelper.sendFile(fileName, ownerId, folderId, size, filePath);
+            socketClientHelper.sendFile(size, filePath);
 
             boolean response = (boolean) socketClientHelper.receiveResponse();
             System.out.println("Response: " + response);
@@ -88,7 +89,7 @@ public class ItemService {
             socketClientHelper.sendRequest(String.valueOf(ownerId));
             socketClientHelper.sendRequest(String.valueOf(parentId));
 
-            socketClientHelper.sendFolder(folderName, ownerId, parentId, folderPath);
+            socketClientHelper.sendFolder(ownerId, folderPath);
 
             boolean response = (boolean) socketClientHelper.receiveResponse();
             System.out.println("Response: " + response);
@@ -108,9 +109,52 @@ public class ItemService {
             socketClientHelper.sendRequest(String.valueOf(userId));
             socketClientHelper.sendRequest(String.valueOf(currentFolderId));
 
-            String userPath = (String) socketClientHelper.receiveResponse();
-            System.out.println("userPath: " + userPath);
-            socketClientHelper.syncFolder(userPath);
+            String folderPath = (String) socketClientHelper.receiveResponse();
+            System.out.println("folderPath: " + folderPath);
+
+            deleteFolderIfExist(folderPath);
+            Files.createDirectories(Paths.get(folderPath));
+
+            socketClientHelper.syncFolder(folderPath);
+
+            boolean response = (boolean) socketClientHelper.receiveResponse();
+            System.out.println("Response: " + response);
+            socketClientHelper.close();
+            return response;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    private void deleteFolderIfExist(String folderPath) throws IOException {
+        java.io.File folder = new java.io.File(folderPath);
+        if(folder.exists()){
+            java.io.File[] files = folder.listFiles();
+            if(files != null){
+                for(java.io.File file : files){
+                    if(file.isDirectory()){
+                        deleteFolderIfExist(file.getAbsolutePath());
+                    } else {
+                        Files.deleteIfExists(file.toPath());
+                    }
+                }
+            }
+        }
+        Files.deleteIfExists(folder.toPath());
+    }
+
+    public boolean downloadFolder(String absolutePath, int currentFolderId) {
+        try {
+            SocketClientHelper socketClientHelper = new SocketClientHelper();
+            socketClientHelper.sendRequest("DOWNLOAD_FOLDER");
+            socketClientHelper.sendRequest(String.valueOf(currentFolderId));
+
+            String folderName = (String) socketClientHelper.receiveResponse();
+            System.out.println("folderName: " + folderName);
+            int size = Integer.parseInt((String) socketClientHelper.receiveResponse());
+
+            socketClientHelper.downloadFolder(absolutePath + java.io.File.separator + folderName, size);
 
             boolean response = (boolean) socketClientHelper.receiveResponse();
             System.out.println("Response: " + response);

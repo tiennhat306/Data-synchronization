@@ -6,19 +6,24 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
+import javafx.geometry.Bounds;
+import javafx.geometry.Insets;
+import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
-import javafx.stage.DirectoryChooser;
-import javafx.stage.FileChooser;
-import javafx.stage.Stage;
+import javafx.scene.layout.VBox;
+import javafx.stage.*;
 import models.Type;
 import models.User;
 import services.client.user.ItemService;
@@ -26,6 +31,7 @@ import services.client.user.ItemService;
 import java.io.*;
 import java.net.URL;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.ResourceBundle;
@@ -77,13 +83,6 @@ public class HomepageController implements Initializable {
 
 	private int currentFolderId = 2;
 	private ObservableList<models.File> items = FXCollections.observableArrayList();
-
-	private String fileName;
-	
-	public static File fileFullContent;
-
-	private String folderName;
-
 
     public HomepageController() {
     }
@@ -145,24 +144,178 @@ public class HomepageController implements Initializable {
 
 		dataTable.setRowFactory(dataTable -> {
 			TableRow<models.File> row = new TableRow<>();
-			row.setOnMouseClicked((event -> {
-				if(event.getButton() == MouseButton.PRIMARY){
-					if(event.getClickCount() == 1){
-						if(row.getItem().getTypeId() == 1){
-							currentFolderId = row.getItem().getId();
-							fillData();
-						}
-						else {
-							// Open file
-						}
+			row.setOnMouseClicked(event -> {
+				if(event.getButton() == MouseButton.PRIMARY && !row.isEmpty()){
+					dataTable.getSelectionModel().select(row.getIndex());
+					models.File file = row.getItem();
+					if(file.getTypeId() == 1){
+						currentFolderId = file.getId();
+						fillData();
 					}
+					else {
+						// Open file
+					}
+				} else if(event.getButton() == MouseButton.SECONDARY && !row.isEmpty()){
+					dataTable.getSelectionModel().select(row.getIndex());
+					showOptionsPopup(event, row.getItem());
 				}
-			}));
+			});
+
+			row.setOnMouseEntered(event -> {
+				if(!row.isEmpty() && !row.isSelected()){
+					row.setStyle("-fx-background-color: #f2f2f2");
+				}
+			});
+
+			row.setOnMouseExited(event -> {
+				if(!row.isEmpty()){
+					row.setStyle("");
+				}
+			});
+
 			return row;
 		});
 
 		fillData();
     }
+
+	private void showOptionsPopup(MouseEvent mouseEvent, models.File selectedItem) {
+		Popup popup = new Popup();
+		popup.setAutoHide(true);
+		popup.setAutoFix(true);
+		popup.setHideOnEscape(true);
+
+		FontAwesomeIconView openIcon = new FontAwesomeIconView();
+		openIcon.setGlyphName("FOLDER");
+		openIcon.setSize("20");
+		openIcon.setStyleClass("icon");
+		Button openBtn = new Button("Mở", openIcon);
+
+		FontAwesomeIconView downloadIcon = new FontAwesomeIconView();
+		downloadIcon.setGlyphName("DOWNLOAD");
+		downloadIcon.setSize("20");
+		downloadIcon.setStyleClass("icon");
+		Button downloadBtn = new Button("Tải xuống", downloadIcon);
+
+		FontAwesomeIconView deleteIcon = new FontAwesomeIconView();
+		deleteIcon.setGlyphName("TRASH");
+		deleteIcon.setSize("20");
+		deleteIcon.setStyleClass("icon");
+		Button deleteBtn = new Button("Xóa", deleteIcon);
+
+		FontAwesomeIconView renameIcon = new FontAwesomeIconView();
+		renameIcon.setGlyphName("EDIT");
+		renameIcon.setSize("20");
+		renameIcon.setStyleClass("icon");
+		Button renameBtn = new Button("Đổi tên", renameIcon);
+
+		FontAwesomeIconView moveIcon = new FontAwesomeIconView();
+		moveIcon.setGlyphName("ARROWS_ALT");
+		moveIcon.setSize("20");
+		moveIcon.setStyleClass("icon");
+		Button moveBtn = new Button("Di chuyển", moveIcon);
+
+		FontAwesomeIconView copyIcon = new FontAwesomeIconView();
+		copyIcon.setGlyphName("COPY");
+		copyIcon.setSize("20");
+		copyIcon.setStyleClass("icon");
+		Button copyBtn = new Button("Sao chép", copyIcon);
+
+		FontAwesomeIconView shareIcon = new FontAwesomeIconView();
+		shareIcon.setGlyphName("SHARE_ALT");
+		shareIcon.setSize("20");
+		shareIcon.setStyleClass("icon");
+		Button shareBtn = new Button("Chia sẻ", shareIcon);
+
+		FontAwesomeIconView syncIcon = new FontAwesomeIconView();
+		syncIcon.setGlyphName("REFRESH");
+		syncIcon.setSize("20");
+		syncIcon.setStyleClass("icon");
+		Button synchronizeBtn = new Button("Đồng bộ", syncIcon);
+
+		openBtn.setOnAction(event -> {
+			// Open file
+
+			popup.hide();
+		});
+
+		downloadBtn.setOnAction(event -> {
+			// Download file
+
+			popup.hide();
+		});
+
+		deleteBtn.setOnAction(event -> {
+			// Delete file
+
+			popup.hide();
+		});
+
+		renameBtn.setOnAction(event -> {
+			// Rename file
+
+			popup.hide();
+		});
+
+		moveBtn.setOnAction(event -> {
+			// Move file
+
+			popup.hide();
+		});
+
+		copyBtn.setOnAction(event -> {
+			// Copy file
+
+			popup.hide();
+		});
+
+		shareBtn.setOnAction(event -> {
+			// Share file
+
+			popup.hide();
+		});
+
+		synchronizeBtn.setOnAction(event -> {
+			// Synchronize file
+
+			popup.hide();
+		});
+
+		VBox options = new VBox();
+		options.setPrefWidth(150);
+		options.setStyle("-fx-background-color: white");
+		options.setStyle("-fx-border-color: gray");
+		options.setStyle("-fx-border-width: 1px");
+
+		options.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+		options.setStyle("-fx-background-radius: 5px");
+		for (Button button : Arrays.asList(openBtn, downloadBtn, deleteBtn, renameBtn, moveBtn, copyBtn, shareBtn, synchronizeBtn)) {
+			if (button != null) {
+				button.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+				button.setPadding(new Insets(5, 5, 5, 15));
+				button.setPrefWidth(150);
+				button.setStyle("-fx-background-color: white");
+				button.setStyle("-fx-border-color: gray");
+				button.setStyle("-fx-border-width: 0 0 0 0");
+
+			}
+		}
+
+		options.getChildren().addAll(openBtn, downloadBtn, deleteBtn, renameBtn, moveBtn, copyBtn, shareBtn, synchronizeBtn);
+		popup.getContent().add(options);
+
+		popup.show(dataTable.getScene().getWindow(), mouseEvent.getScreenX(), mouseEvent.getScreenY());
+
+		Scene scene = dataTable.getScene();
+		scene.setOnMousePressed(event -> {
+			Node target = (Node) event.getTarget();
+			if (!popup.getScene().getRoot().getBoundsInParent().contains(event.getSceneX(), event.getSceneY())) {
+				popup.hide();
+			}
+		});
+
+
+	}
 
 	private void fillData() {
 		ItemService itemService = new ItemService();
@@ -184,9 +337,7 @@ public class HomepageController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-
 		populateData();
-
     }
 
 	@FXML
@@ -194,37 +345,38 @@ public class HomepageController implements Initializable {
 		// Create a FileChooser
 		FileChooser fileChooser = new FileChooser();
 		fileChooser.setTitle("Choose a file to upload");
+		fileChooser.setInitialDirectory(new File(System.getProperty("user.home")));
 
-		// Show the file dialog and get the selected file
-		File selectedFile = fileChooser.showOpenDialog(null);
+		List<File> selectedFiles = fileChooser.showOpenMultipleDialog(null);
 
-		if (selectedFile != null) {
-			// Get the selected file's name
-			fileName = selectedFile.getName();
-			String filePath = selectedFile.getAbsolutePath();
+		if (selectedFiles != null) {
+			for(File file : selectedFiles){
+				// Get the selected file's name
+				String fileName = file.getName();
+				String filePath = file.getAbsolutePath();
+				System.out.println("filePath: " + filePath);
+				Task<Boolean> uploadFileTask = new Task<Boolean>() {
+					@Override
+					protected Boolean call() throws Exception {
+						ItemService itemService = new ItemService();
+						boolean rs = itemService.uploadFile(fileName, 1, currentFolderId, (int) file.length(), filePath);
+						return rs;
+					}
+				};
 
-			Task<Boolean> uploadFileTask = new Task<Boolean>() {
-				@Override
-				protected Boolean call() throws Exception {
-					ItemService itemService = new ItemService();
-					System.out.println("File: " + fileName + " - " + currentFolderId + " - " + selectedFile.length() + " - " + filePath);
-					boolean rs = itemService.uploadFile(fileName, 1, currentFolderId, (int)selectedFile.length(), filePath);
-					return rs;
-				}
-			};
+				uploadFileTask.setOnSucceeded(e -> {
+					boolean response = uploadFileTask.getValue();
+					if(response) fillData();
+					else System.out.println("Upload file thành công");
+				});
 
-			uploadFileTask.setOnSucceeded(e -> {
-				boolean response = uploadFileTask.getValue();
-				if(response) fillData();
-				else System.out.println("Upload file thành công");
-			});
+				uploadFileTask.setOnFailed(e -> {
+					System.out.println("Upload file thất bại");
+				});
 
-			uploadFileTask.setOnFailed(e -> {
-				System.out.println("Upload file thất bại");
-			});
-
-			Thread thread = new Thread(uploadFileTask);
-			thread.start();
+				Thread thread = new Thread(uploadFileTask);
+				thread.start();
+			}
 		} else {
 			System.out.println("Hãy chọn file cần upload");
 		}
@@ -234,13 +386,13 @@ public class HomepageController implements Initializable {
 	public void handleUploadFolderButtonAction() {
 		DirectoryChooser directoryChooser = new DirectoryChooser();
 		directoryChooser.setTitle("Choose a folder to upload");
-
+		
 		// Show the folder dialog and get the selected folder
 		File selectedFolder = directoryChooser.showDialog(null);
 
 		if (selectedFolder != null && selectedFolder.isDirectory()) {
 			// Get the selected folder's name
-			folderName = selectedFolder.getName();
+			String folderName = selectedFolder.getName();
 			String folderPath = selectedFolder.getAbsolutePath();
 
 			Task<Boolean> uploadFolderTask = new Task<Boolean>() {
@@ -274,7 +426,35 @@ public class HomepageController implements Initializable {
 	}
 
 	@FXML
-	public void downloadFileClicked(ActionEvent event) {
+	public void downloadCurrentFolderClicked(ActionEvent event) {
+		// Create a FileChooser to choose the path to save file
+		DirectoryChooser directoryChooser = new DirectoryChooser();
+		directoryChooser.setTitle("Choose a folder to save file");
+//		directoryChooser.setInitialDirectory(new File(System.getProperty("user.home")));
+
+		File selectedFolder = directoryChooser.showDialog(null);
+
+		Task<Boolean> downloadFileTask = new Task<Boolean>() {
+			@Override
+			protected Boolean call() throws Exception {
+				ItemService itemService = new ItemService();
+				boolean rs = itemService.downloadFolder(selectedFolder.getAbsolutePath(), currentFolderId);
+				return rs;
+			}
+		};
+
+		downloadFileTask.setOnSucceeded(e -> {
+			boolean response = downloadFileTask.getValue();
+			if(response) fillData();
+			else System.out.println("Download file thành công");
+		});
+
+		downloadFileTask.setOnFailed(e -> {
+			System.out.println("Download file thất bại");
+		});
+
+		Thread thread = new Thread(downloadFileTask);
+		thread.start();
 	}
 
 	@FXML
@@ -283,7 +463,7 @@ public class HomepageController implements Initializable {
 			@Override
 			protected Boolean call() throws Exception {
 				ItemService itemService = new ItemService();
-				boolean rs = itemService.synchronize(4 , currentFolderId);
+				boolean rs = itemService.synchronize(1 , currentFolderId);
 				return rs;
 			}
 		};
@@ -307,42 +487,85 @@ public class HomepageController implements Initializable {
 
 	@FXML
 	public void createFolderButtonClicked(ActionEvent event) {
-		try {
-			FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/user/create_folder_form.fxml"));
-			Parent root = loader.load();
-			NewFolderFormController controller = loader.getController();
+		Stage popupStage = new Stage();
+		popupStage.initModality(Modality.APPLICATION_MODAL);
+		popupStage.setTitle("Tạo thư mục");
 
-			Stage stage = new Stage();
-			stage.setScene(new Scene(root));
-			stage.showAndWait();
+		popupStage.initStyle(StageStyle.UTILITY);
 
-			folderName = controller.getFolderName();
+		BorderPane popupLayout = new BorderPane();
+		popupLayout.setPadding(new Insets(10));
 
-			if (folderName != null && !folderName.isEmpty()) {
-				Task<Boolean> createFolderTask = new Task<Boolean>() {
-					@Override
-					protected Boolean call() throws Exception {
-						ItemService itemService = new ItemService();
-						boolean rs = itemService.createFolder(folderName, 1, currentFolderId);
-						return rs;
-					}
-				};
+		Label title = new Label("Tên thư mục");
+		title.setStyle("-fx-font-size: 18;");
+		popupLayout.setTop(title);
 
-				createFolderTask.setOnSucceeded(e -> {
-					boolean response = createFolderTask.getValue();
-					if(response) fillData();
-					else System.out.println("Tạo folder thất bại");
-				});
+		TextField folderNameTxt = new TextField();
+		folderNameTxt.setPromptText("Nhập tên thư mục");
+		folderNameTxt.setPrefWidth(200);
+		folderNameTxt.setPrefHeight(30);
+		folderNameTxt.setStyle("-fx-background-color: white");
+		folderNameTxt.setStyle("-fx-border-color: gray");
+		folderNameTxt.setStyle("-fx-border-width: 1px");
 
-				createFolderTask.setOnFailed(e -> {
-					System.out.println("Tạo folder thất bại");
-				});
+		popupLayout.setCenter(folderNameTxt);
 
-				Thread thread = new Thread(createFolderTask);
-				thread.start();
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		Button createBtn = new Button("Tạo");
+		createBtn.setPrefWidth(100);
+		createBtn.setPrefHeight(30);
+		createBtn.setStyle("-fx-background-color: white");
+		createBtn.setStyle("-fx-border-color: gray");
+		createBtn.setStyle("-fx-border-width: 1px");
+
+		createBtn.setOnAction(e -> {
+			String foldername = folderNameTxt.getText();
+			popupStage.close();
+
+			Task<Boolean> createFolderTask = new Task<Boolean>() {
+				@Override
+				protected Boolean call() throws Exception {
+					ItemService itemService = new ItemService();
+					boolean rs = itemService.createFolder(foldername, 1, currentFolderId);
+					return rs;
+				}
+			};
+
+			createFolderTask.setOnSucceeded(event1 -> {
+				boolean response = createFolderTask.getValue();
+				if(response) fillData();
+				else System.out.println("Tạo folder thành công");
+			});
+
+			createFolderTask.setOnFailed(event1 -> {
+				System.out.println("Tạo folder thất bại");
+			});
+
+			Thread thread = new Thread(createFolderTask);
+			thread.start();
+		});
+
+		Button cancelBtn = new Button("Hủy");
+		cancelBtn.setPrefWidth(100);
+		cancelBtn.setPrefHeight(30);
+		cancelBtn.setStyle("-fx-background-color: white");
+		cancelBtn.setStyle("-fx-border-color: gray");
+		cancelBtn.setStyle("-fx-border-width: 1px");
+
+		cancelBtn.setOnAction(e -> popupStage.close());
+
+		HBox footerLabel = new HBox();
+		footerLabel.setSpacing(10);
+		footerLabel.setPadding(new Insets(10));
+		footerLabel.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
+		footerLabel.getChildren().addAll(createBtn, cancelBtn);
+
+		popupLayout.setBottom(footerLabel);
+
+		Scene popupScene = new Scene(popupLayout, 300, 200);
+		popupStage.setScene(popupScene);
+		popupStage.showAndWait();
+	}
+
+	public void accessClicked(ActionEvent actionEvent) {
 	}
 }

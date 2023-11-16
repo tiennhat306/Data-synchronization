@@ -8,9 +8,12 @@ import org.hibernate.query.Query;
 import utils.HibernateUtil;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.sql.Timestamp;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 
 public class FolderService {
     public FolderService() {
@@ -107,8 +110,29 @@ public class FolderService {
     public void createFolderIfNotExist(String path) {
         File file = new File(path);
         if (!file.exists()) {
-            file.mkdir();
+            try {
+                Files.createDirectories(file.toPath());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
+    }
+
+    public void deleteFolderIfExist(String path) throws IOException {
+        File folder = new File(path);
+        if (folder.exists()) {
+            File[] files = folder.listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    if (file.isDirectory()) {
+                        deleteFolderIfExist(file.getAbsolutePath());
+                    } else {
+                        Files.deleteIfExists(file.toPath());
+                    }
+                }
+            }
+        }
+        Files.deleteIfExists(folder.toPath());
     }
     public String getPath(int id) {
         try(Session session = HibernateUtil.getSessionFactory().openSession()) {
@@ -162,6 +186,7 @@ public class FolderService {
             session.getTransaction().commit();
 
             String path = ServerApp.SERVER_PATH + File.separator + getPath(folder.getId());
+            deleteFolderIfExist(path);
             createFolderIfNotExist(path);
 
             return folder.getId();
@@ -169,5 +194,20 @@ public class FolderService {
             e.printStackTrace();
             return -1;
         }
+    }
+
+    public String getFolderName(int folderId) {
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
+            Folder folder = session.find(Folder.class, folderId);
+            if (folder == null) return null;
+            return folder.getFolderName();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public String getFolderPath(int folderId) {
+        return ServerApp.SERVER_PATH + File.separator + getPath(folderId);
     }
 }

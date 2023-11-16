@@ -223,4 +223,40 @@ public class FileService {
         }
         return builder.toString();
     }
+
+    public int sizeOfFile(int fileId) {
+        try(Session session = HibernateUtil.getSessionFactory().openSession()){
+            return session.createQuery("select f.size from File f where f.id = :fileId", Integer.class)
+                    .setParameter("fileId", fileId)
+                    .getSingleResult();
+        } catch (Exception e){
+            e.printStackTrace();
+            return 0;
+        }
+    }
+
+    public String getFilePath(int fileId) {
+        try(Session session = HibernateUtil.getSessionFactory().openSession()){
+            int folderId = session.createQuery("select f.folderId from File f where f.id = :fileId", Integer.class)
+                    .setParameter("fileId", fileId)
+                    .getSingleResult();
+
+            FolderService folderService = new FolderService();
+            String path = ServerApp.SERVER_PATH + java.io.File.separator + folderService.getPath(folderId);
+
+            String fileName = session.createQuery("select f.name from File f where f.id = :fileId", String.class)
+                    .setParameter("fileId", fileId)
+                    .getSingleResult();
+
+            TypeService typeService = new TypeService();
+            String type = typeService.getTypeName(session.createQuery("select f.typeId from File f where f.id = :fileId", Integer.class)
+                    .setParameter("fileId", fileId)
+                    .getSingleResult());
+
+            return path + java.io.File.separator + fileName + "." + type;
+        } catch (Exception e){
+            e.printStackTrace();
+            return "";
+        }
+    }
 }
