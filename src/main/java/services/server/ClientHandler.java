@@ -8,30 +8,28 @@ import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
 
 import services.server.admin.UserService;
 import services.server.user.FileService;
 import services.server.user.FolderService;
 import services.server.user.ItemService;
+import utils.ZipFolder;
 
 import static applications.ServerApp.connections;
 
 public class ClientHandler implements Runnable{
     private Socket clientSocket;
-    private int clientNumber;
     private ObjectInputStream in;
     private ObjectOutputStream out;
     private InetAddress clientAddress;
-    //CountDownLatch ioReady = new CountDownLatch(1); // Initialize with 1
 
     public ClientHandler(Socket clientSocket, int clientNumber) {
         try{
             this.clientSocket = clientSocket;
-            this.clientNumber = clientNumber;
             clientAddress = clientSocket.getInetAddress();
             System.out.println("Client handler connected: " + clientSocket);
             System.out.println("Server thread number " + clientNumber + " Started");
+
             this.out = new ObjectOutputStream(clientSocket.getOutputStream());
             this.in = new ObjectInputStream(clientSocket.getInputStream());
             addConnection("CONNECTED");
@@ -82,7 +80,7 @@ public class ClientHandler implements Runnable{
                         int currentFolderId = Integer.parseInt((String) receiveRequest());
                         int fileSize = Integer.parseInt((String) receiveRequest());
                         boolean response = uploadFile(fileName, ownerId, currentFolderId, fileSize);
-
+                        System.out.println("Response of router: " + response);
                         sendResponse(response);
                     } else {
                         System.out.println("Unknown request: " + type);
@@ -101,6 +99,38 @@ public class ClientHandler implements Runnable{
                         System.out.println("Unknown request: " + type_request);
                     }
                 }
+                case "DOWNLOAD_FILE" -> {
+                    int fileId = Integer.parseInt((String) receiveRequest());
+                    FileService fileService = new FileService();
+
+                    String filePath = fileService.getFilePath(fileId);
+                    System.out.println("filePath: " + filePath);
+
+                    int size = fileService.sizeOfFile(fileId);
+                    sendResponse(String.valueOf(size));
+
+                    syncFile(filePath, size);
+                }
+                case "DOWNLOAD_FOLDER" -> {
+                    int folderId = Integer.parseInt((String) receiveRequest());
+                    boolean response =  downloadFolder(folderId);
+                    sendResponse(response);
+                }
+                case "SYNCHRONIZE" -> {
+                    int userId = Integer.parseInt((String) receiveRequest());
+                    int folderId = Integer.parseInt((String) receiveRequest());
+
+                    services.server.user.UserService userService = new services.server.user.UserService();
+                    String userPath = userService.getUserPath(userId);
+
+                    services.server.user.FolderService folderService = new services.server.user.FolderService();
+                    String path = folderService.getPath(folderId);
+                    sendResponse(userPath + java.io.File.separator + path);
+
+                    boolean response = syncFolder(folderService.getFolderPath(folderId));
+
+                    sendResponse(response);
+                }
                 default -> {
                     System.out.println("Unknown request: " + request);
                 }
@@ -117,6 +147,48 @@ public class ClientHandler implements Runnable{
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        }
+    }
+
+    private boolean downloadFolder(int folderId) {
+        try {
+            FolderService folderService = new FolderService();
+            String folderName = folderService.getFolderName(folderId);
+            sendResponse(folderName);
+
+            String folderPath = folderService.getFolderPath(folderId);
+            System.out.println("folderPath: " + folderPath);
+
+            ZipFolder zipFolder = new ZipFolder(folderName, folderPath);
+            String zipFilePath = zipFolder.zip();
+            System.out.println("zipFilePath: " + zipFilePath);
+
+            int size = (int) zipFolder.size();
+            sendResponse(String.valueOf(size));
+
+            sendZipFolder(zipFilePath, size);
+            zipFolder.deleteOutputZipFile();
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    private void sendZipFolder(String zipFilePath, int size) {
+        byte[] buffer = new byte[1024];
+
+        try(FileInputStream fileInputStream = new FileInputStream(zipFilePath)) {
+            OutputStream fileOutputStream = clientSocket.getOutputStream();
+            int bytesRead;
+            while(size > 0 && (bytesRead = fileInputStream.read(buffer, 0, Math.min(buffer.length, size))) != -1) {
+                fileOutputStream.write(buffer, 0, bytesRead);
+                size -= bytesRead;
+            }
+            fileOutputStream.flush();
+            System.out.println("File sent: " + zipFilePath);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -143,14 +215,13 @@ public class ClientHandler implements Runnable{
             String rs = fileService.uploadFile(nameOfFile, fileService.getFileTypeId(typeOfFile), folderId, ownerId, size);
             boolean response = false;
             if(!rs.equals("")){
-
+                receiveFile(rs, size);
+                System.out.println("Thêm file " + fileName + " thành công");
+                response = true;
 //                Thread receiveFileThread = new Thread(() -> {
 //                    receiveFile(rs, size);
 //                });
 //                receiveFileThread.start();
-                receiveFile(rs, size);
-                System.out.println("Thêm file " + fileName + " thành công");
-                response = true;
             } else {
                 System.out.println("Thêm file " + fileName + " thất bại");
             }
@@ -163,26 +234,10 @@ public class ClientHandler implements Runnable{
     }
 
     private void receiveFile(String filePath, int size){
-//        byte[] buffer = new byte[1024];
-//
-//        try(FileOutputStream fileOutputStream = new FileOutputStream(filePath);
-//            InputStream fileInputStream = clientSocket.getInputStream()) {
-//            int bytesRead;
-//            //while ((bytesRead = fileInputStream.read(buffer)) != -1) {
-//            while(size > 0 && (bytesRead = fileInputStream.read(buffer, 0, Math.min(buffer.length, size))) != -1) {
-//                fileOutputStream.write(buffer, 0, bytesRead);
-//                size -= bytesRead;
-//            }
-//
-//            System.out.println("File uploaded: " + filePath);
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-
-        // receive file
         byte[] buffer = new byte[1024];
-        try(FileOutputStream fileOutputStream = new FileOutputStream(filePath);
-            InputStream fileInputStream = clientSocket.getInputStream()) {
+
+        try(FileOutputStream fileOutputStream = new FileOutputStream(filePath)) {
+            InputStream fileInputStream = clientSocket.getInputStream();
             int bytesRead;
             //while ((bytesRead = fileInputStream.read(buffer)) != -1) {
             while(size > 0 && (bytesRead = fileInputStream.read(buffer, 0, Math.min(buffer.length, size))) != -1) {
@@ -195,21 +250,69 @@ public class ClientHandler implements Runnable{
             e.printStackTrace();
         }
     }
+
+    public void syncFile(String filePath, int size){
+        byte[] buffer = new byte[1024];
+
+        try(FileInputStream fileInputStream = new FileInputStream(filePath)) {
+            OutputStream fileOutputStream = clientSocket.getOutputStream();
+            int bytesRead;
+            while(size > 0 && (bytesRead = fileInputStream.read(buffer, 0, Math.min(buffer.length, size))) != -1) {
+                fileOutputStream.write(buffer, 0, bytesRead);
+                size -= bytesRead;
+            }
+            fileOutputStream.flush();
+            System.out.println("File synchronized: " + filePath);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    public boolean syncFolder(String folderPath){
+        java.io.File folder = new java.io.File(folderPath);
+        java.io.File[] listOfFiles = folder.listFiles();
+        try {
+            if(listOfFiles != null){
+                for (java.io.File file : listOfFiles) {
+                    if (file.isDirectory()) {
+                        String folderName = file.getName();
+                        sendResponse("folder");
+                        sendResponse(folderName);
+                        syncFolder(file.getAbsolutePath());
+                    } else if (file.isFile()) {
+                        String fileName = file.getName();
+                        String filePath = file.getAbsolutePath();
+                        int size = (int) file.length();
+                        sendResponse("file");
+                        sendResponse(fileName);
+                        sendResponse(String.valueOf(size));
+                        syncFile(filePath, size);
+                    }
+                }
+            }
+            sendResponse("END_FOLDER");
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
     
     private boolean uploadFolder(String folderName, int ownerId, int parentId) throws IOException, ClassNotFoundException {
         System.out.println("Upload folder");
 
         FolderService folderService = new FolderService();
         int rs = folderService.uploadFolder(folderName, ownerId, parentId);
-
-        boolean response = false;
-        // send folder id to client
         sendResponse(String.valueOf(rs));
+
+        boolean response = true;
+        boolean check = true;
+
         if(rs != -1){
-            System.out.println("Thêm folder "+ folderName + " thành công");
-            response = true;
+            System.out.println("Tạo folder "+ folderName + " thành công");
         } else {
-            System.out.println("Thêm folder "+ folderName + " thất bại");
+            System.out.println("Tạo folder "+ folderName + " thất bại");
             return false;
         }
 
@@ -221,6 +324,7 @@ public class ClientHandler implements Runnable{
                 int ownerIdOfChild = Integer.parseInt((String) receiveRequest());
                 int parentIdOfChild = Integer.parseInt((String) receiveRequest());
                 response = uploadFolder(folderNameOfChild, ownerIdOfChild, parentIdOfChild);
+                if(!response) check = false;
             } else if(child_type.equals("file")){
                 System.out.println("Upload file");
 
@@ -230,11 +334,17 @@ public class ClientHandler implements Runnable{
                 int sizeOfFile = Integer.parseInt((String) receiveRequest());
 
                 response = uploadFile(fileName, ownerIdOfFile, parentIdOfFile, sizeOfFile);
+                if(!response) check = false;
             }
             child_type = (String) receiveRequest();
         }
 
-        return response;
+        if(check){
+            System.out.println("Upload folder "+ folderName + " thành công");
+        } else {
+            System.out.println("Upload folder "+ folderName + " thất bại");
+        }
+        return check;
     }
     
     private User getUserById(int id) {
