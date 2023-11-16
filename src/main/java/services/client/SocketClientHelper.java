@@ -66,14 +66,12 @@ public class SocketClientHelper {
             int bytesRead;
             while ((bytesRead = fileInputStream.read(buffer)) != -1) {
                 fileOutputStream.write(buffer, 0, bytesRead);
-                fileOutputStream.flush();
             }
+            fileOutputStream.flush();
 
             System.out.println("File uploaded: " + fileName);
         }
     }
-
-
 
     public void sendFolder(String folderName, int ownerId, int parentId , String folderPath) throws IOException {
         File folder = new File(folderPath);
@@ -102,5 +100,27 @@ public class SocketClientHelper {
             }
             sendRequest("END_FOLDER");
         }
+    }
+
+    public void syncFile(String filePath) {
+
+        try(ServerSocket responseSocket = new ServerSocket(9696)){
+            Socket responseClientSocket = responseSocket.accept();
+
+            try(InputStream fileInputStream = responseClientSocket.getInputStream()) {
+                Files.copy(fileInputStream, Paths.get(filePath));
+            }
+
+            if(responseClientSocket != null) responseClientSocket.close();
+
+            //return response;
+        } catch (IOException e) {
+            e.printStackTrace();
+            //return null;
+        }
+    }
+
+    public void syncFolder(String userPath) {
+
     }
 }

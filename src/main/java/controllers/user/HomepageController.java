@@ -216,7 +216,7 @@ public class HomepageController implements Initializable {
 			uploadFileTask.setOnSucceeded(e -> {
 				boolean response = uploadFileTask.getValue();
 				if(response) fillData();
-				else System.out.println("Upload file thất bại");
+				else System.out.println("Upload file thành công");
 			});
 
 			uploadFileTask.setOnFailed(e -> {
@@ -255,7 +255,7 @@ public class HomepageController implements Initializable {
 			uploadFolderTask.setOnSucceeded(e -> {
 				boolean response = uploadFolderTask.getValue();
 				if(response) fillData();
-				else System.out.println("Upload folder thất bại");
+				else System.out.println("Upload folder thành công");
 			});
 
 			uploadFolderTask.setOnFailed(e -> {
@@ -277,6 +277,30 @@ public class HomepageController implements Initializable {
 	public void downloadFileClicked(ActionEvent event) {
 	}
 
+	@FXML
+	public void synchronizeClicked(ActionEvent event) {
+		Task<Boolean> synchronizeTask = new Task<Boolean>() {
+			@Override
+			protected Boolean call() throws Exception {
+				ItemService itemService = new ItemService();
+				boolean rs = itemService.synchronize(4 , currentFolderId);
+				return rs;
+			}
+		};
+
+		synchronizeTask.setOnSucceeded(e -> {
+			boolean response = synchronizeTask.getValue();
+			if(response) fillData();
+			else System.out.println("Đồng bộ thành công");
+		});
+
+		synchronizeTask.setOnFailed(e -> {
+			System.out.println("Đồng bộ thất bại");
+		});
+
+		Thread thread = new Thread(synchronizeTask);
+		thread.start();
+	}
 
 //	private File fetchDataFromDatabase(String fileName) {
 //	}

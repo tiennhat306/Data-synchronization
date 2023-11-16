@@ -101,6 +101,24 @@ public class ItemService {
         }
     }
 
+    public boolean synchronize(int userId, int currentFolderId) {
+        try {
+            SocketClientHelper socketClientHelper = new SocketClientHelper();
+            socketClientHelper.sendRequest("SYNCHRONIZE");
+            socketClientHelper.sendRequest(String.valueOf(userId));
+            socketClientHelper.sendRequest(String.valueOf(currentFolderId));
 
+            String userPath = (String) socketClientHelper.receiveResponse();
+            System.out.println("userPath: " + userPath);
+            socketClientHelper.syncFolder(userPath);
 
+            boolean response = (boolean) socketClientHelper.receiveResponse();
+            System.out.println("Response: " + response);
+            socketClientHelper.close();
+            return response;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
 }

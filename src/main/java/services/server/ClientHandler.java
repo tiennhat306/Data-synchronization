@@ -7,6 +7,10 @@ import models.User;
 import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.nio.file.FileVisitOption;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
@@ -100,6 +104,18 @@ public class ClientHandler implements Runnable{
                         System.out.println("Unknown request: " + type_request);
                     }
                 }
+                case "SYNCHRONIZE" -> {
+                    int userId = Integer.parseInt((String) receiveRequest());
+                    int folderId = Integer.parseInt((String) receiveRequest());
+
+                    services.server.user.UserService userService = new services.server.user.UserService();
+                    String userPath = userService.getUserPath(userId);
+                    sendResponse(userPath);
+
+                    boolean response = synchronize(userId, folderId);
+
+                    sendResponse(response);
+                }
                 default -> {
                     System.out.println("Unknown request: " + request);
                 }
@@ -174,6 +190,54 @@ public class ClientHandler implements Runnable{
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public void syncFile(String filePath){
+        try(Socket responseSocket = new Socket(clientAddress, 9696)){
+            try(OutputStream fileOutputStream = responseSocket.getOutputStream()) {
+                Files.copy(Paths.get(filePath), fileOutputStream);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void syncFolder(String folderPath){
+        try(Socket responseSocket = new Socket(clientAddress, 9696)){
+            try(OutputStream fileOutputStream = responseSocket.getOutputStream()) {
+                Path source = Paths.get(folderPath);
+
+                // Đồng bộ toàn bộ thư mục từ server đến client
+                try {
+                    Files.walk(source, FileVisitOption.FOLLOW_LINKS)
+                            .forEach(sourcePath -> {
+                                Path relativePath = source.relativize(sourcePath);
+                                Path destinationPath = Paths.get("client_folder", relativePath.toString());
+                                try {
+                                    Files.copy(sourcePath, destinationPath);
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
+                            });
+
+                    System.out.println("Folder synchronized from server to client");
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private boolean synchronize(int userId, int folderId) {
+        System.out.println("Synchronize");
+
+
     }
     
     private boolean uploadFolder(String folderName, int ownerId, int parentId) throws IOException, ClassNotFoundException {

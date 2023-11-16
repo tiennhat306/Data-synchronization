@@ -26,4 +26,14 @@ public class UserService {
             return null;
         }
     }
+
+    public String getUserPath(int id) {
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
+            User user = session.find(User.class, id);
+            return user.getUserPath();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
 }
