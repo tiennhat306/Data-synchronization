@@ -22,7 +22,6 @@ public class ClientHandler implements Runnable{
     private ObjectInputStream in;
     private ObjectOutputStream out;
     private InetAddress clientAddress;
-    //CountDownLatch ioReady = new CountDownLatch(1); // Initialize with 1
 
     public ClientHandler(Socket clientSocket, int clientNumber) {
         try{
@@ -31,8 +30,6 @@ public class ClientHandler implements Runnable{
             System.out.println("Client handler connected: " + clientSocket);
             System.out.println("Server thread number " + clientNumber + " Started");
 
-            this.clientSocket.setSoTimeout(10000);
-            this.clientSocket.setSoLinger(true, 5000);
             this.out = new ObjectOutputStream(clientSocket.getOutputStream());
             this.in = new ObjectInputStream(clientSocket.getInputStream());
             addConnection("CONNECTED");
@@ -184,7 +181,6 @@ public class ClientHandler implements Runnable{
         try(FileInputStream fileInputStream = new FileInputStream(zipFilePath)) {
             OutputStream fileOutputStream = clientSocket.getOutputStream();
             int bytesRead;
-            //while ((bytesRead = fileInputStream.read(buffer)) != -1) {
             while(size > 0 && (bytesRead = fileInputStream.read(buffer, 0, Math.min(buffer.length, size))) != -1) {
                 fileOutputStream.write(buffer, 0, bytesRead);
                 size -= bytesRead;
@@ -238,21 +234,7 @@ public class ClientHandler implements Runnable{
     }
 
     private void receiveFile(String filePath, int size){
-//        byte[] buffer = new byte[1024];
-//
-//        try(FileOutputStream fileOutputStream = new FileOutputStream(filePath);
-//            InputStream fileInputStream = clientSocket.getInputStream()) {
-//            int bytesRead;
-//            //while ((bytesRead = fileInputStream.read(buffer)) != -1) {
-//            while(size > 0 && (bytesRead = fileInputStream.read(buffer, 0, Math.min(buffer.length, size))) != -1) {
-//                fileOutputStream.write(buffer, 0, bytesRead);
-//                size -= bytesRead;
-//            }
-//
-//            System.out.println("File uploaded: " + filePath);
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
+        byte[] buffer = new byte[1024];
 
         try(FileOutputStream fileOutputStream = new FileOutputStream(filePath)) {
             InputStream fileInputStream = clientSocket.getInputStream();
