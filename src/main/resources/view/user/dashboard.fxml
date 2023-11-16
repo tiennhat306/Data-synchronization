@@ -140,9 +140,9 @@
                               <FontAwesomeIconView glyphName="REFRESH" />
                            </graphic>
                         </Button>
-                        <Button fx:id="downloadBtn" mnemonicParsing="false" onAction="#downloadFileClicked" text="Tải xuống">
+                        <Button fx:id="downloadBtn" mnemonicParsing="false" onAction="#downloadCurrentFolderClicked" text="Tải xuống">
                            <graphic>
-                              <FontAwesomeIconView glyphName="PLUS" />
+                              <FontAwesomeIconView glyphName="DOWNLOAD" />
                            </graphic>
                         </Button>
                         <Button fx:id="accessBtn" layoutX="92.0" layoutY="10.0" mnemonicParsing="false" onAction="#accessClicked" text="Quyền truy cập">
