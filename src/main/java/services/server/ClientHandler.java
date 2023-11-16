@@ -21,6 +21,7 @@ public class ClientHandler implements Runnable{
     private Socket clientSocket;
     private int clientNumber;
     private ObjectInputStream in;
+    private ObjectOutputStream out;
     private InetAddress clientAddress;
     //CountDownLatch ioReady = new CountDownLatch(1); // Initialize with 1
 
@@ -31,8 +32,8 @@ public class ClientHandler implements Runnable{
             clientAddress = clientSocket.getInetAddress();
             System.out.println("Client handler connected: " + clientSocket);
             System.out.println("Server thread number " + clientNumber + " Started");
+            this.out = new ObjectOutputStream(clientSocket.getOutputStream());
             this.in = new ObjectInputStream(clientSocket.getInputStream());
-
             addConnection("CONNECTED");
         } catch (IOException e) {
             e.printStackTrace();
@@ -109,6 +110,7 @@ public class ClientHandler implements Runnable{
             e.printStackTrace();
         } finally {
             try {
+                if(out != null) out.close();
                 if(in != null) in.close();
                 if(clientSocket != null) clientSocket.close();
                 addConnection("DISCONNECTED");
@@ -141,12 +143,14 @@ public class ClientHandler implements Runnable{
             String rs = fileService.uploadFile(nameOfFile, fileService.getFileTypeId(typeOfFile), folderId, ownerId, size);
             boolean response = false;
             if(!rs.equals("")){
+
+//                Thread receiveFileThread = new Thread(() -> {
+//                    receiveFile(rs, size);
+//                });
+//                receiveFileThread.start();
+                receiveFile(rs, size);
                 System.out.println("Thêm file " + fileName + " thành công");
                 response = true;
-                Thread receiveFileThread = new Thread(() -> {
-                    receiveFile(rs, size);
-                });
-                receiveFileThread.start();
             } else {
                 System.out.println("Thêm file " + fileName + " thất bại");
             }
@@ -159,8 +163,24 @@ public class ClientHandler implements Runnable{
     }
 
     private void receiveFile(String filePath, int size){
-        byte[] buffer = new byte[1024];
+//        byte[] buffer = new byte[1024];
+//
+//        try(FileOutputStream fileOutputStream = new FileOutputStream(filePath);
+//            InputStream fileInputStream = clientSocket.getInputStream()) {
+//            int bytesRead;
+//            //while ((bytesRead = fileInputStream.read(buffer)) != -1) {
+//            while(size > 0 && (bytesRead = fileInputStream.read(buffer, 0, Math.min(buffer.length, size))) != -1) {
+//                fileOutputStream.write(buffer, 0, bytesRead);
+//                size -= bytesRead;
+//            }
+//
+//            System.out.println("File uploaded: " + filePath);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
 
+        // receive file
+        byte[] buffer = new byte[1024];
         try(FileOutputStream fileOutputStream = new FileOutputStream(filePath);
             InputStream fileInputStream = clientSocket.getInputStream()) {
             int bytesRead;
@@ -224,23 +244,11 @@ public class ClientHandler implements Runnable{
     }
 
     public void sendResponse(Object response) {
-        Socket responseSocket = null;
-        ObjectOutputStream responseOut = null;
         try{
-            responseSocket = new Socket(clientAddress, 9696);
-            responseOut = new ObjectOutputStream(responseSocket.getOutputStream());
-            responseOut.writeObject(response);
-            responseOut.flush();
-            responseOut.close();
+            out.writeObject(response);
+            out.flush();
         } catch (IOException e) {
             e.printStackTrace();
-        } finally {
-            try {
-                if(responseOut != null) responseOut.close();
-                if(responseSocket != null) responseSocket.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
         }
     }
 

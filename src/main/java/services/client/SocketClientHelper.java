@@ -1,22 +1,26 @@
 package services.client;
 
 import java.io.*;
-import java.net.InetAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.net.UnknownHostException;
+import java.net.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
 
 public class SocketClientHelper {
     private Socket socket;
+    private ObjectInputStream in;
     private ObjectOutputStream out;
 
     public SocketClientHelper(String host, int port) {
         try{
-            socket = new Socket(host, port);
+            socket = new Socket();
+            InetSocketAddress address = new InetSocketAddress(host, port);
+            socket.connect(address, 20000);
+            socket.setSoTimeout(10000);
+            //socket.setSoLinger(true, 5000);
+            System.out.println("Connected to server: " + socket.getInetAddress());
             out = new ObjectOutputStream(socket.getOutputStream());
+            in = new ObjectInputStream(socket.getInputStream());
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -29,6 +33,7 @@ public class SocketClientHelper {
     public void close() {
         try {
             if(out != null) out.close();
+            if(in != null) in.close();
             if(socket != null) socket.close();
         } catch (IOException e) {
             e.printStackTrace();
@@ -38,17 +43,13 @@ public class SocketClientHelper {
     public void sendRequest(Object request) throws IOException {
         System.out.println("Sending request: " + request);
         out.writeObject(request);
+        out.flush();
     }
 
 
     public Object receiveResponse(){
-        try(ServerSocket responseSocket = new ServerSocket(9696)){
-            Socket responseClientSocket = responseSocket.accept();
-            ObjectInputStream in = new ObjectInputStream(responseClientSocket.getInputStream());
+        try{
             Object response = in.readObject();
-
-            if(in != null) in.close();
-            if(responseClientSocket != null) responseClientSocket.close();
 
             return response;
         } catch (IOException | ClassNotFoundException e) {
@@ -58,19 +59,34 @@ public class SocketClientHelper {
     }
 
     public void sendFile(String fileName, int ownerId, int folderId, int size, String filePath) throws IOException {
-        File file = new File(filePath);
-        byte[] buffer = new byte[1024];
+//        File file = new File(filePath);
+//        byte[] buffer = new byte[1024];
+//
+//        try(FileInputStream fileInputStream = new FileInputStream(file);
+//            OutputStream fileOutputStream = socket.getOutputStream()) {
+//            int bytesRead;
+//            while ((bytesRead = fileInputStream.read(buffer)) != -1) {
+//                fileOutputStream.write(buffer, 0, bytesRead);
+//                fileOutputStream.flush();
+//            }
+//
+//            System.out.println("File uploaded: " + fileName);
+//        }
 
-        try(FileInputStream fileInputStream = new FileInputStream(file);
+        // send file
+        byte[] buffer = new byte[1024];
+        try(FileInputStream fileInputStream = new FileInputStream(filePath);
             OutputStream fileOutputStream = socket.getOutputStream()) {
             int bytesRead;
-            while ((bytesRead = fileInputStream.read(buffer)) != -1) {
+            //while ((bytesRead = fileInputStream.read(buffer)) != -1) {
+            while(size > 0 && (bytesRead = fileInputStream.read(buffer, 0, Math.min(buffer.length, size))) != -1) {
                 fileOutputStream.write(buffer, 0, bytesRead);
-                fileOutputStream.flush();
+                size -= bytesRead;
             }
 
-            System.out.println("File uploaded: " + fileName);
+            System.out.println("File uploaded: " + filePath);
         }
+
     }
 
 

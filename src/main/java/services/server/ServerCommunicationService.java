@@ -40,7 +40,8 @@ public class ServerCommunicationService {
             try{
                 while (ServerCommunicationService.isRunning) {
                     Socket clientSocket = serverSocket.accept();
-
+                    clientSocket.setSoTimeout(10000);
+                    //clientSocket.setSoLinger(true, 5000);
                     try {
                         System.out.println("New client connected: " + clientSocket.getInetAddress());
                         int dataPort = 6969 + noOfThreads + 1;
