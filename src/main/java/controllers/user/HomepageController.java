@@ -311,21 +311,48 @@ public class HomepageController implements Initializable {
 
 		VBox options = new VBox();
 		options.setPrefWidth(150);
-		options.setStyle("-fx-background-color: white");
-		options.setStyle("-fx-border-color: gray");
-		options.setStyle("-fx-border-width: 1px");
+		options.setStyle("-fx-background-color: white; -fx-border-color: gray; -fx-border-radius: 15px; -fx-border-width: 1px; -fx-background-radius: 15px;");
 
 		options.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
-		options.setStyle("-fx-background-radius: 5px");
 		for (Button button : Arrays.asList(openBtn, downloadBtn, deleteBtn, renameBtn, moveBtn, copyBtn, shareBtn, synchronizeBtn)) {
 			if (button != null) {
 				button.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
 				button.setPadding(new Insets(5, 5, 5, 15));
 				button.setPrefWidth(150);
-				button.setStyle("-fx-background-color: white");
-				button.setStyle("-fx-border-color: gray");
-				button.setStyle("-fx-border-width: 0 0 0 0");
 
+				button.setStyle("-fx-background-color: transparent; -fx-background-radius: 0px; -fx-background-insets: 0px; -fx-border-width: 0;");
+				button.setOnMouseEntered(event -> {
+					button.setStyle("-fx-background-color: #f1f1f1; -fx-background-radius: 0px; -fx-background-insets: 0px; -fx-border-width: 0;");
+				});
+				button.setOnMouseExited(event -> {
+					button.setStyle("-fx-background-color: transparent; -fx-background-radius: 0px; -fx-background-insets: 0px; -fx-border-width: 0;");
+				});
+
+				if (button == openBtn) {
+					button.setStyle("-fx-background-color: transparent; -fx-background-radius: 15px 15px 0px 0px; -fx-background-insets: 0px; -fx-border-width: 0;");
+					button.setOnMouseEntered(event -> {
+						button.setStyle("-fx-background-color: #f1f1f1; -fx-background-radius: 15px 15px 0px 0px; -fx-background-insets: 0px; -fx-border-width: 0;");
+					});
+					button.setOnMouseExited(event -> {
+						button.setStyle("-fx-background-color: transparent; -fx-background-radius: 15px 15px 0px 0px; -fx-background-insets: 0px; -fx-border-width: 0;");
+					});
+				} else if(button == synchronizeBtn) {
+					button.setStyle("-fx-background-color: transparent; -fx-background-radius: 0px 0px 15px 15px; -fx-background-insets: 0px; -fx-border-width: 0;");
+					button.setOnMouseEntered(event -> {
+						button.setStyle("-fx-background-color: #f1f1f1; -fx-background-radius: 0px 0px 15px 15px; -fx-background-insets: 0px; -fx-border-width: 0;");
+					});
+					button.setOnMouseExited(event -> {
+						button.setStyle("-fx-background-color: transparent; -fx-background-radius: 0px 0px 15px 15px; -fx-background-insets: 0px; -fx-border-width: 0;");
+					});
+				} else if(button == deleteBtn || button == copyBtn){
+					button.setStyle("-fx-background-color: transparent; -fx-background-radius: 0px; -fx-background-insets: 0px; -fx-border-width: 0 0 1px 0; -fx-border-color: gray;");
+					button.setOnMouseEntered(event -> {
+						button.setStyle("-fx-background-color: #f1f1f1; -fx-background-radius: 0px; -fx-background-insets: 0px; -fx-border-width: 0 0 1px 0; -fx-border-color: gray;");
+					});
+					button.setOnMouseExited(event -> {
+						button.setStyle("-fx-background-color: transparent; -fx-background-radius: 0px; -fx-background-insets: 0px; -fx-border-width: 0 0 1px 0; -fx-border-color: gray;");
+					});
+				}
 			}
 		}
 
