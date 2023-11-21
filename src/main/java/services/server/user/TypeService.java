@@ -14,8 +14,6 @@ public class TypeService {
             e.printStackTrace();
             return "";
         }
-
-
     }
 
 }

@@ -1,12 +1,13 @@
 package services.client.user;
 
-import models.File;
-import services.client.SocketClientHelper;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
+
+import models.File;
+import services.client.SocketClientHelper;
+import services.server.user.TypeService;
 
 public class ItemService {
     public ItemService() {
@@ -143,6 +144,108 @@ public class ItemService {
         }
         Files.deleteIfExists(folder.toPath());
     }
+    
+    public boolean deleteFileIfExist(int fileID) throws IOException {
+    	SocketClientHelper socketClientHelper = new SocketClientHelper();
+        socketClientHelper.sendRequest("DELETE_FILE");
+        socketClientHelper.sendRequest(String.valueOf(fileID));
+        
+        boolean response = (boolean) socketClientHelper.receiveResponse();
+        System.out.println("Response: " + response);
+
+        socketClientHelper.close();
+        return response;
+    }
+    
+    public boolean deleteFolderIfExist(int folderID) throws IOException {
+    	SocketClientHelper socketClientHelper = new SocketClientHelper();
+        socketClientHelper.sendRequest("DELETE_FOLDER");
+        socketClientHelper.sendRequest(String.valueOf(folderID));
+        
+        boolean response = (boolean) socketClientHelper.receiveResponse();
+        System.out.println("Response: " + response);
+
+        socketClientHelper.close();
+        return response;
+    }
+    
+    public boolean renameFile(int fileID, String fileName) throws IOException {
+    	SocketClientHelper socketClientHelper = new SocketClientHelper();
+        socketClientHelper.sendRequest("RENAME_FILE");
+        socketClientHelper.sendRequest(String.valueOf(fileID));
+        socketClientHelper.sendRequest(String.valueOf(fileName));
+        
+        boolean response = (boolean) socketClientHelper.receiveResponse();
+        System.out.println("Response: " + response);
+
+        socketClientHelper.close();
+        return response;
+    }
+    
+    public boolean renameFolder(int folderID, String folderName) throws IOException {
+    	SocketClientHelper socketClientHelper = new SocketClientHelper();
+        socketClientHelper.sendRequest("RENAME_FOLDER");
+        socketClientHelper.sendRequest(String.valueOf(folderID));
+        socketClientHelper.sendRequest(String.valueOf(folderName));
+        
+        boolean response = (boolean) socketClientHelper.receiveResponse();
+        System.out.println("Response: " + response);
+
+        socketClientHelper.close();
+        return response;
+    }
+    
+    public boolean moveFile(int fileID, int folderId) throws IOException {
+    	SocketClientHelper socketClientHelper = new SocketClientHelper();
+        socketClientHelper.sendRequest("MOVE_FILE");
+        socketClientHelper.sendRequest(String.valueOf(fileID));
+        socketClientHelper.sendRequest(String.valueOf(folderId));
+        
+        boolean response = (boolean) socketClientHelper.receiveResponse();
+        System.out.println("Response: " + response);
+
+        socketClientHelper.close();
+        return response;
+    }
+    
+    public boolean moveFolder(int folderID, int parentId) throws IOException {
+    	SocketClientHelper socketClientHelper = new SocketClientHelper();
+        socketClientHelper.sendRequest("MOVE_FOLDER");
+        socketClientHelper.sendRequest(String.valueOf(folderID));
+        socketClientHelper.sendRequest(String.valueOf(parentId));
+        
+        boolean response = (boolean) socketClientHelper.receiveResponse();
+        System.out.println("Response: " + response);
+
+        socketClientHelper.close();
+        return response;
+    }
+    
+    public boolean copyFile(int fileID, int folderId) throws IOException {
+    	SocketClientHelper socketClientHelper = new SocketClientHelper();
+        socketClientHelper.sendRequest("COPY_FILE");
+        socketClientHelper.sendRequest(String.valueOf(fileID));
+        socketClientHelper.sendRequest(String.valueOf(folderId));
+        
+        boolean response = (boolean) socketClientHelper.receiveResponse();
+        System.out.println("Response: " + response);
+
+        socketClientHelper.close();
+        return response;
+    }
+    
+    public boolean copyFolder(int folderID, int parentID) throws IOException {
+    	SocketClientHelper socketClientHelper = new SocketClientHelper();
+        socketClientHelper.sendRequest("COPY_FOLDER");
+        socketClientHelper.sendRequest(String.valueOf(folderID));
+        socketClientHelper.sendRequest(String.valueOf(parentID));
+        
+        boolean response = (boolean) socketClientHelper.receiveResponse();
+        System.out.println("Response: " + response);
+
+        socketClientHelper.close();
+        return response;
+    }
 
     public boolean downloadFolder(String absolutePath, int currentFolderId) {
         try {
@@ -165,4 +268,50 @@ public class ItemService {
             return false;
         }
     }
+    
+    public boolean downloadFolderNew(String absolutePath, int folderID, String folderName) {
+    	try {
+            SocketClientHelper socketClientHelper = new SocketClientHelper();
+            socketClientHelper.sendRequest("DOWNLOAD_FOLDER");
+            socketClientHelper.sendRequest(String.valueOf(folderID));
+
+            int size = Integer.parseInt((String) socketClientHelper.receiveResponse());
+            System.out.println(size);
+
+            socketClientHelper.downloadFolder(absolutePath + java.io.File.separator + folderName, size);
+
+            boolean response = (boolean) socketClientHelper.receiveResponse();
+            System.out.println("Response: " + response);
+            socketClientHelper.close();
+            return response;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    
+    public boolean downloadFile(String absolutePath, int fileId, String fileName, int TypeID) {
+    	try {
+            SocketClientHelper socketClientHelper = new SocketClientHelper();
+            socketClientHelper.sendRequest("DOWNLOAD_FILE");
+            socketClientHelper.sendRequest(String.valueOf(fileId));
+
+            int size = Integer.parseInt((String) socketClientHelper.receiveResponse());
+            
+            TypeService tpService = new TypeService();
+            String TypeName = tpService.getTypeName(TypeID);
+
+            socketClientHelper.downloadFile(absolutePath + java.io.File.separator + fileName, size, TypeName);
+
+            boolean response = (boolean) socketClientHelper.receiveResponse();
+            System.out.println("Response: " + response);
+            socketClientHelper.close();
+            return response;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
 }

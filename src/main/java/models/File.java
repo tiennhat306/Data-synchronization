@@ -135,8 +135,17 @@ public class File implements Serializable {
         File file = (File) o;
         return id == file.id && typeId == file.typeId && folderId == file.folderId && ownerId == file.ownerId && Objects.equals(name, file.name) && Objects.equals(size, file.size) && Objects.equals(createdAt, file.createdAt) && Objects.equals(updatedAt, file.updatedAt) && Objects.equals(updatedBy, file.updatedBy);
     }
+    
+    @Override
+	public String toString() {
+		return "File [id=" + id + ", name=" + name + ", typeId=" + typeId + ", folderId=" + folderId + ", ownerId="
+				+ ownerId + ", size=" + size + ", createdAt=" + createdAt + ", updatedAt=" + updatedAt + ", updatedBy="
+				+ updatedBy + ", typesByTypeId=" + typesByTypeId + ", foldersByFolderId=" + foldersByFolderId
+				+ ", usersByOwnerId=" + usersByOwnerId + ", usersByUpdatedBy=" + usersByUpdatedBy + ", permissionsById="
+				+ permissionsById + "]";
+	}
 
-    public Type getTypesByTypeId() {
+	public Type getTypesByTypeId() {
         return typesByTypeId;
     }
 
