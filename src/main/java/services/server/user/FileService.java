@@ -1,16 +1,15 @@
 package services.server.user;
 
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.List;
-
-import org.hibernate.Session;
-import org.hibernate.Transaction;
-
 import applications.ServerApp;
 import models.File;
 import models.Folder;
+import org.hibernate.Session;
+import org.hibernate.Transaction;
 import utils.HibernateUtil;
+
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.List;
 
 public class FileService {
     public FileService() {
@@ -37,18 +36,6 @@ public class FileService {
             return null;
         }
     }
-    
-    public String getFileName(int fileId) {
-        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
-            File file = session.find(File.class, fileId);
-            if (file == null) return null;
-            return file.getName();
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
-    
     public boolean addFile(File file) {
         Transaction transaction = null;
         try(Session session = HibernateUtil.getSessionFactory().openSession()) {
@@ -86,85 +73,6 @@ public class FileService {
             return false;
         }
     }
-    
-    public boolean copyFile(int id, int folderId) {
-    	Transaction transaction = null;
-    	try(Session session = HibernateUtil.getSessionFactory().openSession()){
-    		transaction = session.beginTransaction();
-    		File file = session.find(File.class, id);
-    		
-    		File newfile = new File();
-            // Set the properties of the File entity
-            newfile.setName(file.getName());
-            newfile.setTypeId(file.getTypeId());
-            newfile.setFolderId(folderId);
-            newfile.setOwnerId(file.getOwnerId());
-            newfile.setSize(file.getSize());
-            newfile.setCreatedAt(file.getCreatedAt());
-            newfile.setUpdatedAt(file.getUpdatedAt());
-            newfile.setUpdatedBy(file.getUpdatedBy());
-
-            // Persist the File entity
-            session.persist(newfile);
-            session.getTransaction().commit();
-            return true;
-    	} catch (Exception e) {
-			// TODO: handle exception
-    		e.printStackTrace();
-    		return false;
-		}
-    }
-    
-    public boolean moveFile(int id, int folder_id) {
-        Transaction transaction = null;
-        
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            transaction = session.beginTransaction();
-
-            File file = session.find(File.class, id);
-            
-            if (file != null) {
-                // Update the file's name
-                file.setFolderId(folder_id);
-                transaction.commit();
-                return true;
-            } else {
-                return false;
-            }
-        } catch (Exception e) {
-            if (transaction != null && transaction.isActive()) {
-                transaction.rollback();
-            }
-            e.printStackTrace(); // Handle the exception appropriately
-            return false;
-        }
-    }
-    
-    public boolean renameFile(int id, String newName) {
-        Transaction transaction = null;
-        
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            transaction = session.beginTransaction();
-
-            File file = session.find(File.class, id);
-            
-            if (file != null) {
-                // Update the file's name
-                file.setName(newName);
-                transaction.commit();
-                return true;
-            } else {
-                return false;
-            }
-        } catch (Exception e) {
-            if (transaction != null && transaction.isActive()) {
-                transaction.rollback();
-            }
-            e.printStackTrace(); // Handle the exception appropriately
-            return false;
-        }
-    }
-    
     public List<File> getFilesByOwnerId(int userId) {
         try (Session session = HibernateUtil.getSessionFactory().openSession()){
             return session.createQuery("select f from File f where f.ownerId = :userId", File.class)

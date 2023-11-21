@@ -104,17 +104,14 @@ public class SocketClientHelper {
     public void syncFile(String filePath, int size) {
         byte[] buffer = new byte[1024];
 
-        try (FileOutputStream fileOutputStream = new FileOutputStream(filePath);
-             InputStream fileInputStream = socket.getInputStream()) {
-
+        try(FileOutputStream fileOutputStream = new FileOutputStream(filePath)) {
+            InputStream fileInputStream = socket.getInputStream();
             int bytesRead;
-            while (size > 0 && (bytesRead = fileInputStream.read(buffer, 0, Math.min(buffer.length, size))) != -1) {
+            while(size > 0 && (bytesRead = fileInputStream.read(buffer, 0, Math.min(buffer.length, size))) != -1) {
                 fileOutputStream.write(buffer, 0, bytesRead);
                 size -= bytesRead;
             }
-
             System.out.println("File synchronized: " + filePath);
-
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -146,33 +143,14 @@ public class SocketClientHelper {
         String FolderZipPath = folderPath + ".zip";
         byte[] buffer = new byte[1024];
 
-        try(FileOutputStream folderOutputStream = new FileOutputStream(FolderZipPath)) {
-            InputStream folderInputStream = socket.getInputStream();
-            int bytesRead;
-            while(size > 0 && (bytesRead = folderInputStream.read(buffer, 0, Math.min(buffer.length, size))) != -1) {
-                folderOutputStream.write(buffer, 0, bytesRead);
-                size -= bytesRead;
-            }
-            System.out.println("File downloaded: " + FolderZipPath);
-            return true;
-        } catch (IOException e) {
-            e.printStackTrace();
-            return false;
-        }
-    }
-    
-    public boolean downloadFile(String folderPath, int size, String endFile) {
-        String FilePath = folderPath + "." + endFile;
-        byte[] buffer = new byte[1024];
-
-        try(FileOutputStream fileOutputStream = new FileOutputStream(FilePath)) {
+        try(FileOutputStream fileOutputStream = new FileOutputStream(FolderZipPath)) {
             InputStream fileInputStream = socket.getInputStream();
             int bytesRead;
             while(size > 0 && (bytesRead = fileInputStream.read(buffer, 0, Math.min(buffer.length, size))) != -1) {
                 fileOutputStream.write(buffer, 0, bytesRead);
                 size -= bytesRead;
             }
-            System.out.println("File downloaded: " + FilePath);
+            System.out.println("File downloaded: " + FolderZipPath);
             return true;
         } catch (IOException e) {
             e.printStackTrace();
