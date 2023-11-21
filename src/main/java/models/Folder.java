@@ -26,15 +26,12 @@ public class Folder implements Serializable {
     private Integer parentId;
     @OneToMany(mappedBy = "foldersByFolderId")
     private Collection<File> filesById;
-    
     @ManyToOne(optional=false)
     @JoinColumn(name = "owner_id", referencedColumnName = "id", insertable=false, updatable=false)
     private User usersByOwnerId;
-    
     @ManyToOne(optional=true)
     @JoinColumn(name = "parent_id", referencedColumnName = "id", insertable=false, updatable=false)
     private Folder foldersByParentId;
-
     @OneToMany(mappedBy = "foldersByParentId")
     private Collection<Folder> foldersById;
     @OneToMany(mappedBy = "foldersByFolderId")
