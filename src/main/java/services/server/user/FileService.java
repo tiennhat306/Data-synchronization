@@ -14,7 +14,15 @@ import java.util.List;
 public class FileService {
     public FileService() {
     }
-    public List<File> getAllFile(int folderId) {
+    public List<File> getAllFile() {
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
+            return session.createQuery("select f from File f", File.class).list();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+    public List<File> getAllFileById(int folderId) {
         try(Session session = HibernateUtil.getSessionFactory().openSession()) {
             //print session
             System.out.println("session: " + session);
@@ -257,6 +265,16 @@ public class FileService {
         } catch (Exception e){
             e.printStackTrace();
             return "";
+        }
+    }
+    public String getFileName(int fileId) {
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
+            File file = session.find(File.class, fileId);
+            if (file == null) return null;
+            return file.getName();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
         }
     }
 }

@@ -60,9 +60,31 @@ public class ClientHandler implements Runnable{
                 }
                 case "GET_USER_BY_ID" -> {
                 }
+                case "GET_ALL_ITEM_PRIVATE" -> {
+                    String ownerId = (String) receiveRequest();
+                    System.out.println(ownerId);
+                    String searchText = (String) receiveRequest();
+                    List<File> response = getPrivateItemList(Integer.parseInt(ownerId), searchText);
+                    sendResponse(response);
+                }
+                case "GET_ALL_ITEM_OSHARE" -> {
+                    String ownerId = (String) receiveRequest();
+                    System.out.println(ownerId);
+                    String searchText = (String) receiveRequest();
+                    List<File> response = getOtherShareItemList(Integer.parseInt(ownerId), searchText);
+                    sendResponse(response);
+                }
+                case "GET_ALL_ITEM_SHARED" -> {
+                    String ownerId = (String) receiveRequest();
+                    System.out.println(ownerId);
+                    String searchText = (String) receiveRequest();
+                    List<File> response = getSharedItemList(Integer.parseInt(ownerId), searchText);
+                    sendResponse(response);
+                }
                 case "GET_ALL_ITEM" -> {
                     String folderId = (String) receiveRequest();
-                    List<File> response = getItemList(Integer.parseInt(folderId));
+                    String searchText = (String) receiveRequest();
+                    List<File> response = getItemList(Integer.parseInt(folderId), searchText);
                     sendResponse(response);
                 }
                 case "CREATE_FOLDER" -> {
@@ -197,10 +219,10 @@ public class ClientHandler implements Runnable{
         System.out.println("Get all user");
         return userService.getAllUser();
     }
-    private List<File> getItemList(int folderId) {
+    private List<File> getItemList(int folderId, String searchText) {
         ItemService itemService = new ItemService();
         System.out.println("Get all item");
-        return itemService.getAllItem(folderId);
+        return itemService.getAllItem(folderId, searchText);
     }
     
     private boolean uploadFile(String fileName, int ownerId, int folderId, int size){
@@ -351,6 +373,21 @@ public class ClientHandler implements Runnable{
         UserService userService = new UserService();
         System.out.println("Get user by id");
         return userService.getUserById(id);
+    }
+    private List<File> getPrivateItemList(int ownerId, String searchText) {
+        ItemService itemService = new ItemService();
+        System.out.println("Get all private item");
+        return itemService.getAllItemPrivateOwnerId(ownerId, searchText);
+    }
+    private List<File> getOtherShareItemList(int ownerId, String searchText) {
+        ItemService itemService = new ItemService();
+        System.out.println("Get all other share item");
+        return itemService.getAllOtherShareItem(ownerId, searchText);
+    }
+    private List<File> getSharedItemList(int ownerId, String searchText) {
+        ItemService itemService = new ItemService();
+        System.out.println("Get all shared item");
+        return itemService.getAllSharedItem(ownerId, searchText);
     }
 
     public void sendResponse(Object response) {

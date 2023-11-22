@@ -1,5 +1,7 @@
 package controllers.user;
 
+import DTO.LoginSession;
+import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
@@ -14,6 +16,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.geometry.Bounds;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -22,21 +25,21 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontPosture;
+import javafx.scene.text.FontWeight;
+import javafx.scene.text.Text;
 import javafx.stage.*;
 import models.Type;
 import models.User;
 import services.client.user.ItemService;
+import services.login.LoginService;
 
 import java.io.*;
 import java.net.URL;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
-import java.util.ResourceBundle;
+import java.util.*;
 
 public class HomepageController implements Initializable {
 
@@ -67,7 +70,7 @@ public class HomepageController implements Initializable {
 	@FXML
 	private HBox personalBtn;
 	@FXML
-	private FontAwesomeIconView searchBtn;
+	private Button searchBtn;
 	@FXML
 	private TextField searchTxt;
 	@FXML
@@ -85,12 +88,26 @@ public class HomepageController implements Initializable {
 
 	private int currentFolderId = 2;
 	private ObservableList<models.File> items = FXCollections.observableArrayList();
-
+	@FXML
+	private Label lbGeneral;
+	@FXML
+	private Label lbMyFile;
+	@FXML
+	private Label lbMyFileShare;
+	@FXML
+	private Label lbOtherFileShare;
+	private int currentSideBarIndex = 0;
+	List<HBox> breadcrumbList = new ArrayList<>();
     public HomepageController() {
     }
 
     public void populateData() {
-        TableColumn<models.File, String> nameColumn = new TableColumn<>("Tên");
+		LoginSession loginSession = LoginService.getCurrentSession();
+		String name = loginSession.getCurrentUserName();
+		userName.setText(name);
+		System.out.println(name);
+
+		TableColumn<models.File, String> nameColumn = new TableColumn<>("Tên");
         TableColumn<models.File, String> ownerNameColumn = new TableColumn<>("Chủ sở hữu");
         TableColumn<models.File, Date> dateModifiedColumn = new TableColumn<>("Đã sửa đổi");
         TableColumn<models.File, String> lastModifiedByColumn = new TableColumn<>("Người sửa đổi");
@@ -170,6 +187,12 @@ public class HomepageController implements Initializable {
             return new SimpleStringProperty(sizeStr);
         });
 
+		breadcrumbList.clear();
+		HBox breadcrumb = createBreadcrumb(2, "Chung");
+		breadcrumbList.add(breadcrumb);
+		// Thêm các HBox breadcrumb vào container
+		path.getChildren().setAll(breadcrumbList);
+
 		dataTable.setRowFactory(dataTable -> {
 			TableRow<models.File> row = new TableRow<>();
 			row.setOnMouseClicked(event -> {
@@ -179,6 +202,11 @@ public class HomepageController implements Initializable {
 					if(file.getTypeId() == 1){
 						currentFolderId = file.getId();
 						fillData();
+						// Tạo HBox breadcrumb mới
+						HBox _breadcrumb = createBreadcrumb(file.getId(), file.getName());
+						breadcrumbList.add(_breadcrumb);
+						// Thêm các HBox breadcrumb vào container
+						path.getChildren().setAll(breadcrumbList);
 					}
 					else {
 						// Open file
@@ -374,7 +402,7 @@ public class HomepageController implements Initializable {
 
 	private void fillData() {
 		ItemService itemService = new ItemService();
-		List<models.File> itemList = itemService.getAllItem(currentFolderId);
+		List<models.File> itemList = itemService.getAllItem(currentFolderId, "");
 
 		System.out.println("itemList: " + itemList);
 
@@ -673,5 +701,239 @@ public class HomepageController implements Initializable {
 	}
 
 	public void accessClicked(ActionEvent actionEvent) {
+	}
+	public void setFontLabel(int number) {
+		for (int i = 0; i < 4; ++i) {
+			if (i == number) continue;
+			switch (i) {
+				case 0:
+					lbGeneral.setFont(Font.font("System", FontWeight.NORMAL, FontPosture.REGULAR, lbGeneral.getFont().getSize()));
+					break;
+				case 1:
+					lbMyFile.setFont(Font.font("System", FontWeight.NORMAL, FontPosture.REGULAR, lbMyFile.getFont().getSize()));
+					break;
+				case 2:
+					lbMyFileShare.setFont(Font.font("System", FontWeight.NORMAL, FontPosture.REGULAR, lbMyFileShare.getFont().getSize()));
+					break;
+				case 3:
+					lbOtherFileShare.setFont(Font.font("System", FontWeight.NORMAL, FontPosture.REGULAR, lbOtherFileShare.getFont().getSize()));
+					break;
+			}
+		}
+	}
+	public void generalPage(MouseEvent event) throws IOException {
+		lbGeneral.setFont(Font.font("System", FontWeight.BOLD, FontPosture.REGULAR, lbGeneral.getFont().getSize()));
+		setFontLabel(0);
+		searchTxt.setText("");
+		currentSideBarIndex = 0;
+		currentFolderId = 2;
+		breadcrumbList.clear();
+		HBox breadcrumb = createBreadcrumb(2, "Chung");
+		breadcrumbList.add(breadcrumb);
+		// Thêm các HBox breadcrumb vào container
+		path.getChildren().setAll(breadcrumbList);
+		ItemService itemService = new ItemService();
+		List<models.File> itemList = itemService.getAllItem(2, "");
+
+		System.out.println("itemList: " + itemList);
+
+		if(itemList == null) {
+			System.out.println("null");
+			dataTable.setPlaceholder(new Label("Không có dữ liệu"));
+		}
+		else {
+			final ObservableList<models.File> items = FXCollections.observableArrayList(itemList);
+			dataTable.setItems(items);
+			System.out.println("not null");
+		}
+	}
+	public void myFilePage(MouseEvent event) throws IOException {
+		lbMyFile.setFont(Font.font("System", FontWeight.BOLD, FontPosture.REGULAR, lbMyFile.getFont().getSize()));
+		setFontLabel(1);
+		searchTxt.setText("");
+		currentSideBarIndex = 1;
+		currentFolderId = -1;
+		breadcrumbList.clear();
+		HBox breadcrumb = createBreadcrumb(-1, "Tập tin của tôi");
+		breadcrumbList.add(breadcrumb);
+		// Thêm các HBox breadcrumb vào container
+		path.getChildren().setAll(breadcrumbList);
+		LoginSession loginSession = LoginService.getCurrentSession();
+		int currentUserId = loginSession.getCurrentUserID();
+		ItemService itemService = new ItemService();
+		List<models.File> itemList = itemService.getAllItemPrivateOwnerId(currentUserId, "");
+
+		System.out.println("itemList: " + itemList);
+
+		if(itemList == null) {
+			System.out.println("null");
+			dataTable.setPlaceholder(new Label("Không có dữ liệu"));
+		}
+		else {
+			final ObservableList<models.File> items = FXCollections.observableArrayList(itemList);
+			dataTable.setItems(items);
+			System.out.println("not null");
+		}
+	}
+	public void myShareFile(MouseEvent event) throws IOException {
+		lbMyFileShare.setFont(Font.font("System", FontWeight.BOLD, FontPosture.REGULAR, lbMyFileShare.getFont().getSize()));
+		setFontLabel(2);
+		searchTxt.setText("");
+		currentSideBarIndex = 2;
+		currentFolderId = -2;
+		breadcrumbList.clear();
+		HBox breadcrumb = createBreadcrumb(-2, "Đã chia sẻ");
+		breadcrumbList.add(breadcrumb);
+		// Thêm các HBox breadcrumb vào container
+		path.getChildren().setAll(breadcrumbList);
+		LoginSession loginSession = LoginService.getCurrentSession();
+		int currentUserId = loginSession.getCurrentUserID();
+		ItemService itemService = new ItemService();
+		List<models.File> itemList = itemService.getAllOtherShareItem(currentUserId, "");
+
+		System.out.println("itemList: " + itemList);
+
+		if(itemList == null) {
+			System.out.println("null");
+			dataTable.setPlaceholder(new Label("Không có dữ liệu"));
+		}
+		else {
+			final ObservableList<models.File> items = FXCollections.observableArrayList(itemList);
+			dataTable.setItems(items);
+			System.out.println("not null");
+		}
+	}
+	public void otherFileShare(MouseEvent event) throws IOException {
+		lbOtherFileShare.setFont(Font.font("System", FontWeight.BOLD, FontPosture.REGULAR, lbOtherFileShare.getFont().getSize()));
+		setFontLabel(3);
+		searchTxt.setText("");
+		currentSideBarIndex = 3;
+		currentFolderId = -3;
+		breadcrumbList.clear();
+		HBox breadcrumb = createBreadcrumb(-3, "Được chia sẻ");
+		breadcrumbList.add(breadcrumb);
+		// Thêm các HBox breadcrumb vào container
+		path.getChildren().setAll(breadcrumbList);
+		LoginSession loginSession = LoginService.getCurrentSession();
+		int currentUserId = loginSession.getCurrentUserID();
+		ItemService itemService = new ItemService();
+		List<models.File> itemList = itemService.getAllSharedItem(currentUserId, "");
+
+		System.out.println("itemList: " + itemList);
+
+		if(itemList == null) {
+			System.out.println("null");
+			dataTable.setPlaceholder(new Label("Không có dữ liệu"));
+		}
+		else {
+			final ObservableList<models.File> items = FXCollections.observableArrayList(itemList);
+			dataTable.setItems(items);
+			System.out.println("not null");
+		}
+	}
+	public void search(ActionEvent event) throws IOException {
+		String txt = searchTxt.getText();
+		System.out.println(txt);
+		ItemService itemService = new ItemService();
+		List<models.File> itemList = null;
+		LoginSession loginSession = LoginService.getCurrentSession();
+		int currentUserId = loginSession.getCurrentUserID();
+		if (currentSideBarIndex == 0) {
+			itemList = itemService.getAllItem(currentFolderId, txt);
+		} else if (currentSideBarIndex == 1) {
+			if (currentFolderId == -1) {
+				itemList = itemService.getAllItemPrivateOwnerId(currentUserId, txt);
+			} else {
+				itemList = itemService.getAllItem(currentFolderId, txt);
+			}
+		} else if (currentSideBarIndex == 2) {
+			if (currentFolderId == -2) {
+				itemList = itemService.getAllOtherShareItem(currentUserId, txt);
+			} else {
+				itemList = itemService.getAllItem(currentFolderId, txt);
+			}
+		} else if (currentSideBarIndex == 3) {
+			if (currentFolderId == -3) {
+				itemList = itemService.getAllSharedItem(currentUserId, txt);
+			} else {
+				itemList = itemService.getAllItem(currentFolderId, txt);
+			}
+		}
+		System.out.println("itemList: " + itemList);
+
+		if(itemList == null) {
+			System.out.println("null");
+			dataTable.setPlaceholder(new Label("Không có dữ liệu"));
+		}
+		else {
+			final ObservableList<models.File> items = FXCollections.observableArrayList(itemList);
+			dataTable.setItems(items);
+			System.out.println("not null");
+		}
+	}
+	private void fillDataBreadCrumb(int index) {
+		ItemService itemService = new ItemService();
+		List<models.File> itemList = null;
+		LoginSession loginSession = LoginService.getCurrentSession();
+		int currentUserId = loginSession.getCurrentUserID();
+		if (index == -1) itemList = itemService.getAllItemPrivateOwnerId(currentUserId, "");
+		else if (index == -2) itemList = itemService.getAllOtherShareItem(currentUserId, "");
+		else itemList = itemService.getAllSharedItem(currentUserId, "");
+
+		System.out.println("itemList: " + itemList);
+
+		if(itemList == null) {
+			System.out.println("null");
+			dataTable.setPlaceholder(new Label("Không có dữ liệu"));
+		}
+		else {
+			items.clear();
+			items.addAll(itemList);
+
+			// Tạo SortedList với Comparator để xác định thứ tự của folders và files
+			SortedList<models.File> sortedData = new SortedList<>(items, (file1, file2) -> {
+				if (file1.getTypeId() == 1 && file2.getTypeId() != 1) {
+					return -1;
+				} else if (file1.getTypeId() != 1 && file2.getTypeId() == 1) {
+					return 1;
+				}
+				return 0;
+
+			});
+
+			dataTable.setItems(sortedData);
+			sortedData.comparatorProperty().bind(dataTable.comparatorProperty());
+			System.out.println("not null");
+		}
+	}
+	// Phương thức tạo HBox breadcrumb
+	private HBox createBreadcrumb(int folderId, String folderName) {
+		HBox breadcrumb = new HBox();
+		breadcrumb.setAlignment(Pos.CENTER_LEFT);
+		breadcrumb.setSpacing(7.0);
+		breadcrumb.setId(String.valueOf(folderId));
+		Text folderText = new Text(folderName);
+		FontAwesomeIconView angleRightIcon = new FontAwesomeIconView(FontAwesomeIcon.ANGLE_RIGHT);
+		Region spacer1 = new Region();
+		Region spacer2 = new Region();
+		HBox.setHgrow(spacer1, Priority.ALWAYS);
+		HBox.setHgrow(spacer2, Priority.ALWAYS);
+		breadcrumb.getChildren().addAll(spacer1, folderText, angleRightIcon, spacer2);
+		currentFolderId = folderId;
+		breadcrumb.setOnMouseClicked(event -> {
+			System.out.println("Clicked on Breadcrumb with ID: " + folderId);
+			int clickedIndex = path.getChildren().indexOf(breadcrumb);
+			if (clickedIndex != -1) {
+				List<Node> keepElements = new ArrayList<>(path.getChildren().subList(0, clickedIndex + 1));
+				path.getChildren().setAll(keepElements);
+				List<HBox> keepBreadcrumbs = new ArrayList<>(breadcrumbList.subList(0, clickedIndex + 1));
+				breadcrumbList.clear();
+				breadcrumbList.addAll(keepBreadcrumbs);
+				currentFolderId = folderId;
+				if (currentFolderId < 0) fillDataBreadCrumb(currentFolderId);
+				else fillData();
+			}
+		});
+		return breadcrumb;
 	}
 }
