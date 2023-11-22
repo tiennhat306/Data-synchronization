@@ -30,5 +30,15 @@ public class UserService {
             return null;
         }
     }
+    public User getUserByUserName(String username) {
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
+            return session.createQuery("SELECT u FROM User u WHERE u.username = :username", User.class)
+                    .setParameter("username", username)
+                    .uniqueResult();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
 }
 
