@@ -12,13 +12,75 @@ public class ItemService {
     public ItemService() {
     }
 
-    public List<File> getAllItem(int folderId){
+    public List<File> getAllItem(int folderId, String searchText){
         try {
             while(true){
                 SocketClientHelper socketClientHelper = new SocketClientHelper();
                 // send request to server
                 socketClientHelper.sendRequest("GET_ALL_ITEM");
                 socketClientHelper.sendRequest(String.valueOf(folderId));
+                socketClientHelper.sendRequest(searchText);
+
+                Object obj = socketClientHelper.receiveResponse();
+                List<File> itemList = (List<File>) obj;
+
+                socketClientHelper.close();
+                return itemList;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+    public List<File> getAllItemPrivateOwnerId(int ownerId, String searchText) {
+        try {
+            while (true) {
+                SocketClientHelper socketClientHelper = new SocketClientHelper();
+                // send request to server
+                socketClientHelper.sendRequest("GET_ALL_ITEM_PRIVATE");
+                System.out.println(ownerId);
+                socketClientHelper.sendRequest(String.valueOf(ownerId));
+                socketClientHelper.sendRequest(searchText);
+
+                Object obj = socketClientHelper.receiveResponse();
+                List<File> itemList = (List<File>) obj;
+                return itemList;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+    public List<File> getAllOtherShareItem(int ownerId, String searchText){
+        try {
+            while (true) {
+                SocketClientHelper socketClientHelper = new SocketClientHelper();
+                // send request to server
+                socketClientHelper.sendRequest("GET_ALL_ITEM_OSHARE");
+                System.out.println(ownerId);
+                socketClientHelper.sendRequest(String.valueOf(ownerId));
+                socketClientHelper.sendRequest(searchText);
+
+                Object obj = socketClientHelper.receiveResponse();
+                List<File> itemList = (List<File>) obj;
+
+                socketClientHelper.close();
+                return itemList;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+    public List<File> getAllSharedItem(int ownerId, String searchText){
+        try {
+            while (true) {
+                SocketClientHelper socketClientHelper = new SocketClientHelper();
+                // send request to server
+                socketClientHelper.sendRequest("GET_ALL_ITEM_SHARED");
+                System.out.println(ownerId);
+                socketClientHelper.sendRequest(String.valueOf(ownerId));
+                socketClientHelper.sendRequest(searchText);
 
                 Object obj = socketClientHelper.receiveResponse();
                 List<File> itemList = (List<File>) obj;
