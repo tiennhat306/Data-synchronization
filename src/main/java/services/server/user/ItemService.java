@@ -18,7 +18,7 @@ public class ItemService {
     public ItemService() {
     }
 
-    public List<File> getAllItem(int folderId, String searchText){
+    public List<File> getAllItem(int userId, int folderId, String searchText){
         try(Session session = HibernateUtil.getSessionFactory().openSession()) {
             List<File> itemList = new ArrayList<>();
             List<Folder> folderList = session.createQuery("select fd from Folder fd where fd.parentId = :folderId AND fd.folderName LIKE :searchText", Folder.class)
