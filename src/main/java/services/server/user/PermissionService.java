@@ -2,6 +2,7 @@ package services.server.user;
 
 import jakarta.persistence.NoResultException;
 import models.Permission;
+import models.User;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 import utils.HibernateUtil;
@@ -31,34 +32,20 @@ public class PermissionService {
         }
     }
 
-    public boolean shareFolder(int folderId, int permissionType, int sharedBy, ArrayList<Integer> userList) {
+    public boolean share(int itemTypeId, int itemId, int permissionType, int sharedBy, ArrayList<Integer> userList) {
         try(Session session = HibernateUtil.getSessionFactory().openSession()) {
             session.beginTransaction();
             for (Integer userId : userList) {
                 Permission permission = new Permission();
                 permission.setUserId(userId);
-                permission.setFolderId(folderId);
+                if(itemTypeId == 1){
+                    permission.setFolderId(itemId);
+                } else {
+                    permission.setFileId(itemId);
+                }
                 permission.setPermissionType((short) permissionType);
                 permission.setSharedBy(sharedBy);
-                session.persist(permission);
-            }
-            session.getTransaction().commit();
-            return true;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
-    }
-
-    public boolean shareFile(int itemId, int permissionType, int sharedBy, ArrayList<Integer> userList) {
-        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
-            session.beginTransaction();
-            for (Integer userId : userList) {
-                Permission permission = new Permission();
-                permission.setUserId(userId);
-                permission.setFileId(itemId);
-                permission.setPermissionType((short) permissionType);
-                permission.setSharedBy(sharedBy);
+                permission.setSharedAt(new java.sql.Timestamp(System.currentTimeMillis()));
                 session.persist(permission);
             }
             session.getTransaction().commit();
@@ -72,9 +59,8 @@ public class PermissionService {
     public int checkPermission(int userId, int typeId, int id) {
         try(Session session = HibernateUtil.getSessionFactory().openSession()) {
             int currentId = id;
-            int currentTypeId = typeId;
 
-            boolean isOwner = session.createQuery("select (CASE WHEN count(*) > 0 THEN true ELSE false END) from " + (currentTypeId == 1 ? "File" : "Folder") + " where id = :id AND ownerId = :userId", Boolean.class)
+            boolean isOwner = session.createQuery("select (CASE WHEN count(*) > 0 THEN true ELSE false END) from " + (typeId == 1 ? "Folder" : "File") + " where id = :id AND ownerId = :userId", Boolean.class)
                     .setParameter("id", id)
                     .setParameter("userId", userId)
                     .uniqueResult();
@@ -86,28 +72,18 @@ public class PermissionService {
             Permission permission = null;
             while (currentId != 1) {
                 try{
-                    Short perrmissionType = session.createQuery("select per.permissionType from Permission per where per.userId = null AND per." + (currentTypeId == 1 ? "folderId" : "fileId") + " = :id", Short.class)
+                    permission = session.createQuery("select per from Permission per where per." + (typeId == 1 ? "folderId" : "fileId") + " = :id AND (per.userId is null OR per.userId = :userId)", Permission.class)
                             .setParameter("id", currentId)
-                            .uniqueResult();
-                    if (perrmissionType != null && perrmissionType != 0) {
-                        return perrmissionType;
-                    }
-
-                    permission = session.createQuery("select per from Permission per where per.userId = :userId AND per." + (currentTypeId == 1 ? "folderId" : "fileId") + " = :id", Permission.class)
                             .setParameter("userId", userId)
-                            .setParameter("id", currentId)
                             .getSingleResult();
-                    if (permission != null) {
-                        return permission.getPermissionType();
-                    }
-
+                    return permission.getPermissionType();
                 } catch (NoResultException e) {
 //                    if (currentTypeId == 1) {
 //                        currentId = session.find(models.Folder.class, currentId).getParentId();
 //                    } else {
 //                        currentId = session.find(models.File.class, currentId).getFolderId();
 //                    }
-                    Integer parentId = session.createQuery("select " + (currentTypeId == 1 ? "fd.parentId" : "fl.folderId") + " from " + (currentTypeId == 1 ? "Folder fd" : "File fl") + " where " + (currentTypeId == 1 ? "fd.id" : "fl.id") + " = :id", Integer.class)
+                    Integer parentId = session.createQuery("select " + (typeId == 1 ? "fd.parentId" : "f.folderId") + " from " + (typeId == 1 ? "Folder fd" : "File f") + " where " + (typeId == 1 ? "fd.id" : "f.id") + " = :id", Integer.class)
                             .setParameter("id", currentId)
                             .uniqueResult();
                     if(parentId != null && parentId > 1){
@@ -127,11 +103,24 @@ public class PermissionService {
     public boolean updatePermission(int itemTypeId, int itemId, int finalPermissionId) {
         try(Session session = HibernateUtil.getSessionFactory().openSession()) {
             Transaction transaction = session.beginTransaction();
-            Permission permission = session.createQuery("select per from Permission per where per." + (itemTypeId == 1 ? "folderId" : "fileId") + " = :itemId AND per.userId = null", Permission.class)
-                    .setParameter("itemId", itemId)
-                    .getSingleResult();
-            permission.setPermissionType((short) finalPermissionId);
-            session.merge(permission);
+            String query = "select per from Permission per where per." + (itemTypeId == 1 ? "folderId" : "fileId") + " = :itemId AND per.userId = null";
+            Permission permission;
+            try{
+                permission = session.createQuery(query, Permission.class)
+                        .setParameter("itemId", itemId)
+                        .getSingleResult();
+                permission.setPermissionType((short) finalPermissionId);
+                session.merge(permission);
+            } catch (NoResultException e) {
+                permission = new Permission();
+                permission.setUserId(null);
+                if(itemTypeId == 1){
+                    permission.setFolderId(itemId);
+                } else {
+                    permission.setFileId(itemId);
+                }
+                session.persist(permission);
+            }
             transaction.commit();
             return true;
         } catch (Exception e) {
@@ -164,6 +153,45 @@ public class PermissionService {
             transaction.commit();
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    public int getPermission(int itemTypeId, int itemId) {
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
+            Permission permission = session.createQuery("select per from Permission per where per." + (itemTypeId == 1 ? "folderId" : "fileId") + " = :itemId AND per.userId = null", Permission.class)
+                    .setParameter("itemId", itemId)
+                    .getSingleResult();
+            return permission.getPermissionType();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return -1;
+        }
+    }
+
+    public List<User> getSharedUser(int itemTypeId, int itemId) {
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
+            String query = "select u from User u where u.id in (select per.userId from Permission per where per." + (itemTypeId == 1 ? "folderId" : "fileId") + " = :itemId AND per.userId is not null)";
+            return session.createQuery(query, User.class)
+                    .setParameter("itemId", itemId)
+                    .list();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public List<User> searchUnsharedUser(int itemTypeId, int itemId, String searchText) {
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
+            String query = "select u from User u where u.id " +
+                    "not in (select per.userId from Permission per where per." + (itemTypeId == 1 ? "folderId" : "fileId") + " = :itemId AND per.userId is not null)" +
+                    " AND u.username like :searchText";
+            return session.createQuery(query, User.class)
+                    .setParameter("itemId", itemId)
+                    .setParameter("searchText", "%" + searchText + "%")
+                    .list();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
         }
     }
 }
