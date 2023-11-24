@@ -398,8 +398,7 @@ public class HomepageController implements Initializable {
 			@Override
 			protected Integer call() throws Exception {
 				PermissionService permissionService = new PermissionService();
-				int permissionType = permissionService.checkPermission(userId, selectedItem.getTypeId(), selectedItem.getId());
-				return permissionType;
+				return permissionService.checkPermission(userId, selectedItem.getTypeId(), selectedItem.getId());
 			}
 		};
 
@@ -423,7 +422,7 @@ public class HomepageController implements Initializable {
 			int itemTypeId = selectedItem.getTypeId();
 			int itemId = selectedItem.getId();
 
-			showAccessPopup(itemTypeId, itemId, checkPermissionTask.getValue());
+			showAccessPopup(itemTypeId, itemId);
 
 			popup.hide();
 		});
@@ -662,6 +661,15 @@ public class HomepageController implements Initializable {
 
 		centerContainer.getChildren().add(shareTxt);
 
+		VBox sharedContainer = new VBox();
+		sharedContainer.setSpacing(10);
+		sharedContainer.setPadding(new Insets(10));
+		sharedContainer.setStyle("-fx-background-color: white; -fx-border-color: gray; -fx-border-width: 1px; -fx-background-radius: 15px;");
+
+		Label sharedTitle = new Label("Đã chia sẻ");
+		sharedTitle.setStyle("-fx-font-size: 16; -fx-font-weight: bold;");
+		sharedContainer.getChildren().add(sharedTitle);
+
 		VBox userSelectedContainer = new VBox();
 		userSelectedContainer.setSpacing(10);
 		userSelectedContainer.setPadding(new Insets(10));
@@ -673,6 +681,51 @@ public class HomepageController implements Initializable {
 		userContainer.setStyle("-fx-background-color: white; -fx-border-color: gray; -fx-border-width: 1px; -fx-background-radius: 15px;");
 
 
+		Task<List<User>> getSharedUserTask = new Task<List<User>>() {
+			@Override
+			protected List<User> call() throws Exception {
+				ItemService itemService = new ItemService();
+				List<User> userList = itemService.getSharedUser(itemTypeId, itemId);
+				return userList;
+			}
+		};
+
+		getSharedUserTask.setOnSucceeded(event -> {
+			List<User> userList = getSharedUserTask.getValue();
+			if(userList != null) {
+				for (User user : userList) {
+					HBox userBox = new HBox();
+					userBox.setSpacing(10);
+					userBox.setAlignment(Pos.CENTER_LEFT);
+
+					FontAwesomeIconView userIcon = new FontAwesomeIconView();
+					userIcon.setGlyphName("USER");
+					userIcon.setSize("20");
+					userIcon.setStyleClass("icon");
+					userBox.getChildren().add(userIcon);
+
+					userBox.setId(user.getId() + "");
+
+					Label userName = new Label(user.getName());
+					userBox.getChildren().add(userName);
+
+					Label userEmail = new Label("("+user.getEmail()+")");
+					userBox.getChildren().add(userEmail);
+
+					sharedContainer.getChildren().add(userBox);
+				}
+
+				centerContainer.getChildren().add(sharedContainer);
+			}
+		});
+
+		getSharedUserTask.setOnFailed(event -> {
+			System.out.println("Lỗi khi lấy danh sách người dùng đã chia sẻ");
+		});
+
+		Thread thread1 = new Thread(getSharedUserTask);
+		thread1.start();
+
 		shareTxt.setOnKeyReleased(e -> {
 			userContainer.getChildren().clear();
 			centerContainer.getChildren().remove(userContainer);
@@ -683,7 +736,7 @@ public class HomepageController implements Initializable {
 					@Override
 					protected List<User> call() throws Exception {
 						ItemService itemService = new ItemService();
-						List<User> userList = itemService.searchUser(keyword);
+						List<User> userList = itemService.searchUnsharedUser(itemTypeId, itemId, keyword);
 						return userList;
 					}
 				};
@@ -966,7 +1019,7 @@ public class HomepageController implements Initializable {
 		popupStage.showAndWait();
 	}
 
-	public void showAccessPopup(int itemTypeId, int itemId, int value) {
+	public void showAccessPopup(int itemTypeId, int itemId) {
 		Stage accessStage = new Stage();
 		accessStage.initModality(Modality.APPLICATION_MODAL);
 		accessStage.setTitle("Quyền truy cập");
@@ -983,9 +1036,29 @@ public class HomepageController implements Initializable {
 
 		ComboBox<String> permissionCbb = new ComboBox<>();
 		permissionCbb.getItems().addAll("Riêng tư","Chỉ xem", "Chỉnh sửa");
-		if(value == 1) permissionCbb.setValue("Riêng tư");
-		else if(value == 2) permissionCbb.setValue("Chỉ xem");
-		else if(value == 3) permissionCbb.setValue("Chỉnh sửa");
+
+		Task<Integer> getPermissionTask = new Task<Integer>() {
+			@Override
+			protected Integer call() throws Exception {
+				PermissionService permissionService = new PermissionService();
+				return permissionService.getPermission(itemTypeId, itemId);
+			}
+		};
+
+		getPermissionTask.setOnSucceeded(e -> {
+			int permission = getPermissionTask.getValue();
+			if(permission == 1) permissionCbb.setValue("Riêng tư");
+			else if(permission == 2) permissionCbb.setValue("Chỉ xem");
+			else if(permission == 3) permissionCbb.setValue("Chỉnh sửa");
+			else permissionCbb.setValue("Riêng tư");
+		});
+
+		getPermissionTask.setOnFailed(e -> {
+			System.out.println("Lỗi khi lấy quyền truy cập");
+		});
+
+		Thread thread1 = new Thread(getPermissionTask);
+		thread1.start();
 
 		permissionCbb.setStyle("-fx-background-color: white; -fx-border-color: gray; -fx-border-width: 1px; -fx-background-radius: 15px;");
 		permissionCbb.setPrefWidth(200);
