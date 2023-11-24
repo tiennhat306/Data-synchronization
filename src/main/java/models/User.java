@@ -185,10 +185,6 @@ public class User implements Serializable {
         return updatedAt;
     }
 
-    public void setUpdatedAt(Timestamp updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
 //    @Override
 //    public boolean equals(Object o) {
 //        if (this == o) return true;
@@ -204,6 +200,9 @@ public class User implements Serializable {
 //        return result;
 //    }
 
+    public void setUpdatedAt(Timestamp updatedAt) {
+        this.updatedAt = updatedAt;
+    }
 
     @Override
     public int hashCode() {
