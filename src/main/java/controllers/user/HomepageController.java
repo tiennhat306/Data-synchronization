@@ -3,22 +3,17 @@ package controllers.user;
 import DTO.LoginSession;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView;
-import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.SortedList;
 import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
-import javafx.geometry.Bounds;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
-import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
@@ -34,6 +29,7 @@ import javafx.stage.*;
 import models.Type;
 import models.User;
 import services.client.user.ItemService;
+import services.client.user.PermissionService;
 import services.login.LoginService;
 
 import java.io.*;
@@ -98,7 +94,10 @@ public class HomepageController implements Initializable {
 	private Label lbOtherFileShare;
 	private int currentSideBarIndex = 0;
 	List<HBox> breadcrumbList = new ArrayList<>();
+	private final int userId;
     public HomepageController() {
+		userId = LoginService.getCurrentSession().getCurrentUserID();
+		System.out.println("userId: " + userId);
     }
 
     public void populateData() {
@@ -283,6 +282,12 @@ public class HomepageController implements Initializable {
 		shareIcon.setStyleClass("icon");
 		Button shareBtn = new Button("Chia sẻ", shareIcon);
 
+		FontAwesomeIconView accessIcon = new FontAwesomeIconView();
+		accessIcon.setGlyphName("SHARE_SQUARE");
+		accessIcon.setSize("20");
+		accessIcon.setStyleClass("icon");
+		Button accessBtn = new Button("Quyền truy cập", accessIcon);
+
 		FontAwesomeIconView syncIcon = new FontAwesomeIconView();
 		syncIcon.setGlyphName("REFRESH");
 		syncIcon.setSize("20");
@@ -326,7 +331,10 @@ public class HomepageController implements Initializable {
 		});
 
 		shareBtn.setOnAction(event -> {
-			// Share file
+			int itemTypeId = selectedItem.getTypeId();
+			int itemId = selectedItem.getId();
+
+			showSharePopup(itemTypeId, itemId);
 
 			popup.hide();
 		});
@@ -342,7 +350,7 @@ public class HomepageController implements Initializable {
 		options.setStyle("-fx-background-color: white; -fx-border-color: gray; -fx-border-radius: 15px; -fx-border-width: 1px; -fx-background-radius: 15px;");
 
 		options.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
-		for (Button button : Arrays.asList(openBtn, downloadBtn, deleteBtn, renameBtn, moveBtn, copyBtn, shareBtn, synchronizeBtn)) {
+		for (Button button : Arrays.asList(openBtn, downloadBtn, deleteBtn, renameBtn, moveBtn, copyBtn, shareBtn, accessBtn, synchronizeBtn)) {
 			if (button != null) {
 				button.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
 				button.setPadding(new Insets(5, 5, 5, 15));
@@ -372,7 +380,7 @@ public class HomepageController implements Initializable {
 					button.setOnMouseExited(event -> {
 						button.setStyle("-fx-background-color: transparent; -fx-background-radius: 0px 0px 15px 15px; -fx-background-insets: 0px; -fx-border-width: 0;");
 					});
-				} else if(button == deleteBtn || button == copyBtn){
+				} else if(button == downloadBtn || button == copyBtn){
 					button.setStyle("-fx-background-color: transparent; -fx-background-radius: 0px; -fx-background-insets: 0px; -fx-border-width: 0 0 1px 0; -fx-border-color: gray;");
 					button.setOnMouseEntered(event -> {
 						button.setStyle("-fx-background-color: #f1f1f1; -fx-background-radius: 0px; -fx-background-insets: 0px; -fx-border-width: 0 0 1px 0; -fx-border-color: gray;");
@@ -384,7 +392,45 @@ public class HomepageController implements Initializable {
 			}
 		}
 
-		options.getChildren().addAll(openBtn, downloadBtn, deleteBtn, renameBtn, moveBtn, copyBtn, shareBtn, synchronizeBtn);
+		options.getChildren().addAll(openBtn, downloadBtn, renameBtn, moveBtn, copyBtn, shareBtn, synchronizeBtn);
+
+		Task<Integer> checkPermissionTask = new Task<Integer>() {
+			@Override
+			protected Integer call() throws Exception {
+				PermissionService permissionService = new PermissionService();
+				int permissionType = permissionService.checkPermission(userId, selectedItem.getTypeId(), selectedItem.getId());
+				return permissionType;
+			}
+		};
+
+		checkPermissionTask.setOnSucceeded(e -> {
+			int permissionType = checkPermissionTask.getValue();
+
+			if(permissionType == 3) {
+				options.getChildren().add(2, deleteBtn);
+			}
+
+		});
+
+		checkPermissionTask.setOnFailed(e -> {
+			System.out.println("Lỗi khi kiểm tra quyền truy cập");
+		});
+
+		Thread thread = new Thread(checkPermissionTask);
+		thread.start();
+
+		accessBtn.setOnAction(event -> {
+			int itemTypeId = selectedItem.getTypeId();
+			int itemId = selectedItem.getId();
+
+			showAccessPopup(itemTypeId, itemId, checkPermissionTask.getValue());
+
+			popup.hide();
+		});
+
+		if(userId == selectedItem.getOwnerId()) {
+			options.getChildren().add(options.getChildren().size() - 1, accessBtn);
+		}
 		popup.getContent().add(options);
 
 		popup.show(dataTable.getScene().getWindow(), mouseEvent.getScreenX(), mouseEvent.getScreenY());
@@ -562,6 +608,227 @@ public class HomepageController implements Initializable {
 	public void handleOpenButtonAction(ActionEvent event) {
 	}
 
+	public void showSharePopup(int itemTypeId, int itemId) {
+		Stage shareStage = new Stage();
+		shareStage.initModality(Modality.APPLICATION_MODAL);
+		shareStage.setTitle("Chia sẻ");
+
+		shareStage.initStyle(StageStyle.UTILITY);
+
+		ArrayList<Integer> userIds = new ArrayList<>();
+
+		BorderPane shareLayout = new BorderPane();
+		shareLayout.setPadding(new Insets(10));
+
+		HBox topContainer = new HBox();
+		topContainer.setSpacing(10);
+		topContainer.setPadding(new Insets(10));
+
+		Label title = new Label("Chia sẻ");
+		title.setStyle("-fx-font-size: 18;");
+
+		ComboBox<String> permissionCbb = new ComboBox<>();
+
+		permissionCbb.getItems().addAll("Chỉ xem", "Chỉnh sửa");
+		permissionCbb.setValue("Chỉ xem");
+
+		permissionCbb.setStyle("-fx-background-color: white; -fx-border-color: gray; -fx-border-width: 1px; -fx-background-radius: 15px;");
+		permissionCbb.setPrefWidth(100);
+		permissionCbb.setPrefHeight(30);
+		permissionCbb.setPadding(new Insets(5));
+
+		topContainer.getChildren().addAll(title, permissionCbb);
+		shareLayout.setTop(topContainer);
+
+
+		VBox centerContainer = new VBox();
+		centerContainer.setSpacing(10);
+		centerContainer.setPadding(new Insets(10));
+		centerContainer.setStyle("-fx-background-color: white; -fx-border-color: gray; -fx-border-width: 1px; -fx-background-radius: 15px;");
+
+		ScrollPane scrollPane = new ScrollPane();
+		scrollPane.setContent(centerContainer);
+		scrollPane.setFitToWidth(true);
+		scrollPane.setPadding(new Insets(10));
+
+
+		TextField shareTxt = new TextField();
+		shareTxt.setPromptText("Nhập tên hoặc email người dùng");
+		shareTxt.setPrefWidth(200);
+		shareTxt.setPrefHeight(30);
+		shareTxt.setStyle("-fx-background-color: white");
+		shareTxt.setStyle("-fx-border-color: gray");
+		shareTxt.setStyle("-fx-border-width: 1px");
+
+		centerContainer.getChildren().add(shareTxt);
+
+		VBox userSelectedContainer = new VBox();
+		userSelectedContainer.setSpacing(10);
+		userSelectedContainer.setPadding(new Insets(10));
+		userSelectedContainer.setStyle("-fx-background-color: white; -fx-border-color: gray; -fx-border-width: 1px; -fx-background-radius: 15px;");
+
+		VBox userContainer = new VBox();
+		userContainer.setSpacing(10);
+		userContainer.setPadding(new Insets(10));
+		userContainer.setStyle("-fx-background-color: white; -fx-border-color: gray; -fx-border-width: 1px; -fx-background-radius: 15px;");
+
+
+		shareTxt.setOnKeyReleased(e -> {
+			userContainer.getChildren().clear();
+			centerContainer.getChildren().remove(userContainer);
+
+			String keyword = shareTxt.getText();
+			if(keyword.length() > 0) {
+				Task<List<User>> searchUserTask = new Task<List<User>>() {
+					@Override
+					protected List<User> call() throws Exception {
+						ItemService itemService = new ItemService();
+						List<User> userList = itemService.searchUser(keyword);
+						return userList;
+					}
+				};
+
+				searchUserTask.setOnSucceeded(event1 -> {
+					List<User> userList = searchUserTask.getValue();
+					if(userList != null) {
+						for (User user : userList) {
+							HBox userBox = new HBox();
+							userBox.setSpacing(10);
+							userBox.setAlignment(Pos.CENTER_LEFT);
+
+							FontAwesomeIconView userIcon = new FontAwesomeIconView();
+							userIcon.setGlyphName("USER");
+							userIcon.setSize("20");
+							userIcon.setStyleClass("icon");
+							userBox.getChildren().add(userIcon);
+
+							userBox.setId(user.getId() + "");
+
+							Label userName = new Label(user.getName());
+							userBox.getChildren().add(userName);
+
+							Label userEmail = new Label("("+user.getEmail()+")");
+							userBox.getChildren().add(userEmail);
+
+
+							userBox.setOnMouseClicked(e1 -> {
+								if(!userIds.contains(user.getId())) {
+									userIds.add(user.getId());
+
+									// copy userBox to newUserBox
+									HBox newUserBox = new HBox();
+									newUserBox.setSpacing(10);
+									newUserBox.setAlignment(Pos.CENTER_LEFT);
+									newUserBox.setId(user.getId() + "");
+
+									Label newUserName = new Label(user.getName());
+									newUserBox.getChildren().add(newUserName);
+
+									Label newUserEmail = new Label("("+user.getEmail()+")");
+									newUserBox.getChildren().add(newUserEmail);
+
+									FontAwesomeIconView iconSelected = new FontAwesomeIconView();
+									iconSelected.setGlyphName("CHECK");
+									iconSelected.setSize("20");
+									iconSelected.setStyleClass("icon");
+									newUserBox.getChildren().add(iconSelected);
+
+									userSelectedContainer.getChildren().add(newUserBox);
+								}
+							});
+
+							userContainer.getChildren().add(userBox);
+						}
+
+						centerContainer.getChildren().add(userContainer);
+					}
+				});
+
+				searchUserTask.setOnFailed(event1 -> {
+					System.out.println("Tìm kiếm thất bại");
+				});
+
+				Thread thread = new Thread(searchUserTask);
+				thread.start();
+			}
+		});
+
+		// if user click on the selected user, remove it from the list
+		userSelectedContainer.setOnMouseClicked(e -> {
+			Node target = (Node) e.getTarget();
+			if(target instanceof HBox) {
+				HBox userBox = (HBox) target;
+				if(userBox.getId() != null) {
+					int userId = Integer.parseInt(userBox.getId());
+					userIds.remove((Integer) userId);
+					userSelectedContainer.getChildren().remove(userBox);
+				}
+			}
+		});
+		centerContainer.getChildren().add(userSelectedContainer);
+		shareLayout.setCenter(scrollPane);
+
+		Button shareBtn = new Button("Chia sẻ");
+		shareBtn.setPrefWidth(100);
+		shareBtn.setPrefHeight(30);
+		shareBtn.setStyle("-fx-background-color: white");
+		shareBtn.setStyle("-fx-border-color: gray");
+		shareBtn.setStyle("-fx-border-width: 1px");
+
+		shareBtn.setOnAction(e -> {
+			String shareName = shareTxt.getText();
+			shareStage.close();
+
+			Task<Boolean> shareTask = new Task<Boolean>() {
+				@Override
+				protected Boolean call() throws Exception {
+					ItemService itemService = new ItemService();
+					int permissionId = permissionCbb.getValue().equals("Chỉ xem") ? 2 : 3;
+					boolean rs = itemService.share(itemTypeId, itemId, permissionId, userId, userIds);
+					return rs;
+				}
+			};
+
+			shareTask.setOnSucceeded(event1 -> {
+				boolean response = shareTask.getValue();
+				System.out.println("Chia sẻ thành công");
+			});
+
+			shareTask.setOnFailed(event1 -> {
+				System.out.println("Chia sẻ thất bại");
+			});
+
+			Thread thread = new Thread(shareTask);
+			thread.start();
+		});
+
+		Button cancelBtn = new Button("Hủy");
+		cancelBtn.setPrefWidth(100);
+		cancelBtn.setPrefHeight(30);
+		cancelBtn.setStyle("-fx-background-color: white");
+		cancelBtn.setStyle("-fx-border-color: gray");
+		cancelBtn.setStyle("-fx-border-width: 1px");
+
+		cancelBtn.setOnAction(e -> {
+			shareStage.close();
+		});
+
+		HBox btnContainer = new HBox();
+		btnContainer.setSpacing(10);
+		btnContainer.setAlignment(Pos.CENTER);
+		btnContainer.getChildren().addAll(shareBtn, cancelBtn);
+
+		shareLayout.setBottom(btnContainer);
+
+		Scene scene = new Scene(shareLayout, 450, 300);
+		shareStage.setScene(scene);
+		shareStage.show();
+	}
+	@FXML
+	public void shareClicked(ActionEvent event) {
+		showSharePopup(1, currentFolderId);
+	}
+
 	@FXML
 	public void downloadCurrentFolderClicked(ActionEvent event) {
 		// Create a FileChooser to choose the path to save file
@@ -582,8 +849,7 @@ public class HomepageController implements Initializable {
 
 		downloadFileTask.setOnSucceeded(e -> {
 			boolean response = downloadFileTask.getValue();
-			if(response) fillData();
-			else System.out.println("Download file thành công");
+			System.out.println("Download file thành công");
 		});
 
 		downloadFileTask.setOnFailed(e -> {
@@ -700,7 +966,96 @@ public class HomepageController implements Initializable {
 		popupStage.showAndWait();
 	}
 
+	public void showAccessPopup(int itemTypeId, int itemId, int value) {
+		Stage accessStage = new Stage();
+		accessStage.initModality(Modality.APPLICATION_MODAL);
+		accessStage.setTitle("Quyền truy cập");
+
+		accessStage.initStyle(StageStyle.UTILITY);
+
+		BorderPane accessLayout = new BorderPane();
+		accessLayout.setPadding(new Insets(10));
+
+
+		Label title = new Label("Quyền truy cập");
+		title.setStyle("-fx-font-size: 18;");
+		accessLayout.setTop(title);
+
+		ComboBox<String> permissionCbb = new ComboBox<>();
+		permissionCbb.getItems().addAll("Riêng tư","Chỉ xem", "Chỉnh sửa");
+		if(value == 1) permissionCbb.setValue("Riêng tư");
+		else if(value == 2) permissionCbb.setValue("Chỉ xem");
+		else if(value == 3) permissionCbb.setValue("Chỉnh sửa");
+
+		permissionCbb.setStyle("-fx-background-color: white; -fx-border-color: gray; -fx-border-width: 1px; -fx-background-radius: 15px;");
+		permissionCbb.setPrefWidth(200);
+		permissionCbb.setPrefHeight(30);
+		permissionCbb.setPadding(new Insets(5));
+
+		accessLayout.setCenter(permissionCbb);
+
+		Button accessBtn = new Button("Cập nhật");
+		accessBtn.setPrefWidth(100);
+		accessBtn.setPrefHeight(30);
+		accessBtn.setStyle("-fx-background-color: white");
+		accessBtn.setStyle("-fx-border-color: gray");
+		accessBtn.setStyle("-fx-border-width: 1px");
+
+		accessBtn.setOnAction(e -> {
+			accessStage.close();
+
+			int permissionId = 0;
+			if(permissionCbb.getValue().equals("Riêng tư")) permissionId = 1;
+			else if(permissionCbb.getValue().equals("Chỉ xem")) permissionId = 2;
+			else if(permissionCbb.getValue().equals("Chỉnh sửa")) permissionId = 3;
+
+			int finalPermissionId = permissionId;
+			Task<Boolean> accessTask = new Task<Boolean>() {
+				@Override
+				protected Boolean call() throws Exception {
+					PermissionService permissionService = new PermissionService();
+					boolean rs = permissionService.updatePermission(itemTypeId, itemId, finalPermissionId);
+					return rs;
+				}
+			};
+
+			accessTask.setOnSucceeded(event1 -> {
+				boolean response = accessTask.getValue();
+				if(response) System.out.println("Cập nhật quyền truy cập thành công");
+				else System.out.println("Cập nhật quyền truy cập thất bại");
+			});
+
+			accessTask.setOnFailed(event1 -> {
+				System.out.println("Cập nhật quyền truy cập thất bại");
+			});
+
+			Thread thread = new Thread(accessTask);
+			thread.start();
+		});
+
+		Button cancelBtn = new Button("Hủy");
+		cancelBtn.setPrefWidth(100);
+		cancelBtn.setPrefHeight(30);
+		cancelBtn.setStyle("-fx-background-color: white");
+		cancelBtn.setStyle("-fx-border-color: gray");
+		cancelBtn.setStyle("-fx-border-width: 1px");
+
+		cancelBtn.setOnAction(e -> accessStage.close());
+
+		HBox footerLabel = new HBox();
+		footerLabel.setSpacing(10);
+		footerLabel.setPadding(new Insets(10));
+		footerLabel.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
+		footerLabel.getChildren().addAll(accessBtn, cancelBtn);
+
+		accessLayout.setBottom(footerLabel);
+
+		Scene accessScene = new Scene(accessLayout, 300, 200);
+		accessStage.setScene(accessScene);
+		accessStage.showAndWait();
+	}
 	public void accessClicked(ActionEvent actionEvent) {
+
 	}
 	public void setFontLabel(int number) {
 		for (int i = 0; i < 4; ++i) {

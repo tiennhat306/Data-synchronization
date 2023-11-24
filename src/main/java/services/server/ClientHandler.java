@@ -7,12 +7,11 @@ import models.User;
 import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.List;
 
 import services.server.admin.UserService;
-import services.server.user.FileService;
-import services.server.user.FolderService;
-import services.server.user.ItemService;
+import services.server.user.*;
 import utils.ZipFolder;
 
 import static applications.ServerApp.connections;
@@ -48,7 +47,7 @@ public class ClientHandler implements Runnable{
                 request = (String) obj;
                 System.out.println("Client request: " + request);
             } else {
-                System.out.println("Unknown request: " + obj);
+                System.out.println("Unknown request 1: " + obj);
             }
             addConnection(request);
 
@@ -92,6 +91,12 @@ public class ClientHandler implements Runnable{
                     int ownerId = Integer.parseInt((String) receiveRequest());
                     int currentFolderId = Integer.parseInt((String) receiveRequest());
                     boolean response = new FolderService().createFolder(folderName, ownerId, currentFolderId);
+
+                    FolderService folderService = new FolderService();
+                    int folderId = folderService.getFolderId(folderName, currentFolderId);
+
+                    PermissionService permissionService = new PermissionService();
+                    permissionService.addPermissionOfFolder(folderId);
                     sendResponse(response);
                 }
                 case "UPLOAD_FILE" -> {
@@ -101,8 +106,21 @@ public class ClientHandler implements Runnable{
                         int ownerId = Integer.parseInt((String) receiveRequest());
                         int currentFolderId = Integer.parseInt((String) receiveRequest());
                         int fileSize = Integer.parseInt((String) receiveRequest());
+
+                        int indexOfDot = fileName.indexOf(".");
+                        String nameOfFile = fileName.substring(0, indexOfDot);
+                        String typeOfFile = fileName.substring(indexOfDot + 1);
+
+                        TypeService typeService = new TypeService();
+                        int fileTypeId = typeService.getTypeId(typeOfFile);
+
                         boolean response = uploadFile(fileName, ownerId, currentFolderId, fileSize);
                         System.out.println("Response of router: " + response);
+
+                        FileService fileService = new FileService();
+                        int fileId = fileService.getFileId(fileName, fileTypeId, currentFolderId);
+                        PermissionService permissionService = new PermissionService();
+                        permissionService.addPermissionOfFile(fileId);
                         sendResponse(response);
                     } else {
                         System.out.println("Unknown request: " + type);
@@ -115,6 +133,12 @@ public class ClientHandler implements Runnable{
                         int ownerId = Integer.parseInt((String) receiveRequest());
                         int currentFolderId = Integer.parseInt((String) receiveRequest());
                         boolean response = uploadFolder(folderName, ownerId, currentFolderId);
+
+                        FolderService folderService = new FolderService();
+                        int folderId = folderService.getFolderId(folderName, currentFolderId);
+
+                        PermissionService permissionService = new PermissionService();
+                        permissionService.addPermissionOfFolder(folderId);
 
                         sendResponse(response);
                     } else {
@@ -151,6 +175,43 @@ public class ClientHandler implements Runnable{
 
                     boolean response = syncFolder(folderService.getFolderPath(folderId));
 
+                    sendResponse(response);
+                }
+                case "SEARCH_USER" -> {
+                    String searchText = (String) receiveRequest();
+                    services.server.user.UserService userService = new services.server.user.UserService();
+                    List<User> response = userService.searchUser(searchText);
+                    sendResponse(response);
+                }
+                case "SHARE" -> {
+                    int itemTypeId = Integer.parseInt((String) receiveRequest());
+                    int itemId = Integer.parseInt((String) receiveRequest());
+                    int permissionType = Integer.parseInt((String) receiveRequest());
+                    int sharedBy = Integer.parseInt((String) receiveRequest());
+                    int userListSize = Integer.parseInt((String) receiveRequest());
+                    ArrayList<Integer> userList = new ArrayList<>();
+                    for(int i = 0; i < userListSize; i++){
+                        userList.add(Integer.parseInt((String) receiveRequest()));
+                    }
+                    PermissionService permissionService = new PermissionService();
+                    boolean response = itemTypeId == 1 ? permissionService.shareFolder(itemId, permissionType, sharedBy, userList)
+                            : permissionService.shareFile(itemId, permissionType, sharedBy, userList);
+                    sendResponse(response);
+                }
+                case "CHECK_PERMISSION" -> {
+                    int userId = Integer.parseInt((String) receiveRequest());
+                    int typeId = Integer.parseInt((String) receiveRequest());
+                    int id = Integer.parseInt((String) receiveRequest());
+                    PermissionService permissionService = new PermissionService();
+                    int response = permissionService.checkPermission(userId, typeId, id);
+                    sendResponse(response);
+                }
+                case "UPDATE_PERMISSION" -> {
+                    int itemTypeId = Integer.parseInt((String) receiveRequest());
+                    int itemId = Integer.parseInt((String) receiveRequest());
+                    int finalPermissionId = Integer.parseInt((String) receiveRequest());
+                    PermissionService permissionService = new PermissionService();
+                    boolean response = permissionService.updatePermission(itemTypeId, itemId, finalPermissionId);
                     sendResponse(response);
                 }
                 default -> {
@@ -228,13 +289,14 @@ public class ClientHandler implements Runnable{
     private boolean uploadFile(String fileName, int ownerId, int folderId, int size){
         try{
             int indexOfDot = fileName.indexOf(".");
-            String nameOfFile = fileName.substring(0, indexOfDot); // Characters before the first period
-            String typeOfFile = fileName.substring(indexOfDot + 1); // Characters after the first period
-            // Send the two parts to the server
-            System.out.println(nameOfFile);
-            System.out.println(typeOfFile);
+            String nameOfFile = fileName.substring(0, indexOfDot);
+            String typeOfFile = fileName.substring(indexOfDot + 1);
+
+            TypeService typeService = new TypeService();
+            int fileTypeId = typeService.getTypeId(typeOfFile);
+
             FileService fileService = new FileService();
-            String rs = fileService.uploadFile(nameOfFile, fileService.getFileTypeId(typeOfFile), folderId, ownerId, size);
+            String rs = fileService.uploadFile(nameOfFile, fileTypeId, folderId, ownerId, size);
             boolean response = false;
             if(!rs.equals("")){
                 receiveFile(rs, size);
