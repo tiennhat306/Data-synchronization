@@ -81,9 +81,10 @@ public class ClientHandler implements Runnable{
                     sendResponse(response);
                 }
                 case "GET_ALL_ITEM" -> {
+                    int userId = Integer.parseInt((String) receiveRequest());
                     String folderId = (String) receiveRequest();
                     String searchText = (String) receiveRequest();
-                    List<File> response = getItemList(Integer.parseInt(folderId), searchText);
+                    List<File> response = getItemList(userId, Integer.parseInt(folderId), searchText);
                     sendResponse(response);
                 }
                 case "CREATE_FOLDER" -> {
@@ -280,10 +281,10 @@ public class ClientHandler implements Runnable{
         System.out.println("Get all user");
         return userService.getAllUser();
     }
-    private List<File> getItemList(int folderId, String searchText) {
+    private List<File> getItemList(int userId, int folderId, String searchText) {
         ItemService itemService = new ItemService();
         System.out.println("Get all item");
-        return itemService.getAllItem(folderId, searchText);
+        return itemService.getAllItem(userId, folderId, searchText);
     }
     
     private boolean uploadFile(String fileName, int ownerId, int folderId, int size){

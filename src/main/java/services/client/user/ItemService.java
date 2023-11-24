@@ -14,12 +14,13 @@ public class ItemService {
     public ItemService() {
     }
 
-    public List<File> getAllItem(int folderId, String searchText){
+    public List<File> getAllItem(int userId, int folderId, String searchText){
         try {
             while(true){
                 SocketClientHelper socketClientHelper = new SocketClientHelper();
                 // send request to server
                 socketClientHelper.sendRequest("GET_ALL_ITEM");
+                socketClientHelper.sendRequest(String.valueOf(userId));
                 socketClientHelper.sendRequest(String.valueOf(folderId));
                 socketClientHelper.sendRequest(searchText);
 

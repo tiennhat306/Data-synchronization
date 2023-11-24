@@ -448,7 +448,7 @@ public class HomepageController implements Initializable {
 
 	private void fillData() {
 		ItemService itemService = new ItemService();
-		List<models.File> itemList = itemService.getAllItem(currentFolderId, "");
+		List<models.File> itemList = itemService.getAllItem(userId, currentFolderId, "");
 
 		System.out.println("itemList: " + itemList);
 
@@ -1085,7 +1085,7 @@ public class HomepageController implements Initializable {
 		// Thêm các HBox breadcrumb vào container
 		path.getChildren().setAll(breadcrumbList);
 		ItemService itemService = new ItemService();
-		List<models.File> itemList = itemService.getAllItem(2, "");
+		List<models.File> itemList = itemService.getAllItem(userId,2, "");
 
 		System.out.println("itemList: " + itemList);
 
@@ -1191,24 +1191,24 @@ public class HomepageController implements Initializable {
 		LoginSession loginSession = LoginService.getCurrentSession();
 		int currentUserId = loginSession.getCurrentUserID();
 		if (currentSideBarIndex == 0) {
-			itemList = itemService.getAllItem(currentFolderId, txt);
+			itemList = itemService.getAllItem(userId, currentFolderId, txt);
 		} else if (currentSideBarIndex == 1) {
 			if (currentFolderId == -1) {
 				itemList = itemService.getAllItemPrivateOwnerId(currentUserId, txt);
 			} else {
-				itemList = itemService.getAllItem(currentFolderId, txt);
+				itemList = itemService.getAllItem(userId, currentFolderId, txt);
 			}
 		} else if (currentSideBarIndex == 2) {
 			if (currentFolderId == -2) {
 				itemList = itemService.getAllOtherShareItem(currentUserId, txt);
 			} else {
-				itemList = itemService.getAllItem(currentFolderId, txt);
+				itemList = itemService.getAllItem(userId, currentFolderId, txt);
 			}
 		} else if (currentSideBarIndex == 3) {
 			if (currentFolderId == -3) {
 				itemList = itemService.getAllSharedItem(currentUserId, txt);
 			} else {
-				itemList = itemService.getAllItem(currentFolderId, txt);
+				itemList = itemService.getAllItem(userId, currentFolderId, txt);
 			}
 		}
 		System.out.println("itemList: " + itemList);
