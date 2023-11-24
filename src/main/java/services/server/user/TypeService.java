@@ -18,4 +18,14 @@ public class TypeService {
 
     }
 
+    public int getTypeId(String typeOfFile) {
+        try(Session session = HibernateUtil.getSessionFactory().openSession()){
+            return session.createQuery("select t.id from Type t where t.name = :typeOfFile", Integer.class)
+                    .setParameter("typeOfFile", typeOfFile)
+                    .getSingleResult();
+        } catch (Exception e){
+            e.printStackTrace();
+            return -1;
+        }
+    }
 }

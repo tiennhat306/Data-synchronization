@@ -22,7 +22,7 @@ public class FileService {
             return null;
         }
     }
-    public List<File> getAllFileById(int folderId) {
+    public List<File> getAllFileByFolderId(int folderId) {
         try(Session session = HibernateUtil.getSessionFactory().openSession()) {
             //print session
             System.out.println("session: " + session);
@@ -130,18 +130,16 @@ public class FileService {
 
     }
 
-    public int getFileTypeId(String typeName) {
-        try(Session session = HibernateUtil.getSessionFactory().openSession()){
-            return session.createQuery("select t.id from Type t where t.name = :name", Integer.class)
-                    .setParameter("name", typeName)
-                    .getSingleResult();
-        } catch (Exception e){
-            e.printStackTrace();
-            return 0;
-        }
-
-
-    }
+//    public int getFileTypeId(String typeName) {
+//        try(Session session = HibernateUtil.getSessionFactory().openSession()){
+//            return session.createQuery("select t.id from Type t where t.name = :name", Integer.class)
+//                    .setParameter("name", typeName)
+//                    .getSingleResult();
+//        } catch (Exception e){
+//            e.printStackTrace();
+//            return 0;
+//        }
+//    }
 
     public List<String> getListFileName() {
         try(Session session = HibernateUtil.getSessionFactory().openSession()){
@@ -275,6 +273,19 @@ public class FileService {
         } catch (Exception e) {
             e.printStackTrace();
             return null;
+        }
+    }
+
+    public int getFileId(String fileName, int fileTypeId, int currentFolderId) {
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
+            return session.createQuery("select f.id from File f where f.name = :fileName AND f.typeId = :fileTypeId AND f.folderId = :currentFolderId", Integer.class)
+                    .setParameter("fileName", fileName)
+                    .setParameter("fileTypeId", fileTypeId)
+                    .setParameter("currentFolderId", currentFolderId)
+                    .getSingleResult();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return -1;
         }
     }
 }
