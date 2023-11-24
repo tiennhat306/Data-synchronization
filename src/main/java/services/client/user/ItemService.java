@@ -1,11 +1,13 @@
 package services.client.user;
 
 import models.File;
+import models.User;
 import services.client.SocketClientHelper;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 
 public class ItemService {
@@ -227,4 +229,45 @@ public class ItemService {
             return false;
         }
     }
+
+    public List<User> searchUser(String keyword) {
+        try {
+            SocketClientHelper socketClientHelper = new SocketClientHelper();
+            socketClientHelper.sendRequest("SEARCH_USER");
+            socketClientHelper.sendRequest(keyword);
+
+            Object obj = socketClientHelper.receiveResponse();
+            List<User> userList = (List<User>) obj;
+
+            socketClientHelper.close();
+            return userList;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public boolean share(int itemTypeId, int itemId, int permissionId, int sharedBy, ArrayList<Integer> userIds) {
+        try {
+            SocketClientHelper socketClientHelper = new SocketClientHelper();
+            socketClientHelper.sendRequest("SHARE");
+            socketClientHelper.sendRequest(String.valueOf(itemTypeId));
+            socketClientHelper.sendRequest(String.valueOf(itemId));
+            socketClientHelper.sendRequest(String.valueOf(permissionId));
+            socketClientHelper.sendRequest(String.valueOf(sharedBy));
+            socketClientHelper.sendRequest(String.valueOf(userIds.size()));
+            for(int userId : userIds){
+                socketClientHelper.sendRequest(String.valueOf(userId));
+            }
+
+            boolean response = (boolean) socketClientHelper.receiveResponse();
+            System.out.println("Response: " + response);
+            socketClientHelper.close();
+            return response;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
 }
