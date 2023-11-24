@@ -538,7 +538,7 @@ public class HomepageController implements Initializable {
 					@Override
 					protected Boolean call() throws Exception {
 						ItemService itemService = new ItemService();
-						boolean rs = itemService.uploadFile(fileName, 1, currentFolderId, (int) file.length(), filePath);
+						boolean rs = itemService.uploadFile(fileName, userId, currentFolderId, (int) file.length(), filePath);
 						return rs;
 					}
 				};
@@ -579,7 +579,7 @@ public class HomepageController implements Initializable {
 				@Override
 				protected Boolean call() throws Exception {
 					ItemService itemService = new ItemService();
-					boolean rs = itemService.uploadFolder(folderName, 1, currentFolderId, folderPath);
+					boolean rs = itemService.uploadFolder(folderName, userId, currentFolderId, folderPath);
 					return rs;
 				}
 			};
@@ -866,7 +866,7 @@ public class HomepageController implements Initializable {
 			@Override
 			protected Boolean call() throws Exception {
 				ItemService itemService = new ItemService();
-				boolean rs = itemService.synchronize(1 , currentFolderId);
+				boolean rs = itemService.synchronize(userId , currentFolderId);
 				return rs;
 			}
 		};
@@ -925,7 +925,7 @@ public class HomepageController implements Initializable {
 				@Override
 				protected Boolean call() throws Exception {
 					ItemService itemService = new ItemService();
-					boolean rs = itemService.createFolder(foldername, 1, currentFolderId);
+					boolean rs = itemService.createFolder(foldername, userId, currentFolderId);
 					return rs;
 				}
 			};
@@ -1053,9 +1053,6 @@ public class HomepageController implements Initializable {
 		Scene accessScene = new Scene(accessLayout, 300, 200);
 		accessStage.setScene(accessScene);
 		accessStage.showAndWait();
-	}
-	public void accessClicked(ActionEvent actionEvent) {
-
 	}
 	public void setFontLabel(int number) {
 		for (int i = 0; i < 4; ++i) {
