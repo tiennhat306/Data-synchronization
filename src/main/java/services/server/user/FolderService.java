@@ -11,6 +11,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
@@ -209,5 +210,18 @@ public class FolderService {
 
     public String getFolderPath(int folderId) {
         return ServerApp.SERVER_PATH + File.separator + getPath(folderId);
+    }
+
+
+    public int getFolderId(String folderName, int currentFolderId) {
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
+            return session.createQuery("select fd.id from Folder fd where fd.folderName = :folderName AND fd.parentId = :currentFolderId", Integer.class)
+                    .setParameter("folderName", folderName)
+                    .setParameter("currentFolderId", currentFolderId)
+                    .getSingleResult();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return -1;
+        }
     }
 }
