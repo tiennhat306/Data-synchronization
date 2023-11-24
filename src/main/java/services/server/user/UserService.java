@@ -36,15 +36,4 @@ public class UserService {
             return null;
         }
     }
-
-    public List<User> searchUser(String searchText) {
-        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
-            return session.createQuery("select u from User u where u.email like :searchText or u.name like :searchText or str(u.phoneNumber) like :searchText", User.class)
-                    .setParameter("searchText", "%" + searchText + "%")
-                    .list();
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
 }
