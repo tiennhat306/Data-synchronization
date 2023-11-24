@@ -18,12 +18,23 @@ public class ItemService {
     public ItemService() {
     }
 
-    public List<File> getAllItem(int folderId, String searchText){
+    public List<File> getAllItem(int userId, int folderId, String searchText){
+        PermissionService permissionService = new PermissionService();
+        int permission = permissionService.checkPermission(userId, 1, folderId);
+        if (permission == 1) {
+            return null;
+        }
+
         try(Session session = HibernateUtil.getSessionFactory().openSession()) {
             List<File> itemList = new ArrayList<>();
-            List<Folder> folderList = session.createQuery("select fd from Folder fd where fd.parentId = :folderId AND fd.folderName LIKE :searchText", Folder.class)
+            String folderPermissionConditions = "(per.permissionType IN (2, 3) AND (per.userId is null OR per.userId = :userId)) OR fd.ownerId = :userId";
+            String folderQuery = "select distinct fd from Folder fd Left Join Permission per on fd.id = per.folderId" +
+                    " where fd.parentId = :folderId AND fd.folderName LIKE :searchText" +
+                    " AND (" + folderPermissionConditions + ")";
+            List<Folder> folderList = session.createQuery(folderQuery, Folder.class)
                     .setParameter("folderId", folderId)
                     .setParameter("searchText", "%" + searchText + "%")
+                    .setParameter("userId", userId)
                     .list();
             System.out.println("folderList: " + folderList);
             if(folderList != null) {
@@ -54,9 +65,14 @@ public class ItemService {
                 }
             }
 
-            List<File> fileList = session.createQuery("select f from File f where f.folderId = :folderId AND f.name LIKE :searchText", File.class)
+            String filePermissionConditions = "(per.permissionType IN (2, 3) AND (per.userId is null OR per.userId = :userId)) OR f.ownerId = :userId";
+            String fileQuery = "select distinct f from File f Left Join Permission per on f.id = per.fileId" +
+                    " where f.folderId = :folderId AND f.name LIKE :searchText" +
+                    " AND (" + filePermissionConditions + ")";
+            List<File> fileList = session.createQuery(fileQuery, File.class)
                     .setParameter("folderId", folderId)
                     .setParameter("searchText", "%" + searchText + "%")
+                    .setParameter("userId", userId)
                     .list();
             System.out.println("fileList: " + fileList);
             if(fileList != null) {

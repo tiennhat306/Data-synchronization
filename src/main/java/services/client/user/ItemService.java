@@ -14,12 +14,13 @@ public class ItemService {
     public ItemService() {
     }
 
-    public List<File> getAllItem(int folderId, String searchText){
+    public List<File> getAllItem(int userId, int folderId, String searchText){
         try {
             while(true){
                 SocketClientHelper socketClientHelper = new SocketClientHelper();
                 // send request to server
                 socketClientHelper.sendRequest("GET_ALL_ITEM");
+                socketClientHelper.sendRequest(String.valueOf(userId));
                 socketClientHelper.sendRequest(String.valueOf(folderId));
                 socketClientHelper.sendRequest(searchText);
 
@@ -230,10 +231,12 @@ public class ItemService {
         }
     }
 
-    public List<User> searchUser(String keyword) {
+    public List<User> searchUnsharedUser(int itemTypeId, int itemId, String keyword) {
         try {
             SocketClientHelper socketClientHelper = new SocketClientHelper();
-            socketClientHelper.sendRequest("SEARCH_USER");
+            socketClientHelper.sendRequest("SEARCH_UNSHARED_USER");
+            socketClientHelper.sendRequest(String.valueOf(itemTypeId));
+            socketClientHelper.sendRequest(String.valueOf(itemId));
             socketClientHelper.sendRequest(keyword);
 
             Object obj = socketClientHelper.receiveResponse();
@@ -270,4 +273,21 @@ public class ItemService {
         }
     }
 
+    public List<User> getSharedUser(int itemTypeId, int itemId) {
+        try {
+            SocketClientHelper socketClientHelper = new SocketClientHelper();
+            socketClientHelper.sendRequest("GET_SHARED_USER");
+            socketClientHelper.sendRequest(String.valueOf(itemTypeId));
+            socketClientHelper.sendRequest(String.valueOf(itemId));
+
+            Object obj = socketClientHelper.receiveResponse();
+            List<User> userList = (List<User>) obj;
+
+            socketClientHelper.close();
+            return userList;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
 }

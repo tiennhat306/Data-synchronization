@@ -81,9 +81,10 @@ public class ClientHandler implements Runnable{
                     sendResponse(response);
                 }
                 case "GET_ALL_ITEM" -> {
-                    String folderId = (String) receiveRequest();
+                    int userId = Integer.parseInt((String) receiveRequest());
+                    int folderId = Integer.parseInt((String) receiveRequest());
                     String searchText = (String) receiveRequest();
-                    List<File> response = getItemList(Integer.parseInt(folderId), searchText);
+                    List<File> response = getItemList(userId, folderId, searchText);
                     sendResponse(response);
                 }
                 case "CREATE_FOLDER" -> {
@@ -177,10 +178,12 @@ public class ClientHandler implements Runnable{
 
                     sendResponse(response);
                 }
-                case "SEARCH_USER" -> {
+                case "SEARCH_UNSHARED_USER" -> {
+                    int itemTypeId = Integer.parseInt((String) receiveRequest());
+                    int itemId = Integer.parseInt((String) receiveRequest());
                     String searchText = (String) receiveRequest();
-                    services.server.user.UserService userService = new services.server.user.UserService();
-                    List<User> response = userService.searchUser(searchText);
+                    PermissionService permissionService = new PermissionService();
+                    List<User> response = permissionService.searchUnsharedUser(itemTypeId, itemId, searchText);
                     sendResponse(response);
                 }
                 case "SHARE" -> {
@@ -194,8 +197,14 @@ public class ClientHandler implements Runnable{
                         userList.add(Integer.parseInt((String) receiveRequest()));
                     }
                     PermissionService permissionService = new PermissionService();
-                    boolean response = itemTypeId == 1 ? permissionService.shareFolder(itemId, permissionType, sharedBy, userList)
-                            : permissionService.shareFile(itemId, permissionType, sharedBy, userList);
+                    boolean response = permissionService.share(itemTypeId, itemId, permissionType, sharedBy, userList);
+                    sendResponse(response);
+                }
+                case "GET_SHARED_USER" -> {
+                    int itemTypeId = Integer.parseInt((String) receiveRequest());
+                    int itemId = Integer.parseInt((String) receiveRequest());
+                    PermissionService permissionService = new PermissionService();
+                    List<User> response = permissionService.getSharedUser(itemTypeId, itemId);
                     sendResponse(response);
                 }
                 case "CHECK_PERMISSION" -> {
@@ -204,6 +213,13 @@ public class ClientHandler implements Runnable{
                     int id = Integer.parseInt((String) receiveRequest());
                     PermissionService permissionService = new PermissionService();
                     int response = permissionService.checkPermission(userId, typeId, id);
+                    sendResponse(response);
+                }
+                case "GET_PERMISSION" -> {
+                    int itemTypeId = Integer.parseInt((String) receiveRequest());
+                    int itemId = Integer.parseInt((String) receiveRequest());
+                    PermissionService permissionService = new PermissionService();
+                    int response = permissionService.getPermission(itemTypeId, itemId);
                     sendResponse(response);
                 }
                 case "UPDATE_PERMISSION" -> {
@@ -280,10 +296,10 @@ public class ClientHandler implements Runnable{
         System.out.println("Get all user");
         return userService.getAllUser();
     }
-    private List<File> getItemList(int folderId, String searchText) {
+    private List<File> getItemList(int userId, int folderId, String searchText) {
         ItemService itemService = new ItemService();
         System.out.println("Get all item");
-        return itemService.getAllItem(folderId, searchText);
+        return itemService.getAllItem(userId, folderId, searchText);
     }
     
     private boolean uploadFile(String fileName, int ownerId, int folderId, int size){

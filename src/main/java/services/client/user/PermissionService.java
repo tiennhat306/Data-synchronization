@@ -36,4 +36,20 @@ public class PermissionService {
             return false;
         }
     }
+
+    public Integer getPermission(int itemTypeId, int itemId) {
+        try{
+            SocketClientHelper socketClientHelper = new SocketClientHelper();
+            socketClientHelper.sendRequest("GET_PERMISSION");
+            socketClientHelper.sendRequest(String.valueOf(itemTypeId));
+            socketClientHelper.sendRequest(String.valueOf(itemId));
+
+            int response = (int) socketClientHelper.receiveResponse();
+            socketClientHelper.close();
+            return response;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return -1;
+        }
+    }
 }
