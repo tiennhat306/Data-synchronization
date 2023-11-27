@@ -4,6 +4,7 @@ import javafx.util.Pair;
 import models.File;
 import models.Folder;
 import models.Permission;
+import models.Type;
 import org.hibernate.Session;
 import utils.HibernateUtil;
 import utils.MapUtil;
@@ -27,8 +28,9 @@ public class ItemService {
 
         try(Session session = HibernateUtil.getSessionFactory().openSession()) {
             List<File> itemList = new ArrayList<>();
+
             String folderPermissionConditions = "(per.permissionType IN (2, 3) AND (per.userId is null OR per.userId = :userId)) OR fd.ownerId = :userId";
-            String folderQuery = "select distinct fd from Folder fd Left Join Permission per on fd.id = per.folderId" +
+            String folderQuery = "select distinct fd from Folder fd Join Permission per on fd.id = per.folderId" +
                     " where fd.parentId = :folderId AND fd.folderName LIKE :searchText" +
                     " AND (" + folderPermissionConditions + ")";
             List<Folder> folderList = session.createQuery(folderQuery, Folder.class)
@@ -36,7 +38,6 @@ public class ItemService {
                     .setParameter("searchText", "%" + searchText + "%")
                     .setParameter("userId", userId)
                     .list();
-            System.out.println("folderList: " + folderList);
             if(folderList != null) {
                 for (Folder folder : folderList) {
                     File folderToFile = new File();
@@ -59,22 +60,19 @@ public class ItemService {
 
                     int countItem = folderService.getNumberItemOfFolder(folder.getId());
                     folderToFile.setSize(Short.MIN_VALUE + countItem);
-
-                    System.out.println("folderItem: " + folderToFile);
                     itemList.add(folderToFile);
                 }
             }
 
-            String filePermissionConditions = "(per.permissionType IN (2, 3) AND (per.userId is null OR per.userId = :userId)) OR f.ownerId = :userId";
-            String fileQuery = "select distinct f from File f Left Join Permission per on f.id = per.fileId" +
-                    " where f.folderId = :folderId AND f.name LIKE :searchText" +
+            String filePermissionConditions = "(per.permissionType IN (2, 3) AND (per.userId is null OR per.userId = :userId)) OR fl.ownerId = :userId";
+            String fileQuery = "select distinct fl from File fl Join Permission per on fl.folderId = per.folderId" +
+                    " where fl.folderId = :folderId AND fl.name LIKE :searchText" +
                     " AND (" + filePermissionConditions + ")";
             List<File> fileList = session.createQuery(fileQuery, File.class)
                     .setParameter("folderId", folderId)
                     .setParameter("searchText", "%" + searchText + "%")
                     .setParameter("userId", userId)
                     .list();
-            System.out.println("fileList: " + fileList);
             if(fileList != null) {
                 itemList.addAll(fileList);
             }
@@ -85,6 +83,7 @@ public class ItemService {
             return null;
         }
     }
+
     public List<File> getAllItemPrivateOwnerId(int id, String searchText){
         int parentId = 1;
         try(Session session = HibernateUtil.getSessionFactory().openSession()) {
@@ -98,7 +97,6 @@ public class ItemService {
                     .setParameter("parentId", parentId)
                     .setParameter("searchText", "%" + searchText + "%")
                     .list();
-            System.out.println("folderList: " + folderList);
             if(folderList != null) {
                 for (Folder folder : folderList) {
                     File folderToFile = new File();
@@ -121,8 +119,6 @@ public class ItemService {
 
                     int countItem = folderService.getNumberItemOfFolder(folder.getId());
                     folderToFile.setSize(Short.MIN_VALUE + countItem);
-
-                    System.out.println("folderItem: " + folderToFile);
                     itemList.add(folderToFile);
                 }
             }
@@ -132,7 +128,6 @@ public class ItemService {
                     .setParameter("parentId", parentId)
                     .setParameter("searchText", "%" + searchText + "%")
                     .list();
-            System.out.println("fileList: " + fileList);
             if(fileList != null) {
                 itemList.addAll(fileList);
             }
@@ -151,14 +146,12 @@ public class ItemService {
             FolderService folderService = new FolderService();
             FileService fileService = new FileService();
             List<Permission> permissionList = permissionService.getItemPermission(id);
-            System.out.println(permissionList);
             List<File> itemList = new ArrayList<>();
             List<Folder> folderList = new ArrayList<>();
             List<File> fileList = new ArrayList<>();
             for (Permission permission : permissionList) {
                 Integer folderId = permission.getFolderId();
                 Integer fileId = permission.getFileId();
-                System.out.println(folderId + " " + fileId);
                 if (folderId != null) {
                     Pair<Integer, Integer> value = mapFd.get(folderId);
                     Integer secondValue = value.getValue();
@@ -179,7 +172,6 @@ public class ItemService {
                     }
                 }
             }
-            System.out.println("folderList: " + folderList);
             if(folderList != null) {
                 for (Folder folder : folderList) {
                     File folderToFile = new File();
@@ -201,13 +193,10 @@ public class ItemService {
 
                     int countItem = folderService.getNumberItemOfFolder(folder.getId());
                     folderToFile.setSize(Short.MIN_VALUE + countItem);
-
-                    System.out.println("folderItem: " + folderToFile);
                     itemList.add(folderToFile);
                 }
             }
 
-            System.out.println("fileList: " + fileList);
             if(fileList != null) {
                 itemList.addAll(fileList);
             }
@@ -228,14 +217,12 @@ public class ItemService {
             FolderService folderService = new FolderService();
             FileService fileService = new FileService();
             List<Permission> permissionList = permissionService.getItemPermission(id);
-            System.out.println(permissionList);
             List<File> itemList = new ArrayList<>();
             List<Folder> folderList = new ArrayList<>();
             List<File> fileList = new ArrayList<>();
             for (Permission permission : permissionList) {
                 Integer folderId = permission.getFolderId();
                 Integer fileId = permission.getFileId();
-                System.out.println(folderId + " " + fileId);
                 if (folderId != null) {
                     Pair<Integer, Integer> value = mapFd.get(folderId);
                     Integer secondValue = value.getValue();
@@ -256,7 +243,6 @@ public class ItemService {
                     }
                 }
             }
-            System.out.println("folderList: " + folderList);
             if(folderList != null) {
                 for (Folder folder : folderList) {
                     File folderToFile = new File();
@@ -279,12 +265,10 @@ public class ItemService {
                     int countItem = folderService.getNumberItemOfFolder(folder.getId());
                     folderToFile.setSize(Short.MIN_VALUE + countItem);
 
-                    System.out.println("folderItem: " + folderToFile);
                     itemList.add(folderToFile);
                 }
             }
 
-            System.out.println("fileList: " + fileList);
             if(fileList != null) {
                 itemList.addAll(fileList);
             }

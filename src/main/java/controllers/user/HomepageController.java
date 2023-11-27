@@ -97,14 +97,12 @@ public class HomepageController implements Initializable {
 	private final int userId;
     public HomepageController() {
 		userId = LoginService.getCurrentSession().getCurrentUserID();
-		System.out.println("userId: " + userId);
     }
 
     public void populateData() {
 		LoginSession loginSession = LoginService.getCurrentSession();
 		String name = loginSession.getCurrentUserName();
 		userName.setText(name);
-		System.out.println(name);
 
 		TableColumn<models.File, String> nameColumn = new TableColumn<>("Tên");
         TableColumn<models.File, String> ownerNameColumn = new TableColumn<>("Chủ sở hữu");
@@ -130,12 +128,12 @@ public class HomepageController implements Initializable {
 						ImageView icon = new ImageView();
 						icon.setFitHeight(20);
 						icon.setFitWidth(20);
-						if(getTableRow().getItem().getTypeId() == 1) {
+						if(getTableRow().getItem().getTypeId() > 1) {
+							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/file.png").toString()));
+						} else  {
 							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/folder.png").toString()));
 						}
-						else {
-							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/file.png").toString()));
-						}
+
 						setGraphic(icon);
 						setText(item);
 					}
@@ -144,7 +142,7 @@ public class HomepageController implements Initializable {
 		});
 
         ownerNameColumn.setCellValueFactory(column -> {
-            return new SimpleStringProperty(column.getValue().getUsersByOwnerId().getName());
+            return new SimpleStringProperty(column.getValue().getUsersByOwnerId().getName() == null ? "" : column.getValue().getUsersByOwnerId().getName());
         });
         dateModifiedColumn.setCellFactory(column -> {
             return new TableCell<models.File, Date>() {
@@ -449,10 +447,7 @@ public class HomepageController implements Initializable {
 		ItemService itemService = new ItemService();
 		List<models.File> itemList = itemService.getAllItem(userId, currentFolderId, "");
 
-		System.out.println("itemList: " + itemList);
-
 		if(itemList == null) {
-			System.out.println("null");
 			dataTable.setPlaceholder(new Label("Không có dữ liệu"));
 		}
 		else {
@@ -472,7 +467,6 @@ public class HomepageController implements Initializable {
 
 			dataTable.setItems(sortedData);
 			sortedData.comparatorProperty().bind(dataTable.comparatorProperty());
-			System.out.println("not null");
 		}
 	}
 
@@ -532,7 +526,6 @@ public class HomepageController implements Initializable {
 			for(File file : selectedFiles){
 				String fileName = file.getName();
 				String filePath = file.getAbsolutePath();
-				System.out.println("filePath: " + filePath);
 				Task<Boolean> uploadFileTask = new Task<Boolean>() {
 					@Override
 					protected Boolean call() throws Exception {
@@ -895,14 +888,15 @@ public class HomepageController implements Initializable {
 			@Override
 			protected Boolean call() throws Exception {
 				ItemService itemService = new ItemService();
-				boolean rs = itemService.downloadFolder(selectedFolder.getAbsolutePath(), currentFolderId);
+				boolean rs = itemService.downloadFolder(selectedFolder.getAbsolutePath(), userId, currentFolderId);
 				return rs;
 			}
 		};
 
 		downloadFileTask.setOnSucceeded(e -> {
 			boolean response = downloadFileTask.getValue();
-			System.out.println("Download file thành công");
+			if(response) System.out.println("Download file thành công");
+			else System.out.println("Download file thất bại");
 		});
 
 		downloadFileTask.setOnFailed(e -> {

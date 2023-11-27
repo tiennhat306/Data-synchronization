@@ -7,6 +7,7 @@ import models.User;
 import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -54,28 +55,24 @@ public class ClientHandler implements Runnable{
             switch (request) {
                 case "GET_ALL_USER" -> {
                     List<User> response = getUserList();
-                    System.out.println(response);
                     sendResponse(response);
                 }
                 case "GET_USER_BY_ID" -> {
                 }
                 case "GET_ALL_ITEM_PRIVATE" -> {
                     String ownerId = (String) receiveRequest();
-                    System.out.println(ownerId);
                     String searchText = (String) receiveRequest();
                     List<File> response = getPrivateItemList(Integer.parseInt(ownerId), searchText);
                     sendResponse(response);
                 }
                 case "GET_ALL_ITEM_OSHARE" -> {
                     String ownerId = (String) receiveRequest();
-                    System.out.println(ownerId);
                     String searchText = (String) receiveRequest();
                     List<File> response = getOtherShareItemList(Integer.parseInt(ownerId), searchText);
                     sendResponse(response);
                 }
                 case "GET_ALL_ITEM_SHARED" -> {
                     String ownerId = (String) receiveRequest();
-                    System.out.println(ownerId);
                     String searchText = (String) receiveRequest();
                     List<File> response = getSharedItemList(Integer.parseInt(ownerId), searchText);
                     sendResponse(response);
@@ -134,13 +131,6 @@ public class ClientHandler implements Runnable{
                         int ownerId = Integer.parseInt((String) receiveRequest());
                         int currentFolderId = Integer.parseInt((String) receiveRequest());
                         boolean response = uploadFolder(folderName, ownerId, currentFolderId);
-
-                        FolderService folderService = new FolderService();
-                        int folderId = folderService.getFolderId(folderName, currentFolderId);
-
-                        PermissionService permissionService = new PermissionService();
-                        permissionService.addPermissionOfFolder(folderId);
-
                         sendResponse(response);
                     } else {
                         System.out.println("Unknown request: " + type_request);
@@ -151,7 +141,6 @@ public class ClientHandler implements Runnable{
                     FileService fileService = new FileService();
 
                     String filePath = fileService.getFilePath(fileId);
-                    System.out.println("filePath: " + filePath);
 
                     int size = fileService.sizeOfFile(fileId);
                     sendResponse(String.valueOf(size));
@@ -159,8 +148,11 @@ public class ClientHandler implements Runnable{
                     syncFile(filePath, size);
                 }
                 case "DOWNLOAD_FOLDER" -> {
+                    int userId = Integer.parseInt((String) receiveRequest());
                     int folderId = Integer.parseInt((String) receiveRequest());
-                    boolean response =  downloadFolder(folderId);
+
+                    boolean response =  downloadFolder(userId, folderId);
+
                     sendResponse(response);
                 }
                 case "SYNCHRONIZE" -> {
@@ -174,7 +166,7 @@ public class ClientHandler implements Runnable{
                     String path = folderService.getPath(folderId);
                     sendResponse(userPath + java.io.File.separator + path);
 
-                    boolean response = syncFolder(folderService.getFolderPath(folderId));
+                    boolean response = syncFolder(userId, folderId, folderService.getFolderPath(folderId));
 
                     sendResponse(response);
                 }
@@ -249,24 +241,25 @@ public class ClientHandler implements Runnable{
         }
     }
 
-    private boolean downloadFolder(int folderId) {
+    private boolean downloadFolder(int userId, int folderId) {
         try {
             FolderService folderService = new FolderService();
             String folderName = folderService.getFolderName(folderId);
             sendResponse(folderName);
 
-            String folderPath = folderService.getFolderPath(folderId);
-            System.out.println("folderPath: " + folderPath);
+            String downloadFolder = System.getProperty("user.home") + java.io.File.separator + "Downloads";
+            createCopyFolderTemp(userId, folderId, downloadFolder);
 
+            String folderPath = downloadFolder + java.io.File.separator + folderName;
             ZipFolder zipFolder = new ZipFolder(folderName, folderPath);
             String zipFilePath = zipFolder.zip();
-            System.out.println("zipFilePath: " + zipFilePath);
 
             int size = (int) zipFolder.size();
             sendResponse(String.valueOf(size));
 
             sendZipFolder(zipFilePath, size);
             zipFolder.deleteOutputZipFile();
+            folderService.deleteFolderIfExist(folderPath);
             return true;
         } catch (Exception e) {
             e.printStackTrace();
@@ -275,30 +268,33 @@ public class ClientHandler implements Runnable{
     }
 
     private void sendZipFolder(String zipFilePath, int size) {
-        byte[] buffer = new byte[1024];
-
-        try(FileInputStream fileInputStream = new FileInputStream(zipFilePath)) {
-            OutputStream fileOutputStream = clientSocket.getOutputStream();
-            int bytesRead;
-            while(size > 0 && (bytesRead = fileInputStream.read(buffer, 0, Math.min(buffer.length, size))) != -1) {
-                fileOutputStream.write(buffer, 0, bytesRead);
-                size -= bytesRead;
-            }
-            fileOutputStream.flush();
-            System.out.println("File sent: " + zipFilePath);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+//        byte[] buffer = new byte[1024];
+//
+//        try(FileInputStream fileInputStream = new FileInputStream(zipFilePath)) {
+//            OutputStream fileOutputStream = clientSocket.getOutputStream();
+//            int bytesRead;
+//            while(size > 0 && (bytesRead = fileInputStream.read(buffer, 0, Math.min(buffer.length, size))) != -1) {
+//                fileOutputStream.write(buffer, 0, bytesRead);
+//                size -= bytesRead;
+//            }
+//            fileOutputStream.flush();
+//            System.out.println("File sent: " + zipFilePath);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+        syncFile(zipFilePath, size);
     }
 
     private List<User> getUserList() {
         UserService userService = new UserService();
-        System.out.println("Get all user");
         return userService.getAllUser();
+    }
+
+    private List<File> getItemList(int userId, int folderId){
+        return getItemList(userId, folderId, "");
     }
     private List<File> getItemList(int userId, int folderId, String searchText) {
         ItemService itemService = new ItemService();
-        System.out.println("Get all item");
         return itemService.getAllItem(userId, folderId, searchText);
     }
     
@@ -325,7 +321,6 @@ public class ClientHandler implements Runnable{
             } else {
                 System.out.println("Thêm file " + fileName + " thất bại");
             }
-            System.out.println("Response: " + response);
             return response;
         } catch (Exception e) {
             e.printStackTrace();
@@ -345,7 +340,6 @@ public class ClientHandler implements Runnable{
                 size -= bytesRead;
             }
 
-            System.out.println("File uploaded: " + filePath);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -362,28 +356,26 @@ public class ClientHandler implements Runnable{
                 size -= bytesRead;
             }
             fileOutputStream.flush();
-            System.out.println("File synchronized: " + filePath);
         } catch (IOException e) {
             e.printStackTrace();
         }
 
     }
 
-    public boolean syncFolder(String folderPath){
-        java.io.File folder = new java.io.File(folderPath);
-        java.io.File[] listOfFiles = folder.listFiles();
+    public boolean syncFolder(int userId, int folderId, String folderPath){
+        List<File> fileList = getItemList(userId, folderId);
         try {
-            if(listOfFiles != null){
-                for (java.io.File file : listOfFiles) {
-                    if (file.isDirectory()) {
+            if(fileList != null){
+                for (File file : fileList) {
+                    if (file.getTypeId() == 1) {
                         String folderName = file.getName();
                         sendResponse("folder");
                         sendResponse(folderName);
-                        syncFolder(file.getAbsolutePath());
-                    } else if (file.isFile()) {
-                        String fileName = file.getName();
-                        String filePath = file.getAbsolutePath();
-                        int size = (int) file.length();
+                        syncFolder(userId, file.getId(), folderPath + java.io.File.separator + folderName);
+                    } else {
+                        String fileName = file.getName() + "." + file.getTypesByTypeId().getName();
+                        String filePath = folderPath + java.io.File.separator + fileName;
+                        int size = file.getSize() == null ? 0 : file.getSize();
                         sendResponse("file");
                         sendResponse(fileName);
                         sendResponse(String.valueOf(size));
@@ -398,10 +390,42 @@ public class ClientHandler implements Runnable{
             return false;
         }
     }
+
+    private void createCopyFileTemp(String realFilePath, String newFilePath){
+        try {
+            Files.copy(new java.io.File(realFilePath).toPath(), new java.io.File(newFilePath).toPath());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void createCopyFolderTemp(int userId, int folderId, String newFolderPath){
+        FolderService folderService = new FolderService();
+        String folderName = folderService.getFolderName(folderId);
+        String folderPath = newFolderPath + java.io.File.separator + folderName;
+        folderService.createFolderIfNotExist(folderPath);
+
+        List<File> fileList = getItemList(userId, folderId);
+        try{
+            if(fileList != null){
+                for (File file : fileList) {
+                    if (file.getTypeId() == 1) {
+                        createCopyFolderTemp(userId, file.getId(), folderPath);
+                    } else {
+                        String fileName = file.getName() + "." + file.getTypesByTypeId().getName();
+                        String newFilePath = folderPath + java.io.File.separator + fileName;
+                        FileService fileService = new FileService();
+                        String realFilePath = fileService.getFilePath(file.getId());
+                        createCopyFileTemp(realFilePath, newFilePath);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
     
     private boolean uploadFolder(String folderName, int ownerId, int parentId) throws IOException, ClassNotFoundException {
-        System.out.println("Upload folder");
-
         FolderService folderService = new FolderService();
         int rs = folderService.uploadFolder(folderName, ownerId, parentId);
         sendResponse(String.valueOf(rs));
@@ -426,8 +450,6 @@ public class ClientHandler implements Runnable{
                 response = uploadFolder(folderNameOfChild, ownerIdOfChild, parentIdOfChild);
                 if(!response) check = false;
             } else if(child_type.equals("file")){
-                System.out.println("Upload file");
-
                 String fileName = (String) receiveRequest();
                 int ownerIdOfFile = Integer.parseInt((String) receiveRequest());
                 int parentIdOfFile = Integer.parseInt((String) receiveRequest());

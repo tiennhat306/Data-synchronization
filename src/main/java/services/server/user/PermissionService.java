@@ -11,10 +11,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class PermissionService {
-    private static final int PUBLIC_ACCESS = 3;
-    private static final int OWNER_ACCESS = 3;
-    private static final int READ_ACCESS = 2;
-    private static final int PRIVATE_ACCESS = 1;
+    public static final int PUBLIC_ACCESS = 3;
+    public static final int OWNER_ACCESS = 3;
+    public static final int READ_ACCESS = 2;
+    public static final int PRIVATE_ACCESS = 1;
 
     public PermissionService() {
 
@@ -24,7 +24,6 @@ public class PermissionService {
             List<Permission> permissionListList = session.createQuery("select per from Permission per where per.userId = :userId AND per.permissionType <> 0", Permission.class)
                     .setParameter("userId", userId)
                     .list();
-            System.out.println("permissionListList: " + permissionListList);
             return permissionListList;
         } catch (Exception e) {
             e.printStackTrace();
@@ -75,7 +74,10 @@ public class PermissionService {
                     permission = session.createQuery("select per from Permission per where per." + (typeId == 1 ? "folderId" : "fileId") + " = :id AND (per.userId is null OR per.userId = :userId)", Permission.class)
                             .setParameter("id", currentId)
                             .setParameter("userId", userId)
-                            .getSingleResult();
+                            .uniqueResult();
+                    if(permission == null){
+                        throw new NoResultException();
+                    }
                     return permission.getPermissionType();
                 } catch (NoResultException e) {
 //                    if (currentTypeId == 1) {
@@ -103,14 +105,35 @@ public class PermissionService {
     public boolean updatePermission(int itemTypeId, int itemId, int finalPermissionId) {
         try(Session session = HibernateUtil.getSessionFactory().openSession()) {
             Transaction transaction = session.beginTransaction();
-            String query = "select per from Permission per where per." + (itemTypeId == 1 ? "folderId" : "fileId") + " = :itemId AND per.userId = null";
+//            String query = "select per from Permission per where per." + (itemTypeId == 1 ? "folderId" : "fileId") + " = :itemId AND per.userId = null";
             Permission permission;
             try{
-                permission = session.createQuery(query, Permission.class)
-                        .setParameter("itemId", itemId)
-                        .getSingleResult();
-                permission.setPermissionType((short) finalPermissionId);
-                session.merge(permission);
+//                permission = session.createQuery(query, Permission.class)
+//                        .setParameter("itemId", itemId)
+//                        .getSingleResult();
+//                permission.setPermissionType((short) finalPermissionId);
+//                session.merge(permission);
+                if(itemTypeId != 1){
+                    String query = "select per from Permission per where per.fileId = :itemId AND per.userId = null";
+                    permission = session.createQuery(query, Permission.class)
+                            .setParameter("itemId", itemId)
+                            .getSingleResult();
+                    permission.setPermissionType((short) finalPermissionId);
+                    session.merge(permission);
+                } else {
+                    String nativeQuery = "WITH RECURSIVE folder_cte AS (\n" +
+                            "  SELECT id FROM folders" +
+                            "      WHERE id = :folderId\n" +
+                            "  UNION ALL\n" +
+                            "  SELECT f.id FROM folders f\n" +
+                            "  INNER JOIN folder_cte AS fc ON f.parent_id = fc.id\n" +
+                            ")\n" +
+                            "UPDATE permissions SET permission_type = :permission WHERE folder_id IN (SELECT id FROM folder_cte)";
+                    session.createNativeQuery(nativeQuery)
+                            .setParameter("folderId", itemId)
+                            .setParameter("permission", (short) finalPermissionId)
+                            .executeUpdate();
+                }
             } catch (NoResultException e) {
                 permission = new Permission();
                 permission.setUserId(null);
@@ -151,6 +174,18 @@ public class PermissionService {
             permission.setPermissionType((short) PRIVATE_ACCESS);
             session.persist(permission);
             transaction.commit();
+//            String query = "WITH RECURSIVE folder_cte AS (\n" +
+//                    "  SELECT id FROM folders" +
+//                    "      WHERE id = :folderId\n" +
+//                    "  UNION ALL\n" +
+//                    "  SELECT f.id FROM folders f\n" +
+//                    "  INNER JOIN folder_cte AS fc ON f.parent_id = fc.id\n" +
+//                    ")\n" +
+//                    "UPDATE permissions SET permission_type = :permission WHERE folder_id IN (SELECT id FROM folder_cte)";
+//            session.createNativeQuery(query)
+//                    .setParameter("folderId", folderId)
+//                    .setParameter("permission", PRIVATE_ACCESS)
+//                    .executeUpdate();
         } catch (Exception e) {
             e.printStackTrace();
         }

@@ -214,7 +214,6 @@ public class FileService {
                     System.out.println("Xóa file để ghi đè thất bại");
                 }
             }
-            System.out.println("File path: " + filePath);
             return filePath;
         } catch (Exception e){
             e.printStackTrace();
