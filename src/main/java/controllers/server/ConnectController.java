@@ -67,8 +67,6 @@ public class ConnectController implements Initializable {
         });
         requestTimeColumn.setCellValueFactory(new PropertyValueFactory<Connection, Date>("requestTime"));
 
-        System.out.println("connectionList: " + connections);
-
         connectionTable.setItems(connections);
 
 

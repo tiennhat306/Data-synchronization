@@ -55,28 +55,24 @@ public class ClientHandler implements Runnable{
             switch (request) {
                 case "GET_ALL_USER" -> {
                     List<User> response = getUserList();
-                    System.out.println(response);
                     sendResponse(response);
                 }
                 case "GET_USER_BY_ID" -> {
                 }
                 case "GET_ALL_ITEM_PRIVATE" -> {
                     String ownerId = (String) receiveRequest();
-                    System.out.println(ownerId);
                     String searchText = (String) receiveRequest();
                     List<File> response = getPrivateItemList(Integer.parseInt(ownerId), searchText);
                     sendResponse(response);
                 }
                 case "GET_ALL_ITEM_OSHARE" -> {
                     String ownerId = (String) receiveRequest();
-                    System.out.println(ownerId);
                     String searchText = (String) receiveRequest();
                     List<File> response = getOtherShareItemList(Integer.parseInt(ownerId), searchText);
                     sendResponse(response);
                 }
                 case "GET_ALL_ITEM_SHARED" -> {
                     String ownerId = (String) receiveRequest();
-                    System.out.println(ownerId);
                     String searchText = (String) receiveRequest();
                     List<File> response = getSharedItemList(Integer.parseInt(ownerId), searchText);
                     sendResponse(response);
@@ -145,7 +141,6 @@ public class ClientHandler implements Runnable{
                     FileService fileService = new FileService();
 
                     String filePath = fileService.getFilePath(fileId);
-                    System.out.println("filePath: " + filePath);
 
                     int size = fileService.sizeOfFile(fileId);
                     sendResponse(String.valueOf(size));
@@ -258,7 +253,6 @@ public class ClientHandler implements Runnable{
             String folderPath = downloadFolder + java.io.File.separator + folderName;
             ZipFolder zipFolder = new ZipFolder(folderName, folderPath);
             String zipFilePath = zipFolder.zip();
-            System.out.println("zipFilePath: " + zipFilePath);
 
             int size = (int) zipFolder.size();
             sendResponse(String.valueOf(size));
@@ -293,7 +287,6 @@ public class ClientHandler implements Runnable{
 
     private List<User> getUserList() {
         UserService userService = new UserService();
-        System.out.println("Get all user");
         return userService.getAllUser();
     }
 
@@ -328,7 +321,6 @@ public class ClientHandler implements Runnable{
             } else {
                 System.out.println("Thêm file " + fileName + " thất bại");
             }
-            System.out.println("Response: " + response);
             return response;
         } catch (Exception e) {
             e.printStackTrace();
@@ -348,7 +340,6 @@ public class ClientHandler implements Runnable{
                 size -= bytesRead;
             }
 
-            System.out.println("File uploaded: " + filePath);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -435,8 +426,6 @@ public class ClientHandler implements Runnable{
     }
     
     private boolean uploadFolder(String folderName, int ownerId, int parentId) throws IOException, ClassNotFoundException {
-        System.out.println("Upload folder");
-
         FolderService folderService = new FolderService();
         int rs = folderService.uploadFolder(folderName, ownerId, parentId);
         sendResponse(String.valueOf(rs));
@@ -461,8 +450,6 @@ public class ClientHandler implements Runnable{
                 response = uploadFolder(folderNameOfChild, ownerIdOfChild, parentIdOfChild);
                 if(!response) check = false;
             } else if(child_type.equals("file")){
-                System.out.println("Upload file");
-
                 String fileName = (String) receiveRequest();
                 int ownerIdOfFile = Integer.parseInt((String) receiveRequest());
                 int parentIdOfFile = Integer.parseInt((String) receiveRequest());

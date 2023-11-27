@@ -38,7 +38,6 @@ public class ItemService {
                     .setParameter("searchText", "%" + searchText + "%")
                     .setParameter("userId", userId)
                     .list();
-            System.out.println("folderList: " + folderList);
             if(folderList != null) {
                 for (Folder folder : folderList) {
                     File folderToFile = new File();
@@ -61,8 +60,6 @@ public class ItemService {
 
                     int countItem = folderService.getNumberItemOfFolder(folder.getId());
                     folderToFile.setSize(Short.MIN_VALUE + countItem);
-
-                    System.out.println("folderItem: " + folderToFile);
                     itemList.add(folderToFile);
                 }
             }
@@ -76,7 +73,6 @@ public class ItemService {
                     .setParameter("searchText", "%" + searchText + "%")
                     .setParameter("userId", userId)
                     .list();
-            System.out.println("fileList: " + fileList);
             if(fileList != null) {
                 itemList.addAll(fileList);
             }
@@ -101,7 +97,6 @@ public class ItemService {
                     .setParameter("parentId", parentId)
                     .setParameter("searchText", "%" + searchText + "%")
                     .list();
-            System.out.println("folderList: " + folderList);
             if(folderList != null) {
                 for (Folder folder : folderList) {
                     File folderToFile = new File();
@@ -124,8 +119,6 @@ public class ItemService {
 
                     int countItem = folderService.getNumberItemOfFolder(folder.getId());
                     folderToFile.setSize(Short.MIN_VALUE + countItem);
-
-                    System.out.println("folderItem: " + folderToFile);
                     itemList.add(folderToFile);
                 }
             }
@@ -135,7 +128,6 @@ public class ItemService {
                     .setParameter("parentId", parentId)
                     .setParameter("searchText", "%" + searchText + "%")
                     .list();
-            System.out.println("fileList: " + fileList);
             if(fileList != null) {
                 itemList.addAll(fileList);
             }
@@ -154,14 +146,12 @@ public class ItemService {
             FolderService folderService = new FolderService();
             FileService fileService = new FileService();
             List<Permission> permissionList = permissionService.getItemPermission(id);
-            System.out.println(permissionList);
             List<File> itemList = new ArrayList<>();
             List<Folder> folderList = new ArrayList<>();
             List<File> fileList = new ArrayList<>();
             for (Permission permission : permissionList) {
                 Integer folderId = permission.getFolderId();
                 Integer fileId = permission.getFileId();
-                System.out.println(folderId + " " + fileId);
                 if (folderId != null) {
                     Pair<Integer, Integer> value = mapFd.get(folderId);
                     Integer secondValue = value.getValue();
@@ -182,7 +172,6 @@ public class ItemService {
                     }
                 }
             }
-            System.out.println("folderList: " + folderList);
             if(folderList != null) {
                 for (Folder folder : folderList) {
                     File folderToFile = new File();
@@ -204,13 +193,10 @@ public class ItemService {
 
                     int countItem = folderService.getNumberItemOfFolder(folder.getId());
                     folderToFile.setSize(Short.MIN_VALUE + countItem);
-
-                    System.out.println("folderItem: " + folderToFile);
                     itemList.add(folderToFile);
                 }
             }
 
-            System.out.println("fileList: " + fileList);
             if(fileList != null) {
                 itemList.addAll(fileList);
             }
@@ -231,14 +217,12 @@ public class ItemService {
             FolderService folderService = new FolderService();
             FileService fileService = new FileService();
             List<Permission> permissionList = permissionService.getItemPermission(id);
-            System.out.println(permissionList);
             List<File> itemList = new ArrayList<>();
             List<Folder> folderList = new ArrayList<>();
             List<File> fileList = new ArrayList<>();
             for (Permission permission : permissionList) {
                 Integer folderId = permission.getFolderId();
                 Integer fileId = permission.getFileId();
-                System.out.println(folderId + " " + fileId);
                 if (folderId != null) {
                     Pair<Integer, Integer> value = mapFd.get(folderId);
                     Integer secondValue = value.getValue();
@@ -259,7 +243,6 @@ public class ItemService {
                     }
                 }
             }
-            System.out.println("folderList: " + folderList);
             if(folderList != null) {
                 for (Folder folder : folderList) {
                     File folderToFile = new File();
@@ -282,12 +265,10 @@ public class ItemService {
                     int countItem = folderService.getNumberItemOfFolder(folder.getId());
                     folderToFile.setSize(Short.MIN_VALUE + countItem);
 
-                    System.out.println("folderItem: " + folderToFile);
                     itemList.add(folderToFile);
                 }
             }
 
-            System.out.println("fileList: " + fileList);
             if(fileList != null) {
                 itemList.addAll(fileList);
             }

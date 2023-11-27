@@ -97,14 +97,12 @@ public class HomepageController implements Initializable {
 	private final int userId;
     public HomepageController() {
 		userId = LoginService.getCurrentSession().getCurrentUserID();
-		System.out.println("userId: " + userId);
     }
 
     public void populateData() {
 		LoginSession loginSession = LoginService.getCurrentSession();
 		String name = loginSession.getCurrentUserName();
 		userName.setText(name);
-		System.out.println(name);
 
 		TableColumn<models.File, String> nameColumn = new TableColumn<>("Tên");
         TableColumn<models.File, String> ownerNameColumn = new TableColumn<>("Chủ sở hữu");
@@ -200,7 +198,6 @@ public class HomepageController implements Initializable {
 					models.File file = row.getItem();
 					if(file.getTypeId() == 1){
 						currentFolderId = file.getId();
-						System.err.println("currentFolderId: " + currentFolderId);
 						fillData();
 						// Tạo HBox breadcrumb mới
 						HBox _breadcrumb = createBreadcrumb(file.getId(), file.getName());
@@ -213,7 +210,6 @@ public class HomepageController implements Initializable {
 					}
 				} else if(event.getButton() == MouseButton.SECONDARY && !row.isEmpty()){
 					dataTable.getSelectionModel().select(row.getIndex());
-					System.err.println("File item: " + row.getItem().getName() + ", " + row.getItem().getTypeId() + ", " + row.getItem().getId() + ", " + row.getItem().getOwnerId());
 					showOptionsPopup(event, row.getItem());
 				}
 			});
@@ -451,10 +447,7 @@ public class HomepageController implements Initializable {
 		ItemService itemService = new ItemService();
 		List<models.File> itemList = itemService.getAllItem(userId, currentFolderId, "");
 
-		System.out.println("itemList: " + itemList);
-
 		if(itemList == null) {
-			System.out.println("null");
 			dataTable.setPlaceholder(new Label("Không có dữ liệu"));
 		}
 		else {
@@ -474,7 +467,6 @@ public class HomepageController implements Initializable {
 
 			dataTable.setItems(sortedData);
 			sortedData.comparatorProperty().bind(dataTable.comparatorProperty());
-			System.out.println("not null");
 		}
 	}
 
@@ -534,7 +526,6 @@ public class HomepageController implements Initializable {
 			for(File file : selectedFiles){
 				String fileName = file.getName();
 				String filePath = file.getAbsolutePath();
-				System.out.println("filePath: " + filePath);
 				Task<Boolean> uploadFileTask = new Task<Boolean>() {
 					@Override
 					protected Boolean call() throws Exception {
