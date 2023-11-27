@@ -167,7 +167,7 @@ public class ItemService {
         }
     }
 
-    public boolean synchronize(int userId, int currentFolderId) {
+    public boolean synchronize(int userId,  int currentFolderId) {
         try {
             SocketClientHelper socketClientHelper = new SocketClientHelper();
             socketClientHelper.sendRequest("SYNCHRONIZE");
@@ -209,15 +209,15 @@ public class ItemService {
         Files.deleteIfExists(folder.toPath());
     }
 
-    public boolean downloadFolder(String absolutePath, int currentFolderId) {
+    public boolean downloadFolder(String absolutePath, int userId, int currentFolderId) {
         try {
             SocketClientHelper socketClientHelper = new SocketClientHelper();
             socketClientHelper.sendRequest("DOWNLOAD_FOLDER");
+            socketClientHelper.sendRequest(String.valueOf(userId));
             socketClientHelper.sendRequest(String.valueOf(currentFolderId));
 
             String folderName = (String) socketClientHelper.receiveResponse();
-            System.out.println("folderName: " + folderName);
-            int size = Integer.parseInt((String) socketClientHelper.receiveResponse());
+            int size = Integer.parseInt((String)socketClientHelper.receiveResponse());
 
             socketClientHelper.downloadFolder(absolutePath + java.io.File.separator + folderName, size);
 

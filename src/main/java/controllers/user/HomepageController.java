@@ -130,12 +130,12 @@ public class HomepageController implements Initializable {
 						ImageView icon = new ImageView();
 						icon.setFitHeight(20);
 						icon.setFitWidth(20);
-						if(getTableRow().getItem().getTypeId() == 1) {
+						if(getTableRow().getItem().getTypeId() > 1) {
+							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/file.png").toString()));
+						} else  {
 							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/folder.png").toString()));
 						}
-						else {
-							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/file.png").toString()));
-						}
+
 						setGraphic(icon);
 						setText(item);
 					}
@@ -144,7 +144,7 @@ public class HomepageController implements Initializable {
 		});
 
         ownerNameColumn.setCellValueFactory(column -> {
-            return new SimpleStringProperty(column.getValue().getUsersByOwnerId().getName());
+            return new SimpleStringProperty(column.getValue().getUsersByOwnerId().getName() == null ? "" : column.getValue().getUsersByOwnerId().getName());
         });
         dateModifiedColumn.setCellFactory(column -> {
             return new TableCell<models.File, Date>() {
@@ -200,6 +200,7 @@ public class HomepageController implements Initializable {
 					models.File file = row.getItem();
 					if(file.getTypeId() == 1){
 						currentFolderId = file.getId();
+						System.err.println("currentFolderId: " + currentFolderId);
 						fillData();
 						// Tạo HBox breadcrumb mới
 						HBox _breadcrumb = createBreadcrumb(file.getId(), file.getName());
@@ -212,6 +213,7 @@ public class HomepageController implements Initializable {
 					}
 				} else if(event.getButton() == MouseButton.SECONDARY && !row.isEmpty()){
 					dataTable.getSelectionModel().select(row.getIndex());
+					System.err.println("File item: " + row.getItem().getName() + ", " + row.getItem().getTypeId() + ", " + row.getItem().getId() + ", " + row.getItem().getOwnerId());
 					showOptionsPopup(event, row.getItem());
 				}
 			});
@@ -895,14 +897,15 @@ public class HomepageController implements Initializable {
 			@Override
 			protected Boolean call() throws Exception {
 				ItemService itemService = new ItemService();
-				boolean rs = itemService.downloadFolder(selectedFolder.getAbsolutePath(), currentFolderId);
+				boolean rs = itemService.downloadFolder(selectedFolder.getAbsolutePath(), userId, currentFolderId);
 				return rs;
 			}
 		};
 
 		downloadFileTask.setOnSucceeded(e -> {
 			boolean response = downloadFileTask.getValue();
-			System.out.println("Download file thành công");
+			if(response) System.out.println("Download file thành công");
+			else System.out.println("Download file thất bại");
 		});
 
 		downloadFileTask.setOnFailed(e -> {

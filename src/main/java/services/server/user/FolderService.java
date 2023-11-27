@@ -3,6 +3,7 @@ package services.server.user;
 import applications.ServerApp;
 import javafx.util.Pair;
 import models.Folder;
+import models.Permission;
 import org.hibernate.Session;
 import org.hibernate.query.Query;
 import utils.HibernateUtil;
@@ -184,6 +185,12 @@ public class FolderService {
             folder.setParentId(parentId);
 
             session.persist(folder);
+
+            Permission permission = new Permission();
+            permission.setFolderId(folder.getId());
+            permission.setPermissionType((short) PermissionService.PRIVATE_ACCESS);
+            session.persist(permission);
+
             session.getTransaction().commit();
 
             String path = ServerApp.SERVER_PATH + File.separator + getPath(folder.getId());

@@ -4,6 +4,7 @@ import javafx.util.Pair;
 import models.File;
 import models.Folder;
 import models.Permission;
+import models.Type;
 import org.hibernate.Session;
 import utils.HibernateUtil;
 import utils.MapUtil;
@@ -27,8 +28,9 @@ public class ItemService {
 
         try(Session session = HibernateUtil.getSessionFactory().openSession()) {
             List<File> itemList = new ArrayList<>();
+
             String folderPermissionConditions = "(per.permissionType IN (2, 3) AND (per.userId is null OR per.userId = :userId)) OR fd.ownerId = :userId";
-            String folderQuery = "select distinct fd from Folder fd Left Join Permission per on fd.id = per.folderId" +
+            String folderQuery = "select distinct fd from Folder fd Join Permission per on fd.id = per.folderId" +
                     " where fd.parentId = :folderId AND fd.folderName LIKE :searchText" +
                     " AND (" + folderPermissionConditions + ")";
             List<Folder> folderList = session.createQuery(folderQuery, Folder.class)
@@ -65,9 +67,9 @@ public class ItemService {
                 }
             }
 
-            String filePermissionConditions = "(per.permissionType IN (2, 3) AND (per.userId is null OR per.userId = :userId)) OR f.ownerId = :userId";
-            String fileQuery = "select distinct f from File f Left Join Permission per on f.id = per.fileId" +
-                    " where f.folderId = :folderId AND f.name LIKE :searchText" +
+            String filePermissionConditions = "(per.permissionType IN (2, 3) AND (per.userId is null OR per.userId = :userId)) OR fl.ownerId = :userId";
+            String fileQuery = "select distinct fl from File fl Join Permission per on fl.folderId = per.folderId" +
+                    " where fl.folderId = :folderId AND fl.name LIKE :searchText" +
                     " AND (" + filePermissionConditions + ")";
             List<File> fileList = session.createQuery(fileQuery, File.class)
                     .setParameter("folderId", folderId)
@@ -85,6 +87,7 @@ public class ItemService {
             return null;
         }
     }
+
     public List<File> getAllItemPrivateOwnerId(int id, String searchText){
         int parentId = 1;
         try(Session session = HibernateUtil.getSessionFactory().openSession()) {
