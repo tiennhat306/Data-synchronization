@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class PermissionService {
+    public static final int FOLDER_TYPE = 1;
     public static final int PUBLIC_ACCESS = 3;
     public static final int OWNER_ACCESS = 3;
     public static final int READ_ACCESS = 2;
@@ -193,9 +194,17 @@ public class PermissionService {
 
     public int getPermission(int itemTypeId, int itemId) {
         try(Session session = HibernateUtil.getSessionFactory().openSession()) {
-            Permission permission = session.createQuery("select per from Permission per where per." + (itemTypeId == 1 ? "folderId" : "fileId") + " = :itemId AND per.userId = null", Permission.class)
-                    .setParameter("itemId", itemId)
-                    .getSingleResult();
+            Permission permission;
+            try {
+                permission = session.createQuery("select per from Permission per where per." + (itemTypeId == 1 ? "folderId" : "fileId") + " = :itemId AND per.userId = null", Permission.class)
+                        .setParameter("itemId", itemId)
+                        .getSingleResult();
+            } catch (NoResultException e) {
+                int parentId = session.createQuery("select " + (itemTypeId == 1 ? "fd.parentId" : "f.folderId") + " from " + (itemTypeId == 1 ? "Folder fd" : "File f") + " where " + (itemTypeId == 1 ? "fd.id" : "f.id") + " = :id", Integer.class)
+                        .setParameter("id", itemId)
+                        .uniqueResult();
+                return getPermission(PermissionService.FOLDER_TYPE, parentId);
+            }
             return permission.getPermissionType();
         } catch (Exception e) {
             e.printStackTrace();

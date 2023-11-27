@@ -175,7 +175,7 @@ public class FolderService {
         }
     }
 
-    public int uploadFolder(String folderName, int ownerId, int parentId) {
+    public int uploadFolder(String folderName, int ownerId, int parentId, int permissionType){
         try(Session session = HibernateUtil.getSessionFactory().openSession()){
             session.beginTransaction();
             Folder folder = new Folder();
@@ -183,12 +183,13 @@ public class FolderService {
             folder.setFolderName(folderName);
             folder.setOwnerId(ownerId);
             folder.setParentId(parentId);
+            folder.setDeleted(false);
 
             session.persist(folder);
 
             Permission permission = new Permission();
             permission.setFolderId(folder.getId());
-            permission.setPermissionType((short) PermissionService.PRIVATE_ACCESS);
+            permission.setPermissionType((short) permissionType);
             session.persist(permission);
 
             session.getTransaction().commit();

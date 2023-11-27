@@ -3,6 +3,7 @@ package controllers.user;
 import DTO.LoginSession;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView;
+import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -467,6 +468,19 @@ public class HomepageController implements Initializable {
 
 			dataTable.setItems(sortedData);
 			sortedData.comparatorProperty().bind(dataTable.comparatorProperty());
+		}
+
+		PermissionService permissionService = new PermissionService();
+		int permissionType = permissionService.checkPermission(userId, 1, currentFolderId);
+		if(permissionType == 3) {
+			createFolderBtn.setDisable(false);
+			uploadFileBtn.setDisable(false);
+			uploadFolderBtn.setDisable(false);
+		}
+		else {
+			createFolderBtn.setDisable(true);
+			uploadFileBtn.setDisable(true);
+			uploadFolderBtn.setDisable(true);
 		}
 	}
 
@@ -1044,7 +1058,6 @@ public class HomepageController implements Initializable {
 			if(permission == 1) permissionCbb.setValue("Riêng tư");
 			else if(permission == 2) permissionCbb.setValue("Chỉ xem");
 			else if(permission == 3) permissionCbb.setValue("Chỉnh sửa");
-			else permissionCbb.setValue("Riêng tư");
 		});
 
 		getPermissionTask.setOnFailed(e -> {
