@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class PermissionService {
+    public static final int FOLDER_TYPE = 1;
     public static final int PUBLIC_ACCESS = 3;
     public static final int OWNER_ACCESS = 3;
     public static final int READ_ACCESS = 2;
