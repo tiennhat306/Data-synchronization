@@ -104,21 +104,7 @@ public class ClientHandler implements Runnable{
                         int ownerId = Integer.parseInt((String) receiveRequest());
                         int currentFolderId = Integer.parseInt((String) receiveRequest());
                         int fileSize = Integer.parseInt((String) receiveRequest());
-
-                        int indexOfDot = fileName.indexOf(".");
-                        String nameOfFile = fileName.substring(0, indexOfDot);
-                        String typeOfFile = fileName.substring(indexOfDot + 1);
-
-                        TypeService typeService = new TypeService();
-                        int fileTypeId = typeService.getTypeId(typeOfFile);
-
                         boolean response = uploadFile(fileName, ownerId, currentFolderId, fileSize);
-                        System.out.println("Response of router: " + response);
-
-                        FileService fileService = new FileService();
-                        int fileId = fileService.getFileId(fileName, fileTypeId, currentFolderId);
-                        PermissionService permissionService = new PermissionService();
-                        permissionService.addPermissionOfFile(fileId);
                         sendResponse(response);
                     } else {
                         System.out.println("Unknown request: " + type);
@@ -130,7 +116,10 @@ public class ClientHandler implements Runnable{
                         String folderName = (String) receiveRequest();
                         int ownerId = Integer.parseInt((String) receiveRequest());
                         int currentFolderId = Integer.parseInt((String) receiveRequest());
-                        boolean response = uploadFolder(folderName, ownerId, currentFolderId);
+
+                        PermissionService permissionService = new PermissionService();
+                        int permission_type = permissionService.getPermission(PermissionService.FOLDER_TYPE, currentFolderId);
+                        boolean response = uploadFolder(folderName, ownerId, currentFolderId, permission_type);
                         sendResponse(response);
                     } else {
                         System.out.println("Unknown request: " + type_request);
@@ -425,9 +414,9 @@ public class ClientHandler implements Runnable{
         }
     }
     
-    private boolean uploadFolder(String folderName, int ownerId, int parentId) throws IOException, ClassNotFoundException {
+    private boolean uploadFolder(String folderName, int ownerId, int parentId, int permission_type) throws IOException, ClassNotFoundException {
         FolderService folderService = new FolderService();
-        int rs = folderService.uploadFolder(folderName, ownerId, parentId);
+        int rs = folderService.uploadFolder(folderName, ownerId, parentId, permission_type);
         sendResponse(String.valueOf(rs));
 
         boolean response = true;
@@ -447,7 +436,7 @@ public class ClientHandler implements Runnable{
                 String folderNameOfChild = (String) receiveRequest();
                 int ownerIdOfChild = Integer.parseInt((String) receiveRequest());
                 int parentIdOfChild = Integer.parseInt((String) receiveRequest());
-                response = uploadFolder(folderNameOfChild, ownerIdOfChild, parentIdOfChild);
+                response = uploadFolder(folderNameOfChild, ownerIdOfChild, parentIdOfChild, permission_type);
                 if(!response) check = false;
             } else if(child_type.equals("file")){
                 String fileName = (String) receiveRequest();

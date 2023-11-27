@@ -3,6 +3,7 @@ package services.server.user;
 import applications.ServerApp;
 import models.File;
 import models.Folder;
+import models.Permission;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 import utils.HibernateUtil;
@@ -181,6 +182,18 @@ public class FileService {
         }
     }
 
+    public void deleteFileIfExist(String filePath) {
+        java.io.File file = new java.io.File(filePath);
+        if(file.exists()){
+            boolean rs = file.delete();
+            if(rs){
+                System.out.println("Xóa file thành công");
+            } else {
+                System.out.println("Xóa file thất bại");
+            }
+        }
+    }
+
     public String uploadFile(String fileName, int fileType, int folderId, int ownerId, int size) {
         try(Session session = HibernateUtil.getSessionFactory().openSession()){
             session.beginTransaction();
@@ -194,8 +207,8 @@ public class FileService {
             file.setCreatedAt(new Timestamp(System.currentTimeMillis()));
             file.setUpdatedAt(new Timestamp(System.currentTimeMillis()));
             file.setUpdatedBy(ownerId);
+            file.setDeleted(false);
 
-            // Persist the File entity
             session.persist(file);
             session.getTransaction().commit();
 
@@ -205,15 +218,7 @@ public class FileService {
 
             TypeService typeService = new TypeService();
             String filePath = path + java.io.File.separator + fileName + "." + typeService.getTypeName(fileType);
-            java.io.File fileItem = new java.io.File(filePath);
-            if(fileItem.exists()){
-                boolean rs = fileItem.delete();
-                if(rs){
-                    System.out.println("Xóa file để ghi đè thành công");
-                } else {
-                    System.out.println("Xóa file để ghi đè thất bại");
-                }
-            }
+            deleteFileIfExist(filePath);
             return filePath;
         } catch (Exception e){
             e.printStackTrace();
