@@ -68,7 +68,6 @@ public class SocketClientHelper {
                 size -= bytesRead;
             }
             fileOutputStream.flush();
-            System.out.println("File uploaded: " + filePath);
         }
 
     }
@@ -122,7 +121,6 @@ public class SocketClientHelper {
             if (type.equals("folder")) {
                 String folderName = (String) receiveResponse();
                 String newFolderPath = folderPath + java.io.File.separator + folderName;
-                System.out.println("newFolderPath: " + newFolderPath);
                 try {
                     Files.createDirectories(Paths.get(newFolderPath));
                 } catch (IOException e) {
@@ -154,7 +152,6 @@ public class SocketClientHelper {
 //                fileOutputStream.write(buffer, 0, bytesRead);
 //                size -= bytesRead;
 //            }
-//            System.out.println("File downloaded: " + FolderZipPath);
 //            return true;
 //        } catch (IOException e) {
 //            e.printStackTrace();

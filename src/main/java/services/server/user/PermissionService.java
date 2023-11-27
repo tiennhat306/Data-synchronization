@@ -24,7 +24,6 @@ public class PermissionService {
             List<Permission> permissionListList = session.createQuery("select per from Permission per where per.userId = :userId AND per.permissionType <> 0", Permission.class)
                     .setParameter("userId", userId)
                     .list();
-            System.out.println("permissionListList: " + permissionListList);
             return permissionListList;
         } catch (Exception e) {
             e.printStackTrace();

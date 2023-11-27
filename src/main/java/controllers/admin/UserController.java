@@ -105,8 +105,6 @@ public class UserController implements Initializable {
         UserService userService = new UserService();
         List<User> userList = userService.getAllUser();
 
-        System.out.println("userList: " + userList);
-
         if(userList == null) {
             userTable.setPlaceholder(new Label("Không có dữ liệu người dùng"));
         }

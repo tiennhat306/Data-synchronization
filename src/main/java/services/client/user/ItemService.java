@@ -41,7 +41,6 @@ public class ItemService {
                 SocketClientHelper socketClientHelper = new SocketClientHelper();
                 // send request to server
                 socketClientHelper.sendRequest("GET_ALL_ITEM_PRIVATE");
-                System.out.println(ownerId);
                 socketClientHelper.sendRequest(String.valueOf(ownerId));
                 socketClientHelper.sendRequest(searchText);
 
@@ -60,7 +59,6 @@ public class ItemService {
                 SocketClientHelper socketClientHelper = new SocketClientHelper();
                 // send request to server
                 socketClientHelper.sendRequest("GET_ALL_ITEM_OSHARE");
-                System.out.println(ownerId);
                 socketClientHelper.sendRequest(String.valueOf(ownerId));
                 socketClientHelper.sendRequest(searchText);
 
@@ -81,7 +79,6 @@ public class ItemService {
                 SocketClientHelper socketClientHelper = new SocketClientHelper();
                 // send request to server
                 socketClientHelper.sendRequest("GET_ALL_ITEM_SHARED");
-                System.out.println(ownerId);
                 socketClientHelper.sendRequest(String.valueOf(ownerId));
                 socketClientHelper.sendRequest(searchText);
 
@@ -134,7 +131,6 @@ public class ItemService {
             socketClientHelper.sendFile(size, filePath);
 
             boolean response = (boolean) socketClientHelper.receiveResponse();
-            System.out.println("Response: " + response);
             socketClientHelper.close();
             return response;
         } catch (Exception e) {
@@ -157,7 +153,6 @@ public class ItemService {
             socketClientHelper.sendFolder(ownerId, folderPath);
 
             boolean response = (boolean) socketClientHelper.receiveResponse();
-            System.out.println("Response: " + response);
 
             socketClientHelper.close();
             return response;
@@ -175,7 +170,6 @@ public class ItemService {
             socketClientHelper.sendRequest(String.valueOf(currentFolderId));
 
             String folderPath = (String) socketClientHelper.receiveResponse();
-            System.out.println("folderPath: " + folderPath);
 
             deleteFolderIfExist(folderPath);
             Files.createDirectories(Paths.get(folderPath));
@@ -183,7 +177,6 @@ public class ItemService {
             socketClientHelper.syncFolder(folderPath);
 
             boolean response = (boolean) socketClientHelper.receiveResponse();
-            System.out.println("Response: " + response);
             socketClientHelper.close();
             return response;
         } catch (Exception e) {
@@ -222,7 +215,6 @@ public class ItemService {
             socketClientHelper.downloadFolder(absolutePath + java.io.File.separator + folderName, size);
 
             boolean response = (boolean) socketClientHelper.receiveResponse();
-            System.out.println("Response: " + response);
             socketClientHelper.close();
             return response;
         } catch (Exception e) {
@@ -264,7 +256,6 @@ public class ItemService {
             }
 
             boolean response = (boolean) socketClientHelper.receiveResponse();
-            System.out.println("Response: " + response);
             socketClientHelper.close();
             return response;
         } catch (Exception e) {
