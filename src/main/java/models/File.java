@@ -55,6 +55,9 @@ public class File implements Serializable {
     private User usersByUpdatedBy;
     @OneToMany(mappedBy = "filesByFileId")
     private Collection<Permission> permissionsById;
+    @Basic
+    @Column(name = "is_deleted")
+    private boolean isDeleted;
 
     public int getId() {
         return id;
@@ -128,14 +131,6 @@ public class File implements Serializable {
         this.updatedBy = updatedBy;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        File file = (File) o;
-        return id == file.id && typeId == file.typeId && folderId == file.folderId && ownerId == file.ownerId && Objects.equals(name, file.name) && Objects.equals(size, file.size) && Objects.equals(createdAt, file.createdAt) && Objects.equals(updatedAt, file.updatedAt) && Objects.equals(updatedBy, file.updatedBy);
-    }
-
     public Type getTypesByTypeId() {
         return typesByTypeId;
     }
@@ -174,5 +169,12 @@ public class File implements Serializable {
 
     public void setPermissionsById(Collection<Permission> permissionsById) {
         this.permissionsById = permissionsById;
+    }
+
+    public boolean isDeleted() {
+        return isDeleted;
+    }
+    public void setDeleted(boolean deleted) {
+        isDeleted = deleted;
     }
 }

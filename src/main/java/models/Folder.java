@@ -36,6 +36,9 @@ public class Folder implements Serializable {
     private Collection<Folder> foldersById;
     @OneToMany(mappedBy = "foldersByFolderId")
     private Collection<Permission> permissionsById;
+    @Basic
+    @Column(name = "is_deleted")
+    private boolean isDeleted;
 
     public int getId() {
         return id;
@@ -67,19 +70,6 @@ public class Folder implements Serializable {
 
     public void setParentId(Integer parentId) {
         this.parentId = parentId;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Folder folder = (Folder) o;
-        return id == folder.id && ownerId == folder.ownerId && Objects.equals(folderName, folder.folderName) && Objects.equals(parentId, folder.parentId);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(id, folderName, ownerId, parentId);
     }
 
     public Collection<File> getFilesById() {
@@ -120,5 +110,12 @@ public class Folder implements Serializable {
 
     public void setPermissionsById(Collection<Permission> permissionsById) {
         this.permissionsById = permissionsById;
+    }
+
+    public boolean isDeleted() {
+        return isDeleted;
+    }
+    public void setDeleted(boolean deleted) {
+        isDeleted = deleted;
     }
 }
