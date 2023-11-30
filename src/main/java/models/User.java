@@ -66,6 +66,18 @@ public class User implements Serializable {
     private Collection<Folder> foldersById;
     @OneToMany(mappedBy = "usersByUserId")
     private Collection<Permission> permissionsById;
+    @OneToMany(mappedBy = "usersBySharedBy")
+    private Collection<Permission> permissionsById_0;
+    @OneToMany(mappedBy = "usersByUserId")
+    private Collection<RecentFile> recentfilesById;
+
+    public boolean isGender() {
+        return gender;
+    }
+
+    public boolean isStatus() {
+        return status;
+    }
 
     public int getId() {
         return id;
@@ -179,14 +191,6 @@ public class User implements Serializable {
         this.createdAt = createdAt;
     }
 
-    public Timestamp getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(Timestamp updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
 //    @Override
 //    public boolean equals(Object o) {
 //        if (this == o) return true;
@@ -202,6 +206,13 @@ public class User implements Serializable {
 //        return result;
 //    }
 
+    public Timestamp getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(Timestamp updatedAt) {
+        this.updatedAt = updatedAt;
+    }
 
     @Override
     public int hashCode() {
@@ -238,5 +249,29 @@ public class User implements Serializable {
 
     public void setPermissionsById(Collection<Permission> permissionsById) {
         this.permissionsById = permissionsById;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        User user = (User) o;
+        return id == user.id && gender == user.gender && role == user.role && status == user.status && Objects.equals(name, user.name) && Objects.equals(birthday, user.birthday) && Objects.equals(avatar, user.avatar) && Objects.equals(username, user.username) && Objects.equals(password, user.password) && Objects.equals(phoneNumber, user.phoneNumber) && Objects.equals(email, user.email) && Objects.equals(userPath, user.userPath) && Objects.equals(refreshToken, user.refreshToken) && Objects.equals(createdAt, user.createdAt) && Objects.equals(updatedAt, user.updatedAt);
+    }
+
+    public Collection<Permission> getPermissionsById_0() {
+        return permissionsById_0;
+    }
+
+    public void setPermissionsById_0(Collection<Permission> permissionsById_0) {
+        this.permissionsById_0 = permissionsById_0;
+    }
+
+    public Collection<RecentFile> getRecentfilesById() {
+        return recentfilesById;
+    }
+
+    public void setRecentfilesById(Collection<RecentFile> recentfilesById) {
+        this.recentfilesById = recentfilesById;
     }
 }

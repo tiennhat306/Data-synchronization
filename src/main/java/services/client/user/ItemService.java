@@ -1,23 +1,26 @@
 package services.client.user;
 
 import models.File;
+import models.User;
 import services.client.SocketClientHelper;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 
 public class ItemService {
     public ItemService() {
     }
 
-    public List<File> getAllItem(int folderId, String searchText){
+    public List<File> getAllItem(int userId, int folderId, String searchText){
         try {
             while(true){
                 SocketClientHelper socketClientHelper = new SocketClientHelper();
                 // send request to server
                 socketClientHelper.sendRequest("GET_ALL_ITEM");
+                socketClientHelper.sendRequest(String.valueOf(userId));
                 socketClientHelper.sendRequest(String.valueOf(folderId));
                 socketClientHelper.sendRequest(searchText);
 
@@ -38,7 +41,6 @@ public class ItemService {
                 SocketClientHelper socketClientHelper = new SocketClientHelper();
                 // send request to server
                 socketClientHelper.sendRequest("GET_ALL_ITEM_PRIVATE");
-                System.out.println(ownerId);
                 socketClientHelper.sendRequest(String.valueOf(ownerId));
                 socketClientHelper.sendRequest(searchText);
 
@@ -57,7 +59,6 @@ public class ItemService {
                 SocketClientHelper socketClientHelper = new SocketClientHelper();
                 // send request to server
                 socketClientHelper.sendRequest("GET_ALL_ITEM_OSHARE");
-                System.out.println(ownerId);
                 socketClientHelper.sendRequest(String.valueOf(ownerId));
                 socketClientHelper.sendRequest(searchText);
 
@@ -78,7 +79,6 @@ public class ItemService {
                 SocketClientHelper socketClientHelper = new SocketClientHelper();
                 // send request to server
                 socketClientHelper.sendRequest("GET_ALL_ITEM_SHARED");
-                System.out.println(ownerId);
                 socketClientHelper.sendRequest(String.valueOf(ownerId));
                 socketClientHelper.sendRequest(searchText);
 
@@ -131,7 +131,6 @@ public class ItemService {
             socketClientHelper.sendFile(size, filePath);
 
             boolean response = (boolean) socketClientHelper.receiveResponse();
-            System.out.println("Response: " + response);
             socketClientHelper.close();
             return response;
         } catch (Exception e) {
@@ -154,7 +153,6 @@ public class ItemService {
             socketClientHelper.sendFolder(ownerId, folderPath);
 
             boolean response = (boolean) socketClientHelper.receiveResponse();
-            System.out.println("Response: " + response);
 
             socketClientHelper.close();
             return response;
@@ -164,7 +162,7 @@ public class ItemService {
         }
     }
 
-    public boolean synchronize(int userId, int currentFolderId) {
+    public boolean synchronize(int userId,  int currentFolderId) {
         try {
             SocketClientHelper socketClientHelper = new SocketClientHelper();
             socketClientHelper.sendRequest("SYNCHRONIZE");
@@ -172,7 +170,6 @@ public class ItemService {
             socketClientHelper.sendRequest(String.valueOf(currentFolderId));
 
             String folderPath = (String) socketClientHelper.receiveResponse();
-            System.out.println("folderPath: " + folderPath);
 
             deleteFolderIfExist(folderPath);
             Files.createDirectories(Paths.get(folderPath));
@@ -180,7 +177,6 @@ public class ItemService {
             socketClientHelper.syncFolder(folderPath);
 
             boolean response = (boolean) socketClientHelper.receiveResponse();
-            System.out.println("Response: " + response);
             socketClientHelper.close();
             return response;
         } catch (Exception e) {
@@ -206,25 +202,83 @@ public class ItemService {
         Files.deleteIfExists(folder.toPath());
     }
 
-    public boolean downloadFolder(String absolutePath, int currentFolderId) {
+    public boolean downloadFolder(String absolutePath, int userId, int currentFolderId) {
         try {
             SocketClientHelper socketClientHelper = new SocketClientHelper();
             socketClientHelper.sendRequest("DOWNLOAD_FOLDER");
+            socketClientHelper.sendRequest(String.valueOf(userId));
             socketClientHelper.sendRequest(String.valueOf(currentFolderId));
 
             String folderName = (String) socketClientHelper.receiveResponse();
-            System.out.println("folderName: " + folderName);
-            int size = Integer.parseInt((String) socketClientHelper.receiveResponse());
+            int size = Integer.parseInt((String)socketClientHelper.receiveResponse());
 
             socketClientHelper.downloadFolder(absolutePath + java.io.File.separator + folderName, size);
 
             boolean response = (boolean) socketClientHelper.receiveResponse();
-            System.out.println("Response: " + response);
             socketClientHelper.close();
             return response;
         } catch (Exception e) {
             e.printStackTrace();
             return false;
+        }
+    }
+
+    public List<User> searchUnsharedUser(int itemTypeId, int itemId, String keyword) {
+        try {
+            SocketClientHelper socketClientHelper = new SocketClientHelper();
+            socketClientHelper.sendRequest("SEARCH_UNSHARED_USER");
+            socketClientHelper.sendRequest(String.valueOf(itemTypeId));
+            socketClientHelper.sendRequest(String.valueOf(itemId));
+            socketClientHelper.sendRequest(keyword);
+
+            Object obj = socketClientHelper.receiveResponse();
+            List<User> userList = (List<User>) obj;
+
+            socketClientHelper.close();
+            return userList;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public boolean share(int itemTypeId, int itemId, int permissionId, int sharedBy, ArrayList<Integer> userIds) {
+        try {
+            SocketClientHelper socketClientHelper = new SocketClientHelper();
+            socketClientHelper.sendRequest("SHARE");
+            socketClientHelper.sendRequest(String.valueOf(itemTypeId));
+            socketClientHelper.sendRequest(String.valueOf(itemId));
+            socketClientHelper.sendRequest(String.valueOf(permissionId));
+            socketClientHelper.sendRequest(String.valueOf(sharedBy));
+            socketClientHelper.sendRequest(String.valueOf(userIds.size()));
+            for(int userId : userIds){
+                socketClientHelper.sendRequest(String.valueOf(userId));
+            }
+
+            boolean response = (boolean) socketClientHelper.receiveResponse();
+            socketClientHelper.close();
+            return response;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public List<User> getSharedUser(int itemTypeId, int itemId) {
+        try {
+            SocketClientHelper socketClientHelper = new SocketClientHelper();
+            socketClientHelper.sendRequest("GET_SHARED_USER");
+            socketClientHelper.sendRequest(String.valueOf(itemTypeId));
+            socketClientHelper.sendRequest(String.valueOf(itemId));
+
+            Object obj = socketClientHelper.receiveResponse();
+            List<User> userList = (List<User>) obj;
+
+            socketClientHelper.close();
+            return userList;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
         }
     }
 }

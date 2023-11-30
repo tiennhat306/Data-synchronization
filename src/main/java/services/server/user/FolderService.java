@@ -3,6 +3,7 @@ package services.server.user;
 import applications.ServerApp;
 import javafx.util.Pair;
 import models.Folder;
+import models.Permission;
 import org.hibernate.Session;
 import org.hibernate.query.Query;
 import utils.HibernateUtil;
@@ -11,6 +12,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
@@ -173,7 +175,7 @@ public class FolderService {
         }
     }
 
-    public int uploadFolder(String folderName, int ownerId, int parentId) {
+    public int uploadFolder(String folderName, int ownerId, int parentId, int permissionType){
         try(Session session = HibernateUtil.getSessionFactory().openSession()){
             session.beginTransaction();
             Folder folder = new Folder();
@@ -181,8 +183,15 @@ public class FolderService {
             folder.setFolderName(folderName);
             folder.setOwnerId(ownerId);
             folder.setParentId(parentId);
+            folder.setDeleted(false);
 
             session.persist(folder);
+
+            Permission permission = new Permission();
+            permission.setFolderId(folder.getId());
+            permission.setPermissionType((short) permissionType);
+            session.persist(permission);
+
             session.getTransaction().commit();
 
             String path = ServerApp.SERVER_PATH + File.separator + getPath(folder.getId());
@@ -209,5 +218,18 @@ public class FolderService {
 
     public String getFolderPath(int folderId) {
         return ServerApp.SERVER_PATH + File.separator + getPath(folderId);
+    }
+
+
+    public int getFolderId(String folderName, int currentFolderId) {
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
+            return session.createQuery("select fd.id from Folder fd where fd.folderName = :folderName AND fd.parentId = :currentFolderId", Integer.class)
+                    .setParameter("folderName", folderName)
+                    .setParameter("currentFolderId", currentFolderId)
+                    .getSingleResult();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return -1;
+        }
     }
 }

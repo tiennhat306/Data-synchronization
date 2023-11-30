@@ -3,6 +3,7 @@ package services.server.user;
 import applications.ServerApp;
 import models.File;
 import models.Folder;
+import models.Permission;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 import utils.HibernateUtil;
@@ -22,7 +23,7 @@ public class FileService {
             return null;
         }
     }
-    public List<File> getAllFileById(int folderId) {
+    public List<File> getAllFileByFolderId(int folderId) {
         try(Session session = HibernateUtil.getSessionFactory().openSession()) {
             //print session
             System.out.println("session: " + session);
@@ -130,18 +131,16 @@ public class FileService {
 
     }
 
-    public int getFileTypeId(String typeName) {
-        try(Session session = HibernateUtil.getSessionFactory().openSession()){
-            return session.createQuery("select t.id from Type t where t.name = :name", Integer.class)
-                    .setParameter("name", typeName)
-                    .getSingleResult();
-        } catch (Exception e){
-            e.printStackTrace();
-            return 0;
-        }
-
-
-    }
+//    public int getFileTypeId(String typeName) {
+//        try(Session session = HibernateUtil.getSessionFactory().openSession()){
+//            return session.createQuery("select t.id from Type t where t.name = :name", Integer.class)
+//                    .setParameter("name", typeName)
+//                    .getSingleResult();
+//        } catch (Exception e){
+//            e.printStackTrace();
+//            return 0;
+//        }
+//    }
 
     public List<String> getListFileName() {
         try(Session session = HibernateUtil.getSessionFactory().openSession()){
@@ -183,6 +182,18 @@ public class FileService {
         }
     }
 
+    public void deleteFileIfExist(String filePath) {
+        java.io.File file = new java.io.File(filePath);
+        if(file.exists()){
+            boolean rs = file.delete();
+            if(rs){
+                System.out.println("Xóa file thành công");
+            } else {
+                System.out.println("Xóa file thất bại");
+            }
+        }
+    }
+
     public String uploadFile(String fileName, int fileType, int folderId, int ownerId, int size) {
         try(Session session = HibernateUtil.getSessionFactory().openSession()){
             session.beginTransaction();
@@ -196,8 +207,8 @@ public class FileService {
             file.setCreatedAt(new Timestamp(System.currentTimeMillis()));
             file.setUpdatedAt(new Timestamp(System.currentTimeMillis()));
             file.setUpdatedBy(ownerId);
+            file.setDeleted(false);
 
-            // Persist the File entity
             session.persist(file);
             session.getTransaction().commit();
 
@@ -207,16 +218,7 @@ public class FileService {
 
             TypeService typeService = new TypeService();
             String filePath = path + java.io.File.separator + fileName + "." + typeService.getTypeName(fileType);
-            java.io.File fileItem = new java.io.File(filePath);
-            if(fileItem.exists()){
-                boolean rs = fileItem.delete();
-                if(rs){
-                    System.out.println("Xóa file để ghi đè thành công");
-                } else {
-                    System.out.println("Xóa file để ghi đè thất bại");
-                }
-            }
-            System.out.println("File path: " + filePath);
+            deleteFileIfExist(filePath);
             return filePath;
         } catch (Exception e){
             e.printStackTrace();
@@ -275,6 +277,19 @@ public class FileService {
         } catch (Exception e) {
             e.printStackTrace();
             return null;
+        }
+    }
+
+    public int getFileId(String fileName, int fileTypeId, int currentFolderId) {
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
+            return session.createQuery("select f.id from File f where f.name = :fileName AND f.typeId = :fileTypeId AND f.folderId = :currentFolderId", Integer.class)
+                    .setParameter("fileName", fileName)
+                    .setParameter("fileTypeId", fileTypeId)
+                    .setParameter("currentFolderId", currentFolderId)
+                    .getSingleResult();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return -1;
         }
     }
 }
