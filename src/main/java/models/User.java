@@ -68,6 +68,16 @@ public class User implements Serializable {
     private Collection<Permission> permissionsById;
     @OneToMany(mappedBy = "usersBySharedBy")
     private Collection<Permission> permissionsById_0;
+    @OneToMany(mappedBy = "usersByUserId")
+    private Collection<RecentFile> recentfilesById;
+
+    public boolean isGender() {
+        return gender;
+    }
+
+    public boolean isStatus() {
+        return status;
+    }
 
     public int getId() {
         return id;
@@ -181,10 +191,6 @@ public class User implements Serializable {
         this.createdAt = createdAt;
     }
 
-    public Timestamp getUpdatedAt() {
-        return updatedAt;
-    }
-
 //    @Override
 //    public boolean equals(Object o) {
 //        if (this == o) return true;
@@ -199,6 +205,10 @@ public class User implements Serializable {
 //        result = 31 * result + Arrays.hashCode(avatar);
 //        return result;
 //    }
+
+    public Timestamp getUpdatedAt() {
+        return updatedAt;
+    }
 
     public void setUpdatedAt(Timestamp updatedAt) {
         this.updatedAt = updatedAt;
@@ -255,5 +265,13 @@ public class User implements Serializable {
 
     public void setPermissionsById_0(Collection<Permission> permissionsById_0) {
         this.permissionsById_0 = permissionsById_0;
+    }
+
+    public Collection<RecentFile> getRecentfilesById() {
+        return recentfilesById;
+    }
+
+    public void setRecentfilesById(Collection<RecentFile> recentfilesById) {
+        this.recentfilesById = recentfilesById;
     }
 }
