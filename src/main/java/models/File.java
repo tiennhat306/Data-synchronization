@@ -60,6 +60,9 @@ public class File implements Serializable {
     private boolean isDeleted;
     @OneToMany(mappedBy = "filesByFileId")
     private Collection<RecentFile> recentfilesById;
+    @Basic
+    @Column(name = "finalpath")
+    private String finalpath;
 
     public int getId() {
         return id;
@@ -200,5 +203,13 @@ public class File implements Serializable {
 
     public void setRecentfilesById(Collection<RecentFile> recentfilesById) {
         this.recentfilesById = recentfilesById;
+    }
+
+    public String getFinalpath() {
+        return finalpath;
+    }
+
+    public void setFinalpath(String finalpath) {
+        this.finalpath = finalpath;
     }
 }
