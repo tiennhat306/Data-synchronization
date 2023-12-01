@@ -205,6 +205,19 @@ public class ClientHandler implements Runnable{
                     boolean response = permissionService.updatePermission(itemTypeId, itemId, finalPermissionId);
                     sendResponse(response);
                 }
+                case "DELETE" -> {
+                    int itemTypeId = Integer.parseInt((String) receiveRequest());
+                    int itemId = Integer.parseInt((String) receiveRequest());
+                    boolean response = false;
+                    if(itemTypeId == 1){
+                        FolderService folderService = new FolderService();
+                        response = folderService.deleteFolder(itemId);
+                    } else if(itemTypeId == 2){
+                        FileService fileService = new FileService();
+                        response = fileService.deleteFile(itemId);
+                    }
+                    sendResponse(response);
+                }
                 default -> {
                     System.out.println("Unknown request: " + request);
                 }

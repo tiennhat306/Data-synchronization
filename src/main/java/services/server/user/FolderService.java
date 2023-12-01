@@ -240,4 +240,19 @@ public class FolderService {
             return -1;
         }
     }
+
+    public boolean deleteFolder(int itemId) {
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
+            session.beginTransaction();
+            Folder folder = session.find(Folder.class, itemId);
+            if (folder == null) return false;
+            folder.setDeleted(true);
+            session.update(folder);
+            session.getTransaction().commit();
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
 }

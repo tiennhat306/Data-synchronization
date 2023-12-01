@@ -332,6 +332,10 @@ public class HomepageController implements Initializable {
 
 		deleteBtn.setOnAction(event -> {
 			// Delete file
+			int itemTypeId = selectedItem.getTypeId();
+			int itemId = selectedItem.getId();
+
+			sendDeleteRequest(itemTypeId, itemId);
 
 			popup.hide();
 		});
@@ -470,6 +474,33 @@ public class HomepageController implements Initializable {
 		});
 
 
+	}
+
+	private void sendDeleteRequest(int itemTypeId, int itemId) {
+		Task<Boolean> deleteTask = new Task<Boolean>() {
+			@Override
+			protected Boolean call() throws Exception {
+				ItemService itemService = new ItemService();
+				boolean rs = itemService.deleteItem(itemTypeId, itemId);
+				return rs;
+			}
+		};
+
+		deleteTask.setOnSucceeded(e -> {
+			boolean response = deleteTask.getValue();
+			if(response) {
+				fillData();
+				System.out.println("Xóa thành công");
+			}
+			else System.out.println("Xóa thất bại");
+		});
+
+		deleteTask.setOnFailed(e -> {
+			System.out.println("Xóa thất bại");
+		});
+
+		Thread thread = new Thread(deleteTask);
+		thread.start();
 	}
 
 	private void fillData() {
@@ -729,7 +760,7 @@ public class HomepageController implements Initializable {
 		VBox sharedContainer = new VBox();
 		sharedContainer.setSpacing(10);
 		sharedContainer.setPadding(new Insets(10));
-		sharedContainer.setStyle("-fx-background-color: white; -fx-border-color: gray; -fx-border-width: 1px; -fx-background-radius: 15px;");
+		sharedContainer.setStyle("-fx-background-color: white; -fx-border-color: gray; -fx-border-width: 0px; -fx-background-radius: 15px;");
 
 		Label sharedTitle = new Label("Đã chia sẻ");
 		sharedTitle.setStyle("-fx-font-size: 16; -fx-font-weight: bold;");
