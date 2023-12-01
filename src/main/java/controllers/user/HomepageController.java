@@ -3,7 +3,6 @@ package controllers.user;
 import DTO.LoginSession;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView;
-import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -129,11 +128,27 @@ public class HomepageController implements Initializable {
 						ImageView icon = new ImageView();
 						icon.setFitHeight(20);
 						icon.setFitWidth(20);
-						if(getTableRow().getItem().getTypeId() > 1) {
-							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/file.png").toString()));
-						} else  {
+						if(getTableRow().getItem().getTypeId() == 1){
 							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/folder.png").toString()));
+						} else if (getTableRow().getItem().getTypesByTypeId().getName().equals("txt")){
+							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/txt.png").toString()));
 						}
+						else if (getTableRow().getItem().getTypesByTypeId().getName().matches("docx?|docm|dotx?|dotm")){
+							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/doc.png").toString()));
+						}
+						else if (getTableRow().getItem().getTypesByTypeId().getName().equals("pdf")){
+							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/pdf.png").toString()));
+						}
+						else if (getTableRow().getItem().getTypesByTypeId().getName().matches("mp4|mp3|avi|flv|wmv|mov|wav|wma|ogg|mkv")){
+							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/mp4.png").toString()));
+						}
+						else if (getTableRow().getItem().getTypesByTypeId().getName().matches("png|svg|jpg|jpeg|gif|bmp")){
+							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/picture.png").toString()));
+						}
+						else {
+							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/unknown.png").toString()));
+						}
+
 
 						setGraphic(icon);
 						setText(item);
@@ -185,6 +200,14 @@ public class HomepageController implements Initializable {
             return new SimpleStringProperty(sizeStr);
         });
 
+
+
+
+
+
+
+
+
 		breadcrumbList.clear();
 		HBox breadcrumb = createBreadcrumb(2, "Chung");
 		breadcrumbList.add(breadcrumb);
@@ -229,6 +252,8 @@ public class HomepageController implements Initializable {
 
 			return row;
 		});
+
+		dataTable.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/assets/css/tableview.css")).toExternalForm());
 
 		fillData();
     }
@@ -391,7 +416,7 @@ public class HomepageController implements Initializable {
 			}
 		}
 
-		options.getChildren().addAll(openBtn, downloadBtn, renameBtn, moveBtn, copyBtn, shareBtn, synchronizeBtn);
+		options.getChildren().addAll(openBtn, downloadBtn, shareBtn, synchronizeBtn);
 
 		Task<Integer> checkPermissionTask = new Task<Integer>() {
 			@Override
@@ -406,6 +431,9 @@ public class HomepageController implements Initializable {
 
 			if(permissionType == 3) {
 				options.getChildren().add(2, deleteBtn);
+				options.getChildren().add(3, renameBtn);
+				options.getChildren().add(4, moveBtn);
+				options.getChildren().add(5, copyBtn);
 			}
 
 		});
@@ -493,6 +521,8 @@ public class HomepageController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+		populateData();
+
 		SortedList<models.File> sortedList = new SortedList<>(items, (file1, file2) -> {
 			if (file1.getTypeId() == 1 && file2.getTypeId() != 1) {
 				return -1;
@@ -525,7 +555,6 @@ public class HomepageController implements Initializable {
 		});
 		dataTable.setItems(sortedList);
 		sortedList.comparatorProperty().bind(dataTable.comparatorProperty());
-		populateData();
     }
 
 	@FXML
@@ -636,7 +665,36 @@ public class HomepageController implements Initializable {
 		ComboBox<String> permissionCbb = new ComboBox<>();
 
 		permissionCbb.getItems().addAll("Chỉ xem", "Chỉnh sửa");
-		permissionCbb.setValue("Chỉ xem");
+
+		Task<Integer> getPermissionTask = new Task<Integer>() {
+			@Override
+			protected Integer call() throws Exception {
+				PermissionService permissionService = new PermissionService();
+				return permissionService.getPermission(itemTypeId, itemId);
+			}
+		};
+
+		getPermissionTask.setOnSucceeded(e -> {
+			int permission = getPermissionTask.getValue();
+			if(permission == 2) {
+				permissionCbb.setValue("Chỉ xem");
+				permissionCbb.setDisable(true);
+			}
+			else if(permission == 3){
+				permissionCbb.setValue("Chỉnh sửa");
+				permissionCbb.setDisable(false);
+			}
+			else {
+				shareStage.close();
+			}
+		});
+
+		getPermissionTask.setOnFailed(e -> {
+			System.out.println("Lỗi khi lấy quyền truy cập");
+		});
+
+		Thread thread1 = new Thread(getPermissionTask);
+		thread1.start();
 
 		permissionCbb.setStyle("-fx-background-color: white; -fx-border-color: gray; -fx-border-width: 1px; -fx-background-radius: 15px;");
 		permissionCbb.setPrefWidth(100);
@@ -730,8 +788,8 @@ public class HomepageController implements Initializable {
 			System.out.println("Lỗi khi lấy danh sách người dùng đã chia sẻ");
 		});
 
-		Thread thread1 = new Thread(getSharedUserTask);
-		thread1.start();
+		Thread thread2 = new Thread(getSharedUserTask);
+		thread2.start();
 
 		shareTxt.setOnKeyReleased(e -> {
 			userContainer.getChildren().clear();

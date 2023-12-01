@@ -89,12 +89,6 @@ public class ClientHandler implements Runnable{
                     int ownerId = Integer.parseInt((String) receiveRequest());
                     int currentFolderId = Integer.parseInt((String) receiveRequest());
                     boolean response = new FolderService().createFolder(folderName, ownerId, currentFolderId);
-
-                    FolderService folderService = new FolderService();
-                    int folderId = folderService.getFolderId(folderName, currentFolderId);
-
-                    PermissionService permissionService = new PermissionService();
-                    permissionService.addPermissionOfFolder(folderId);
                     sendResponse(response);
                 }
                 case "UPLOAD_FILE" -> {
