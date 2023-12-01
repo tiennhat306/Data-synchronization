@@ -39,6 +39,9 @@ public class Folder implements Serializable {
     @Basic
     @Column(name = "is_deleted")
     private boolean isDeleted;
+    @Basic
+    @Column(name = "finalpath")
+    private String finalpath;
 
     public int getId() {
         return id;
@@ -115,7 +118,29 @@ public class Folder implements Serializable {
     public boolean isDeleted() {
         return isDeleted;
     }
+
     public void setDeleted(boolean deleted) {
         isDeleted = deleted;
+    }
+
+    public String getFinalpath() {
+        return finalpath;
+    }
+
+    public void setFinalpath(String finalpath) {
+        this.finalpath = finalpath;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Folder folder = (Folder) o;
+        return id == folder.id && ownerId == folder.ownerId && isDeleted == folder.isDeleted && Objects.equals(folderName, folder.folderName) && Objects.equals(parentId, folder.parentId) && Objects.equals(finalpath, folder.finalpath);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, folderName, ownerId, parentId, isDeleted, finalpath);
     }
 }
