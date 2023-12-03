@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.DatePicker?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.RadioButton?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.ToggleGroup?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.text.Font?>
+
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="controllers.user.ManagementController">
+   <children>
+      <TabPane fx:id="managementView" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" tabClosingPolicy="UNAVAILABLE">
+         <tabs>
+            <Tab id="1" fx:id="tabInfo" text="Thông tin cá nhân">
+               <content>
+                  <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="298.0" prefWidth="470.0">
+                     <children>
+                        <Label layoutX="56.0" layoutY="81.0" text="Họ tên" />
+                        <Label layoutX="56.0" layoutY="234.0" text="Ngày sinh" />
+                        <Label layoutX="56.0" layoutY="129.0" text="Email" />
+                        <Label layoutX="56.0" layoutY="180.0" text="Số điện thoại" />
+                        <Label layoutX="56.0" layoutY="284.0" text="Giới tính" />
+                        <Label layoutX="56.0" layoutY="29.0" text="Username" />
+                        <TextField fx:id="tfUsername" layoutX="171.0" layoutY="25.0" prefHeight="26.0" prefWidth="307.0" />
+                        <Button fx:id="btnUpd" layoutX="167.0" layoutY="313.0" mnemonicParsing="false" onAction="#submitFormUpdate" text="Cập nhật" />
+                        <FontAwesomeIconView fill="RED" layoutX="117.0" layoutY="44.0" size="16.0" text="*">
+                           <font>
+                              <Font size="24.0" />
+                           </font>
+                        </FontAwesomeIconView>
+                        <FontAwesomeIconView fill="RED" layoutX="113.0" layoutY="299.0" size="16.0" text="*">
+                           <font>
+                              <Font size="24.0" />
+                           </font>
+                        </FontAwesomeIconView>
+                        <FontAwesomeIconView fill="RED" layoutX="120.0" layoutY="249.0" size="16.0" text="*">
+                           <font>
+                              <Font size="24.0" />
+                           </font>
+                        </FontAwesomeIconView>
+                        <FontAwesomeIconView fill="RED" layoutX="136.0" layoutY="192.0" size="16.0" text="*">
+                           <font>
+                              <Font size="24.0" />
+                           </font>
+                        </FontAwesomeIconView>
+                        <FontAwesomeIconView fill="RED" layoutX="98.0" layoutY="145.0" size="16.0" text="*">
+                           <font>
+                              <Font size="24.0" />
+                           </font>
+                        </FontAwesomeIconView>
+                        <FontAwesomeIconView fill="RED" layoutX="101.0" layoutY="96.0" size="16.0" text="*">
+                           <font>
+                              <Font size="24.0" />
+                           </font>
+                        </FontAwesomeIconView>
+                        <TextField fx:id="tfName" layoutX="171.0" layoutY="76.0" prefHeight="26.0" prefWidth="307.0" />
+                        <TextField fx:id="tfEmail" layoutX="171.0" layoutY="125.0" prefHeight="26.0" prefWidth="307.0" />
+                        <TextField fx:id="tfPhone" layoutX="171.0" layoutY="176.0" prefHeight="26.0" prefWidth="307.0" />
+                        <RadioButton fx:id="rdMale" layoutX="167.0" layoutY="284.0" mnemonicParsing="false" text="Nam">
+                           <toggleGroup>
+                              <ToggleGroup fx:id="gender" />
+                           </toggleGroup></RadioButton>
+                        <RadioButton fx:id="rdFemale" layoutX="231.0" layoutY="284.0" mnemonicParsing="false" text="Nữ" toggleGroup="$gender" />
+                        <DatePicker fx:id="birthday" layoutX="171.0" layoutY="229.0" prefHeight="26.0" prefWidth="307.0" />
+                        <Label fx:id="emailErr" layoutX="171.0" layoutY="156.0" textFill="RED" />
+                        <Label fx:id="nameErr" layoutX="171.0" layoutY="102.0" textFill="RED" />
+                        <Label fx:id="phoneErr" layoutX="171.0" layoutY="205.0" textFill="RED" />
+                     </children>
+                  </AnchorPane>
+               </content>
+            </Tab>
+            <Tab id="2" fx:id="tabPass" text="Đổi mật khẩu">
+               <content>
+                  <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
+                     <children>
+                        <Label layoutX="89.0" layoutY="73.0" text="Mật khẩu cũ" />
+                        <Label layoutX="89.0" layoutY="123.0" text="Mật khẩu mới" />
+                        <Label layoutX="89.0" layoutY="177.0" text="Nhập lại mật khẩu mới" />
+                        <Button fx:id="btnSavePass" layoutX="243.0" layoutY="232.0" mnemonicParsing="false" onAction="#submitFormPass" text="Lưu" />
+                        <PasswordField fx:id="tfConfirmPass" layoutX="243.0" layoutY="172.0" prefHeight="26.0" prefWidth="275.0" />
+                        <PasswordField fx:id="tfOldPass" layoutX="243.0" layoutY="69.0" prefHeight="26.0" prefWidth="275.0" />
+                        <PasswordField fx:id="tfNewPass" layoutX="243.0" layoutY="118.0" prefHeight="26.0" prefWidth="275.0" />
+                        <FontAwesomeIconView fill="RED" layoutX="168.0" layoutY="89.0" size="16.0" text="*" />
+                        <FontAwesomeIconView fill="RED" layoutX="168.0" layoutY="138.0" size="16.0" text="*" />
+                        <FontAwesomeIconView fill="RED" layoutX="216.0" layoutY="192.0" size="16.0" text="*" />
+                        <Label fx:id="oldPassErr" layoutX="247.0" layoutY="98.0" textFill="RED" />
+                        <Label fx:id="newPassErr" layoutX="247.0" layoutY="152.0" textFill="RED" />
+                        <Label fx:id="confirmPassErr" layoutX="247.0" layoutY="204.0" textFill="RED" />
+                     </children>
+                  </AnchorPane>
+               </content>
+            </Tab>
+         </tabs>
+      </TabPane>
+   </children>
+</AnchorPane>
