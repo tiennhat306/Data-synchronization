@@ -1,6 +1,7 @@
 package controllers.user;
 
 import DTO.LoginSession;
+import applications.MainApp;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView;
 import javafx.application.Platform;
@@ -11,10 +12,13 @@ import javafx.collections.transformation.SortedList;
 import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
+import javafx.geometry.Bounds;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
@@ -32,6 +36,7 @@ import models.User;
 import services.client.user.ItemService;
 import services.client.user.PermissionService;
 import services.login.LoginService;
+import services.server.admin.UserService;
 
 import java.io.*;
 import java.net.URL;
@@ -96,14 +101,20 @@ public class HomepageController implements Initializable {
 	private int currentSideBarIndex = 0;
 	List<HBox> breadcrumbList = new ArrayList<>();
 	private final int userId;
+	private Stage stage;
+	private Scene scene;
+	private Parent root;
     public HomepageController() {
 		userId = LoginService.getCurrentSession().getCurrentUserID();
     }
 
+	public void refreshName(String name) {
+		userName.setText(name);
+	}
+
     public void populateData() {
 		LoginSession loginSession = LoginService.getCurrentSession();
-		String name = loginSession.getCurrentUserName();
-		userName.setText(name);
+		refreshName(loginSession.getCurrentUserName());
 
 		TableColumn<models.File, String> nameColumn = new TableColumn<>("Tên");
         TableColumn<models.File, String> ownerNameColumn = new TableColumn<>("Chủ sở hữu");
@@ -1367,5 +1378,104 @@ public class HomepageController implements Initializable {
 			}
 		});
 		return breadcrumb;
+	}
+	@FXML
+	private void showSettingPopup(MouseEvent mouseEvent) {
+		Popup popup = new Popup();
+		popup.setAutoHide(true);
+		popup.setAutoFix(true);
+		popup.setHideOnEscape(true);
+
+		FontAwesomeIconView updateIcon = new FontAwesomeIconView();
+		updateIcon.setGlyphName("USER");
+		updateIcon.setSize("20");
+		updateIcon.setStyleClass("icon");
+		Button updateBtn = new Button("Cập nhật", updateIcon);
+
+		FontAwesomeIconView logoutIcon = new FontAwesomeIconView();
+		logoutIcon.setGlyphName("SIGN_OUT");
+		logoutIcon.setSize("20");
+		logoutIcon.setStyleClass("icon");
+		Button logoutBtn = new Button("Đăng xuất", logoutIcon);
+
+		updateBtn.setOnAction(event -> {
+			// Tạo FXMLLoader
+			FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/user/management.fxml"));
+			// Load form management.fxml
+			Parent root = null;
+			try {
+				root = loader.load();
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+			// Hiển thị form management.fxml
+			Stage stage = new Stage();
+			stage.setScene(new Scene(root));
+			stage.show();
+
+			// Đóng form gốc (nếu cần)
+			((Node)(event.getSource())).getScene().getWindow().hide();
+			popup.hide();
+		});
+
+		logoutBtn.setOnAction(event -> {
+			// Thực hiện đăng xuất
+			LoginSession loginSession = LoginService.getCurrentSession();
+			loginSession.destroySession();
+			LoginService.clearCurrentSession();
+
+			// Đóng Popup
+			Popup newPopup = (Popup) logoutBtn.getScene().getWindow();
+			Window ownerWindow = newPopup.getOwnerWindow();
+			if (ownerWindow instanceof Stage) {
+				Stage stage = (Stage) ownerWindow;
+				stage.close();
+			}
+			// Chuyển đến scene đăng nhập
+			FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/login/login-view.fxml"));
+			Parent loginRoot;
+			try {
+				loginRoot = loader.load();
+				Scene loginScene = new Scene(loginRoot);
+				Stage newStage = new Stage();
+				newStage.setScene(loginScene);
+				newStage.show();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		});
+		VBox options = new VBox();
+		options.setPrefWidth(150);
+		options.setStyle("-fx-background-color: white; -fx-border-color: gray; -fx-border-radius: 15px; -fx-border-width: 1px; -fx-background-radius: 15px;");
+
+		options.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+		for (Button button : Arrays.asList(updateBtn, logoutBtn)) {
+			if (button != null) {
+				button.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+				button.setPadding(new Insets(5, 5, 5, 15));
+				button.setPrefWidth(150);
+
+				button.setStyle("-fx-background-color: transparent; -fx-background-radius: 15px 15px 0px 0px; -fx-background-insets: 0px; -fx-border-width: 0;");
+				button.setOnMouseEntered(event -> {
+					button.setStyle("-fx-background-color: #f1f1f1; -fx-background-radius: 15px 15px 0px 0px; -fx-background-insets: 0px; -fx-border-width: 0;");
+				});
+				button.setOnMouseExited(event -> {
+					button.setStyle("-fx-background-color: transparent; -fx-background-radius: 15px 15px 0px 0px; -fx-background-insets: 0px; -fx-border-width: 0;");
+				});
+			}
+		}
+
+		options.getChildren().addAll(updateBtn, logoutBtn);
+		popup.getContent().add(options);
+
+		popup.show(settingBtn.getScene().getWindow(), mouseEvent.getScreenX() - 140, mouseEvent.getScreenY() + 14);
+
+		Scene scene = settingBtn.getScene();
+		scene.setOnMousePressed(event -> {
+			Node target = (Node) event.getTarget();
+			if (!popup.getScene().getRoot().getBoundsInParent().contains(event.getSceneX(), event.getSceneY())) {
+				popup.hide();
+			}
+		});
 	}
 }
