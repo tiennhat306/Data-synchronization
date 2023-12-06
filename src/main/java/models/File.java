@@ -212,4 +212,16 @@ public class File implements Serializable {
     public void setFinalpath(String finalpath) {
         this.finalpath = finalpath;
     }
+
+    @Basic
+    @Column(name = "date_deleted")
+    private Timestamp dateDeleted;
+
+    public Timestamp getDateDeleted() {
+        return dateDeleted;
+    }
+
+    public void setDateDeleted(Timestamp dateDeleted) {
+        this.dateDeleted = dateDeleted;
+    }
 }

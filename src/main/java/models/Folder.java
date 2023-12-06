@@ -19,7 +19,7 @@ public class Folder implements Serializable {
     @Column(name = "folder_name", nullable = false)
     private String folderName;
     @Basic
-    @Column(name = "owner_id" ,nullable = false)
+    @Column(name = "owner_id",nullable = false)
     private int ownerId;
     @Basic
     @Column(name = "parent_id")
@@ -142,5 +142,17 @@ public class Folder implements Serializable {
     @Override
     public int hashCode() {
         return Objects.hash(id, folderName, ownerId, parentId, isDeleted, finalpath);
+    }
+
+    @Basic
+    @Column(name = "date_deleted")
+    private Timestamp dateDeleted;
+
+    public Timestamp getDateDeleted() {
+        return dateDeleted;
+    }
+
+    public void setDateDeleted(Timestamp dateDeleted) {
+        this.dateDeleted = dateDeleted;
     }
 }
