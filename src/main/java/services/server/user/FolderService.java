@@ -247,10 +247,50 @@ public class FolderService {
             Folder folder = session.find(Folder.class, itemId);
             if (folder == null) return false;
             folder.setDeleted(true);
-            session.update(folder);
+            folder.setFinalpath(getPath(folder.getParentId()));
+            session.merge(folder);
+
+            // recursively delete all subfolders and files
+            List<Folder> folderList = session.createQuery("select fd from Folder fd where fd.parentId = :id", Folder.class).setParameter("id", itemId).list();
+            for (Folder subFolder : folderList) {
+                deleteFolder(subFolder.getId());
+            }
+            List<models.File> fileList = session.createQuery("select f from File f where f.folderId = :id", models.File.class).setParameter("id", itemId).list();
+            for (models.File file : fileList) {
+                FileService fileService = new FileService();
+                fileService.deleteFile(file.getId());
+            }
+
             session.getTransaction().commit();
             return true;
         } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean deleteFolderPermanently(int id){
+        try(Session session = HibernateUtil.getSessionFactory().openSession()){
+            session.beginTransaction();
+            Folder folder = session.find(Folder.class, id);
+            if (folder == null) return false;
+
+            // recursively delete all subfolders and files
+            List<Folder> folderList = session.createQuery("select fd from Folder fd where fd.parentId = :id", Folder.class).setParameter("id", id).list();
+            for (Folder subFolder : folderList) {
+                deleteFolderPermanently(subFolder.getId());
+            }
+            List<models.File> fileList = session.createQuery("select f from File f where f.folderId = :id", models.File.class).setParameter("id", id).list();
+            for (models.File file : fileList) {
+                FileService fileService = new FileService();
+                fileService.deleteFilePermanently(file.getId());
+            }
+
+            session.remove(folder);
+
+            session.getTransaction().commit();
+            return true;
+        } catch (Exception e){
             e.printStackTrace();
             return false;
         }

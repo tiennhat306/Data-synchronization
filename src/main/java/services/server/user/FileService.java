@@ -74,6 +74,25 @@ public class FileService {
         try (Session session = HibernateUtil.getSessionFactory().openSession()){
             transaction = session.beginTransaction();
             File file = session.find(File.class, id);
+            if(file == null) return false;
+            file.setDeleted(true);
+            FolderService folderService = new FolderService();
+            file.setFinalpath(folderService.getPath(file.getFolderId()));
+            session.merge(file);
+            transaction.commit();
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean deleteFilePermanently(int id) {
+        Transaction transaction = null;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()){
+            transaction = session.beginTransaction();
+            File file = session.find(File.class, id);
+            if(file == null) return false;
             session.remove(file);
             transaction.commit();
             return true;
@@ -82,6 +101,7 @@ public class FileService {
             return false;
         }
     }
+
     public List<File> getFilesByOwnerId(int userId) {
         try (Session session = HibernateUtil.getSessionFactory().openSession()){
             return session.createQuery("select f from File f where f.ownerId = :userId", File.class)
@@ -287,6 +307,28 @@ public class FileService {
                     .setParameter("fileTypeId", fileTypeId)
                     .setParameter("currentFolderId", currentFolderId)
                     .getSingleResult();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return -1;
+        }
+    }
+
+    public String getFullFileName(int fileId) {
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
+            File file = session.find(File.class, fileId);
+            if (file == null) return null;
+            return file.getName() + "." + new TypeService().getTypeName(file.getTypeId());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public int getSize(int fileId) {
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
+            File file = session.find(File.class, fileId);
+            if (file == null) return -1;
+            return file.getSize();
         } catch (Exception e) {
             e.printStackTrace();
             return -1;

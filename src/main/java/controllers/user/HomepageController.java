@@ -326,6 +326,43 @@ public class HomepageController implements Initializable {
 
 		downloadBtn.setOnAction(event -> {
 			// Download file
+			DirectoryChooser directoryChooser = new DirectoryChooser();
+			directoryChooser.setTitle("Choose a folder to save file");
+
+			File selectedFolder = directoryChooser.showDialog(null);
+
+			Task<Boolean> downloadFileTask = new Task<Boolean>() {
+				@Override
+				protected Boolean call() throws Exception {
+					ItemService itemService = new ItemService();
+					boolean rs = false;
+					int itemTypeId = selectedItem.getTypeId();
+					int itemId = selectedItem.getId();
+					if(selectedFolder != null) {
+						String path = selectedFolder.getAbsolutePath();
+						if(itemTypeId == 1) {
+							rs = itemService.downloadFolder(path, userId, itemId);
+						}
+						else {
+							rs = itemService.downloadFile(path, itemId);
+						}
+					}
+					return rs;
+				}
+			};
+
+			downloadFileTask.setOnSucceeded(e -> {
+				boolean response = downloadFileTask.getValue();
+				if(response) System.out.println("Download file thành công");
+				else System.out.println("Download file thất bại");
+			});
+
+			downloadFileTask.setOnFailed(e -> {
+				System.out.println("Download file thất bại");
+			});
+
+			Thread thread = new Thread(downloadFileTask);
+			thread.start();
 
 			popup.hide();
 		});
@@ -697,11 +734,14 @@ public class HomepageController implements Initializable {
 
 		permissionCbb.getItems().addAll("Chỉ xem", "Chỉnh sửa");
 
+		final int[] ownerId = {-1};
 		Task<Integer> getPermissionTask = new Task<Integer>() {
 			@Override
 			protected Integer call() throws Exception {
 				PermissionService permissionService = new PermissionService();
-				return permissionService.getPermission(itemTypeId, itemId);
+				int permission = permissionService.getPermission(itemTypeId, itemId);
+				ownerId[0] = permissionService.getOwnerId(itemTypeId, itemId);
+				return permission;
 			}
 		};
 
@@ -710,6 +750,10 @@ public class HomepageController implements Initializable {
 			if(permission == 2) {
 				permissionCbb.setValue("Chỉ xem");
 				permissionCbb.setDisable(true);
+
+				if(userId == ownerId[0]) {
+					permissionCbb.setDisable(false);
+				}
 			}
 			else if(permission == 3){
 				permissionCbb.setValue("Chỉnh sửa");

@@ -297,4 +297,40 @@ public class ItemService {
             return false;
         }
     }
+
+    public boolean deleteItemPermanently(int itemTypeId, int itemId) {
+        try {
+            SocketClientHelper socketClientHelper = new SocketClientHelper();
+            socketClientHelper.sendRequest("DELETE_PERMANENTLY");
+            socketClientHelper.sendRequest(String.valueOf(itemTypeId));
+            socketClientHelper.sendRequest(String.valueOf(itemId));
+
+            boolean response = (boolean) socketClientHelper.receiveResponse();
+            socketClientHelper.close();
+            return response;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean downloadFile(String path, int itemId) {
+        try {
+            SocketClientHelper socketClientHelper = new SocketClientHelper();
+            socketClientHelper.sendRequest("DOWNLOAD_FILE");
+            socketClientHelper.sendRequest(String.valueOf(itemId));
+
+            String fileName = (String) socketClientHelper.receiveResponse();
+            int size = Integer.parseInt((String)socketClientHelper.receiveResponse());
+
+            socketClientHelper.downloadFile(path + java.io.File.separator + fileName, size);
+
+            boolean response = (boolean) socketClientHelper.receiveResponse();
+            socketClientHelper.close();
+            return response;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
 }

@@ -121,14 +121,10 @@ public class ClientHandler implements Runnable{
                 }
                 case "DOWNLOAD_FILE" -> {
                     int fileId = Integer.parseInt((String) receiveRequest());
-                    FileService fileService = new FileService();
 
-                    String filePath = fileService.getFilePath(fileId);
+                    boolean response = downloadFile(fileId);
 
-                    int size = fileService.sizeOfFile(fileId);
-                    sendResponse(String.valueOf(size));
-
-                    syncFile(filePath, size);
+                    sendResponse(response);
                 }
                 case "DOWNLOAD_FOLDER" -> {
                     int userId = Integer.parseInt((String) receiveRequest());
@@ -197,6 +193,13 @@ public class ClientHandler implements Runnable{
                     int response = permissionService.getPermission(itemTypeId, itemId);
                     sendResponse(response);
                 }
+                case "GET_OWNER_ID" -> {
+                    int itemTypeId = Integer.parseInt((String) receiveRequest());
+                    int itemId = Integer.parseInt((String) receiveRequest());
+                    int response = new PermissionService().getOwnerId(itemTypeId, itemId);
+                    System.out.println("Owner id: " + response);
+                    sendResponse(response);
+                }
                 case "UPDATE_PERMISSION" -> {
                     int itemTypeId = Integer.parseInt((String) receiveRequest());
                     int itemId = Integer.parseInt((String) receiveRequest());
@@ -212,9 +215,22 @@ public class ClientHandler implements Runnable{
                     if(itemTypeId == 1){
                         FolderService folderService = new FolderService();
                         response = folderService.deleteFolder(itemId);
-                    } else if(itemTypeId == 2){
+                    } else {
                         FileService fileService = new FileService();
                         response = fileService.deleteFile(itemId);
+                    }
+                    sendResponse(response);
+                }
+                case "DELETE_PERMANENTLY" -> {
+                    int itemTypeId = Integer.parseInt((String) receiveRequest());
+                    int itemId = Integer.parseInt((String) receiveRequest());
+                    boolean response = false;
+                    if(itemTypeId == 1){
+                        FolderService folderService = new FolderService();
+                        response = folderService.deleteFolderPermanently(itemId);
+                    } else {
+                        FileService fileService = new FileService();
+                        response = fileService.deleteFilePermanently(itemId);
                     }
                     sendResponse(response);
                 }
@@ -234,6 +250,24 @@ public class ClientHandler implements Runnable{
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        }
+    }
+
+
+    private boolean downloadFile(int fileId){
+        try {
+            FileService fileService = new FileService();
+            String fileName = fileService.getFullFileName(fileId);
+            sendResponse(fileName);
+
+            int size = fileService.getSize(fileId);
+            sendResponse(String.valueOf(size));
+
+            syncFile(fileService.getFilePath(fileId), size);
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
         }
     }
 

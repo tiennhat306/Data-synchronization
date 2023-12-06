@@ -31,7 +31,7 @@ public class ItemService {
 
             String folderPermissionConditions = "(per.permissionType IN (2, 3) AND (per.userId is null OR per.userId = :userId)) OR fd.ownerId = :userId";
             String folderQuery = "select distinct fd from Folder fd Join Permission per on fd.id = per.folderId" +
-                    " where fd.parentId = :folderId AND fd.folderName LIKE :searchText" +
+                    " where fd.parentId = :folderId AND fd.folderName LIKE :searchText AND fd.isDeleted = false" +
                     " AND (" + folderPermissionConditions + ")";
             List<Folder> folderList = session.createQuery(folderQuery, Folder.class)
                     .setParameter("folderId", folderId)
@@ -66,7 +66,7 @@ public class ItemService {
 
             String filePermissionConditions = "(per.permissionType IN (2, 3) AND (per.userId is null OR per.userId = :userId)) OR fl.ownerId = :userId";
             String fileQuery = "select distinct fl from File fl Join Permission per on fl.folderId = per.folderId" +
-                    " where fl.folderId = :folderId AND fl.name LIKE :searchText" +
+                    " where fl.folderId = :folderId AND fl.name LIKE :searchText AND fl.isDeleted = false" +
                     " AND (" + filePermissionConditions + ")";
             List<File> fileList = session.createQuery(fileQuery, File.class)
                     .setParameter("folderId", folderId)
