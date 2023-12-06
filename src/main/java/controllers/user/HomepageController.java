@@ -315,6 +315,37 @@ public class HomepageController implements Initializable {
 
 		openBtn.setOnAction(event -> {
 			// Open file
+			int itemTypeId = selectedItem.getTypeId();
+			int itemId = selectedItem.getId();
+
+			Task<Boolean> openTask = new Task<Boolean>() {
+				@Override
+				protected Boolean call() throws Exception {
+					ItemService itemService = new ItemService();
+					if(itemTypeId == 1) {
+						boolean rs = itemService.openFolder(userId, itemId);
+						return rs;
+					} else {
+						boolean rs = itemService.openFile(userId, itemId);
+						return rs;
+					}
+				}
+			};
+
+			openTask.setOnSucceeded(e -> {
+				boolean response = openTask.getValue();
+				if(response) {
+					System.out.println("Mở thành công");
+				}
+				else System.out.println("Mở thất bại");
+			});
+
+			openTask.setOnFailed(e -> {
+				System.out.println("Mở thất bại");
+			});
+
+			Thread thread = new Thread(openTask);
+			thread.start();
 
 			popup.hide();
 		});
@@ -2061,6 +2092,149 @@ public class HomepageController implements Initializable {
 	}
 
 	public void showRecentOpenPage(MouseEvent mouseEvent) {
+		dataTable.getColumns().clear();
+		TableColumn<models.File, String> nameColumn = new TableColumn<>("Tên");
+		TableColumn<models.File, Date> dateOpenedColumn = new TableColumn<>("Ngày mở");
+		TableColumn<models.File, String> ownerColumn = new TableColumn<>("Chủ sở hữu");
+		TableColumn<models.File, String> addressColumn = new TableColumn<>("Vị trí");
 
+		dataTable.getColumns().addAll(nameColumn, dateOpenedColumn, ownerColumn, addressColumn);
+
+		nameColumn.setCellValueFactory(column -> {
+			return new SimpleStringProperty(column.getValue().getName() + (column.getValue().getTypeId() != 1 ? "." + column.getValue().getTypesByTypeId().getName() : ""));
+		});
+		nameColumn.setCellFactory(column -> {
+			return new TableCell<models.File, String>() {
+				@Override
+				protected void updateItem(String item, boolean empty) {
+					super.updateItem(item, empty);
+					if(empty || item == null || getTableRow() == null ||getTableRow().getItem() == null) {
+						setText(null);
+						setGraphic(null);
+					}
+					else {
+						ImageView icon = new ImageView();
+						icon.setFitHeight(20);
+						icon.setFitWidth(20);
+						if(getTableRow().getItem().getTypeId() == 1){
+							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/folder.png").toString()));
+						} else if (getTableRow().getItem().getTypesByTypeId().getName().equals("txt")){
+							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/txt.png").toString()));
+						}
+						else if (getTableRow().getItem().getTypesByTypeId().getName().matches("docx?|docm|dotx?|dotm")){
+							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/doc.png").toString()));
+						}
+						else if (getTableRow().getItem().getTypesByTypeId().getName().equals("pdf")){
+							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/pdf.png").toString()));
+						}
+						else if (getTableRow().getItem().getTypesByTypeId().getName().matches("mp4|mp3|avi|flv|wmv|mov|wav|wma|ogg|mkv")){
+							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/mp4.png").toString()));
+						}
+						else if (getTableRow().getItem().getTypesByTypeId().getName().matches("png|svg|jpg|jpeg|gif|bmp")){
+							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/picture.png").toString()));
+						}
+						else {
+							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/unknown.png").toString()));
+						}
+
+
+						setGraphic(icon);
+						setText(item);
+					}
+				}
+			};
+		});
+
+		dateOpenedColumn.setCellFactory(column -> {
+			return new TableCell<models.File, Date>() {
+				private final SimpleDateFormat format = new SimpleDateFormat("dd/MM/yyyy HH:mm");
+				@Override
+				protected void updateItem(Date item, boolean empty) {
+					super.updateItem(item, empty);
+					if(empty || item == null) {
+						setText(null);
+					}
+					else {
+						setText(format.format(item));
+					}
+				}
+			};
+		});
+		dateOpenedColumn.setCellValueFactory(new PropertyValueFactory<models.File, Date>("dateDeleted"));
+		ownerColumn.setCellValueFactory(column -> {
+			return new SimpleStringProperty(column.getValue().getUsersByDeletedBy() == null ? "" : column.getValue().getUsersByDeletedBy().getName());
+		});
+		addressColumn.setCellValueFactory(new PropertyValueFactory<models.File, String>("finalpath"));
+
+		dataTable.setRowFactory(dataTable -> {
+			TableRow<models.File> row = new TableRow<>();
+			row.setOnMouseClicked(event -> {
+				if(event.getButton() == MouseButton.PRIMARY && !row.isEmpty()){
+					dataTable.getSelectionModel().select(row.getIndex());
+					models.File file = row.getItem();
+					if(file.getTypeId() == 1){
+						currentFolderId = file.getId();
+						fillData();
+						// Tạo HBox breadcrumb mới
+						HBox _breadcrumb = createBreadcrumb(file.getId(), file.getName());
+						breadcrumbList.add(_breadcrumb);
+						// Thêm các HBox breadcrumb vào container
+						path.getChildren().setAll(breadcrumbList);
+					}
+					else {
+						// Open file
+					}
+				} else if(event.getButton() == MouseButton.SECONDARY && !row.isEmpty()){
+					dataTable.getSelectionModel().select(row.getIndex());
+					showDeleteOptionsPopup(event, row.getItem());
+				}
+			});
+
+			row.setOnMouseEntered(event -> {
+				if(!row.isEmpty() && !row.isSelected()){
+					row.setStyle("-fx-background-color: #f2f2f2");
+				}
+			});
+
+			row.setOnMouseExited(event -> {
+				if(!row.isEmpty()){
+					row.setStyle("");
+				}
+			});
+
+			return row;
+		});
+
+		dataTable.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/assets/css/tableview.css")).toExternalForm());
+
+		lbTrashBtn.setFont(Font.font("System", FontWeight.BOLD, FontPosture.REGULAR, lbTrashBtn.getFont().getSize()));
+		setFontLabel(5);
+		searchTxt.setText("");
+		currentSideBarIndex = 5;
+		currentFolderId = -5;
+		breadcrumbList.clear();
+		HBox breadcrumb = createBreadcrumb(-5, "Thùng rác");
+		breadcrumbList.add(breadcrumb);
+		// Thêm các HBox breadcrumb vào container
+		path.getChildren().setAll(breadcrumbList);
+
+		ItemService itemService = new ItemService();
+		List<models.File> itemList = itemService.getAllDeletedItem(userId, "");
+
+		System.out.println("itemList: " + itemList);
+
+		if(itemList == null) {
+			System.out.println("null");
+			dataTable.setPlaceholder(new Label("Không có dữ liệu"));
+		}
+		else {
+			final ObservableList<models.File> items = FXCollections.observableArrayList(itemList);
+			dataTable.setItems(items);
+			System.out.println("not null");
+		}
+
+		createFolderBtn.setDisable(true);
+		uploadFileBtn.setDisable(true);
+		uploadFolderBtn.setDisable(true);
 	}
 }

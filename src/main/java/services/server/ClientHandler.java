@@ -173,6 +173,34 @@ public class ClientHandler implements Runnable{
                     syncFile(filePath, size);
                     sendResponse(true);
                 }
+                case "OPEN_FOLDER" -> {
+                    int userId = Integer.parseInt((String) receiveRequest());
+                    int folderId = Integer.parseInt((String) receiveRequest());
+
+                    String userPath = new services.server.user.UserService().getUserPath(userId);
+                    String folderPath = new services.server.user.FolderService().getFolderPath(folderId);
+                    sendResponse(userPath + java.io.File.separator + folderPath);
+
+                    boolean response = syncFolder(userId, folderId, new services.server.user.FolderService().getFolderPath(folderId));
+
+                    sendResponse(response);
+                }
+                case "OPEN_FILE" -> {
+                    int userId = Integer.parseInt((String) receiveRequest());
+                    int fileId = Integer.parseInt((String) receiveRequest());
+
+                    String userPath = new services.server.user.UserService().getUserPath(userId);
+                    String filePath = new services.server.user.FileService().getPath(fileId);
+                    sendResponse(userPath + java.io.File.separator + filePath);
+
+                    int size = new services.server.user.FileService().getSize(fileId);
+                    sendResponse(String.valueOf(size));
+
+                    syncFile(new FileService().getFilePath(fileId), size);
+
+                    boolean response = new RecentFileService().addRecentFile(userId, fileId);
+                    sendResponse(response);
+                }
                 case "SEARCH_UNSHARED_USER" -> {
                     int itemTypeId = Integer.parseInt((String) receiveRequest());
                     int itemId = Integer.parseInt((String) receiveRequest());

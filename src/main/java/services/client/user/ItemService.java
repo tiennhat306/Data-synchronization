@@ -398,4 +398,56 @@ public class ItemService {
             return null;
         }
     }
+
+    public boolean openFolder(int userId, int folderId) {
+        try {
+            SocketClientHelper socketClientHelper = new SocketClientHelper();
+            socketClientHelper.sendRequest("OPEN_FOLDER");
+            socketClientHelper.sendRequest(String.valueOf(userId));
+            socketClientHelper.sendRequest(String.valueOf(folderId));
+
+            String folderPath = (String) socketClientHelper.receiveResponse();
+
+            deleteFolderIfExist(folderPath);
+            Files.createDirectories(Paths.get(folderPath));
+
+            socketClientHelper.syncFolder(folderPath);
+
+            boolean response = (boolean) socketClientHelper.receiveResponse();
+            socketClientHelper.close();
+            return response;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean openFile(int userId, int fileId) {
+        try {
+            SocketClientHelper socketClientHelper = new SocketClientHelper();
+            socketClientHelper.sendRequest("OPEN_FILE");
+            socketClientHelper.sendRequest(String.valueOf(userId));
+            socketClientHelper.sendRequest(String.valueOf(fileId));
+
+            String filePath = (String) socketClientHelper.receiveResponse();
+            int size = Integer.parseInt((String)socketClientHelper.receiveResponse());
+
+            Files.deleteIfExists(Paths.get(filePath));
+            java.io.File file = new java.io.File(filePath);
+            java.io.File parent = file.getParentFile();
+            if(!parent.exists()){
+                parent.mkdirs();
+            }
+            file.createNewFile();
+
+            socketClientHelper.syncFile(filePath, size);
+
+            boolean response = (boolean) socketClientHelper.receiveResponse();
+            socketClientHelper.close();
+            return response;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
 }
