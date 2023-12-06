@@ -39,6 +39,7 @@ import java.util.*;
 
 public class HomepageController implements Initializable {
 
+	public Label RecentOpenBtn;
 	@FXML
 	private HBox HistoryBtn;
 	@FXML
@@ -1287,6 +1288,7 @@ public class HomepageController implements Initializable {
 		}
 	}
 	public void generalPage(MouseEvent event) throws IOException {
+		resetDatatable();
 		lbGeneral.setFont(Font.font("System", FontWeight.BOLD, FontPosture.REGULAR, lbGeneral.getFont().getSize()));
 		setFontLabel(0);
 		searchTxt.setText("");
@@ -1313,6 +1315,7 @@ public class HomepageController implements Initializable {
 		}
 	}
 	public void myFilePage(MouseEvent event) throws IOException {
+		resetDatatable();
 		lbMyFile.setFont(Font.font("System", FontWeight.BOLD, FontPosture.REGULAR, lbMyFile.getFont().getSize()));
 		setFontLabel(1);
 		searchTxt.setText("");
@@ -1341,6 +1344,7 @@ public class HomepageController implements Initializable {
 		}
 	}
 	public void myShareFile(MouseEvent event) throws IOException {
+		resetDatatable();
 		lbMyFileShare.setFont(Font.font("System", FontWeight.BOLD, FontPosture.REGULAR, lbMyFileShare.getFont().getSize()));
 		setFontLabel(2);
 		searchTxt.setText("");
@@ -1369,6 +1373,7 @@ public class HomepageController implements Initializable {
 		}
 	}
 	public void otherFileShare(MouseEvent event) throws IOException {
+		resetDatatable();
 		lbOtherFileShare.setFont(Font.font("System", FontWeight.BOLD, FontPosture.REGULAR, lbOtherFileShare.getFont().getSize()));
 		setFontLabel(3);
 		searchTxt.setText("");
@@ -1397,6 +1402,7 @@ public class HomepageController implements Initializable {
 		}
 	}
 	public void search(ActionEvent event) throws IOException {
+		resetDatatable();
 		String txt = searchTxt.getText();
 		System.out.println(txt);
 		ItemService itemService = new ItemService();
@@ -1437,6 +1443,7 @@ public class HomepageController implements Initializable {
 		}
 	}
 	private void fillDataBreadCrumb(int index) {
+		resetDatatable();
 		ItemService itemService = new ItemService();
 		List<models.File> itemList = null;
 		LoginSession loginSession = LoginService.getCurrentSession();
@@ -1500,5 +1507,307 @@ public class HomepageController implements Initializable {
 			}
 		});
 		return breadcrumb;
+	}
+
+
+	public void resetDatatable() {
+		dataTable.getColumns().clear();
+		TableColumn<models.File, String> nameColumn = new TableColumn<>("Tên");
+		TableColumn<models.File, String> ownerNameColumn = new TableColumn<>("Chủ sở hữu");
+		TableColumn<models.File, Date> dateModifiedColumn = new TableColumn<>("Đã sửa đổi");
+		TableColumn<models.File, String> lastModifiedByColumn = new TableColumn<>("Người sửa đổi");
+		TableColumn<models.File, String> sizeColumn = new TableColumn<>("Kích thước");
+
+		dataTable.getColumns().addAll(nameColumn, ownerNameColumn, dateModifiedColumn, lastModifiedByColumn, sizeColumn);
+
+		nameColumn.setCellValueFactory(column -> {
+			return new SimpleStringProperty(column.getValue().getName() + (column.getValue().getTypeId() != 1 ? "." + column.getValue().getTypesByTypeId().getName() : ""));
+		});
+		nameColumn.setCellFactory(column -> {
+			return new TableCell<models.File, String>() {
+				@Override
+				protected void updateItem(String item, boolean empty) {
+					super.updateItem(item, empty);
+					if(empty || item == null || getTableRow() == null ||getTableRow().getItem() == null) {
+						setText(null);
+						setGraphic(null);
+					}
+					else {
+						ImageView icon = new ImageView();
+						icon.setFitHeight(20);
+						icon.setFitWidth(20);
+						if(getTableRow().getItem().getTypeId() == 1){
+							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/folder.png").toString()));
+						} else if (getTableRow().getItem().getTypesByTypeId().getName().equals("txt")){
+							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/txt.png").toString()));
+						}
+						else if (getTableRow().getItem().getTypesByTypeId().getName().matches("docx?|docm|dotx?|dotm")){
+							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/doc.png").toString()));
+						}
+						else if (getTableRow().getItem().getTypesByTypeId().getName().equals("pdf")){
+							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/pdf.png").toString()));
+						}
+						else if (getTableRow().getItem().getTypesByTypeId().getName().matches("mp4|mp3|avi|flv|wmv|mov|wav|wma|ogg|mkv")){
+							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/mp4.png").toString()));
+						}
+						else if (getTableRow().getItem().getTypesByTypeId().getName().matches("png|svg|jpg|jpeg|gif|bmp")){
+							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/picture.png").toString()));
+						}
+						else {
+							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/unknown.png").toString()));
+						}
+
+
+						setGraphic(icon);
+						setText(item);
+					}
+				}
+			};
+		});
+
+		ownerNameColumn.setCellValueFactory(column -> {
+			return new SimpleStringProperty(column.getValue().getUsersByOwnerId().getName() == null ? "" : column.getValue().getUsersByOwnerId().getName());
+		});
+		dateModifiedColumn.setCellFactory(column -> {
+			return new TableCell<models.File, Date>() {
+				private final SimpleDateFormat format = new SimpleDateFormat("dd/MM/yyyy HH:mm");
+				@Override
+				protected void updateItem(Date item, boolean empty) {
+					super.updateItem(item, empty);
+					if(empty || item == null) {
+						setText(null);
+					}
+					else {
+						setText(format.format(item));
+					}
+				}
+			};
+		});
+		dateModifiedColumn.setCellValueFactory(new PropertyValueFactory<models.File, Date>("updatedAt"));
+		lastModifiedByColumn.setCellValueFactory(column -> {
+			return new SimpleStringProperty(column.getValue().getUsersByUpdatedBy() == null ? "" : column.getValue().getUsersByUpdatedBy().getName());
+		});
+		sizeColumn.setCellValueFactory(column -> {
+			int size = column.getValue().getSize();
+			String sizeStr = "";
+			if(size < 0){
+				sizeStr = (size - Short.MIN_VALUE) + " mục";
+			}
+			else if(size < 1024) {
+				sizeStr = size + " bytes";
+			}
+			else if(size < 1024 * 1024) {
+				sizeStr = size / 1024 + " KB";
+			}
+			else if(size < 1024 * 1024 * 1024) {
+				sizeStr = size / (1024 * 1024) + " MB";
+			}
+			else {
+				sizeStr = size / (1024 * 1024 * 1024) + " GB";
+			}
+			return new SimpleStringProperty(sizeStr);
+		});
+
+		dataTable.setRowFactory(dataTable -> {
+			TableRow<models.File> row = new TableRow<>();
+			row.setOnMouseClicked(event -> {
+				if(event.getButton() == MouseButton.PRIMARY && !row.isEmpty()){
+					dataTable.getSelectionModel().select(row.getIndex());
+					models.File file = row.getItem();
+					if(file.getTypeId() == 1){
+						currentFolderId = file.getId();
+						fillData();
+						// Tạo HBox breadcrumb mới
+						HBox _breadcrumb = createBreadcrumb(file.getId(), file.getName());
+						breadcrumbList.add(_breadcrumb);
+						// Thêm các HBox breadcrumb vào container
+						path.getChildren().setAll(breadcrumbList);
+					}
+					else {
+						// Open file
+					}
+				} else if(event.getButton() == MouseButton.SECONDARY && !row.isEmpty()){
+					dataTable.getSelectionModel().select(row.getIndex());
+					showOptionsPopup(event, row.getItem());
+				}
+			});
+
+			row.setOnMouseEntered(event -> {
+				if(!row.isEmpty() && !row.isSelected()){
+					row.setStyle("-fx-background-color: #f2f2f2");
+				}
+			});
+
+			row.setOnMouseExited(event -> {
+				if(!row.isEmpty()){
+					row.setStyle("");
+				}
+			});
+
+			return row;
+		});
+
+		dataTable.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/assets/css/tableview.css")).toExternalForm());
+	}
+
+
+	public void showTrashPage(MouseEvent mouseEvent) {
+		dataTable.getColumns().clear();
+		TableColumn<models.File, String> nameColumn = new TableColumn<>("Tên");
+		TableColumn<models.File, String> ownerNameColumn = new TableColumn<>("Chủ sở hữu");
+		TableColumn<models.File, Date> dateModifiedColumn = new TableColumn<>("Đã sửa đổi");
+		TableColumn<models.File, String> lastModifiedByColumn = new TableColumn<>("Người sửa đổi");
+		TableColumn<models.File, String> sizeColumn = new TableColumn<>("Kích thước");
+
+		dataTable.getColumns().addAll(nameColumn, ownerNameColumn, dateModifiedColumn, lastModifiedByColumn, sizeColumn);
+
+		nameColumn.setCellValueFactory(column -> {
+			return new SimpleStringProperty(column.getValue().getName() + (column.getValue().getTypeId() != 1 ? "." + column.getValue().getTypesByTypeId().getName() : ""));
+		});
+		nameColumn.setCellFactory(column -> {
+			return new TableCell<models.File, String>() {
+				@Override
+				protected void updateItem(String item, boolean empty) {
+					super.updateItem(item, empty);
+					if(empty || item == null || getTableRow() == null ||getTableRow().getItem() == null) {
+						setText(null);
+						setGraphic(null);
+					}
+					else {
+						ImageView icon = new ImageView();
+						icon.setFitHeight(20);
+						icon.setFitWidth(20);
+						if(getTableRow().getItem().getTypeId() == 1){
+							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/folder.png").toString()));
+						} else if (getTableRow().getItem().getTypesByTypeId().getName().equals("txt")){
+							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/txt.png").toString()));
+						}
+						else if (getTableRow().getItem().getTypesByTypeId().getName().matches("docx?|docm|dotx?|dotm")){
+							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/doc.png").toString()));
+						}
+						else if (getTableRow().getItem().getTypesByTypeId().getName().equals("pdf")){
+							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/pdf.png").toString()));
+						}
+						else if (getTableRow().getItem().getTypesByTypeId().getName().matches("mp4|mp3|avi|flv|wmv|mov|wav|wma|ogg|mkv")){
+							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/mp4.png").toString()));
+						}
+						else if (getTableRow().getItem().getTypesByTypeId().getName().matches("png|svg|jpg|jpeg|gif|bmp")){
+							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/picture.png").toString()));
+						}
+						else {
+							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/unknown.png").toString()));
+						}
+
+
+						setGraphic(icon);
+						setText(item);
+					}
+				}
+			};
+		});
+
+		ownerNameColumn.setCellValueFactory(column -> {
+			return new SimpleStringProperty(column.getValue().getUsersByOwnerId().getName() == null ? "" : column.getValue().getUsersByOwnerId().getName());
+		});
+		dateModifiedColumn.setCellFactory(column -> {
+			return new TableCell<models.File, Date>() {
+				private final SimpleDateFormat format = new SimpleDateFormat("dd/MM/yyyy HH:mm");
+				@Override
+				protected void updateItem(Date item, boolean empty) {
+					super.updateItem(item, empty);
+					if(empty || item == null) {
+						setText(null);
+					}
+					else {
+						setText(format.format(item));
+					}
+				}
+			};
+		});
+		dateModifiedColumn.setCellValueFactory(new PropertyValueFactory<models.File, Date>("updatedAt"));
+		lastModifiedByColumn.setCellValueFactory(column -> {
+			return new SimpleStringProperty(column.getValue().getUsersByUpdatedBy() == null ? "" : column.getValue().getUsersByUpdatedBy().getName());
+		});
+		sizeColumn.setCellValueFactory(column -> {
+			int size = column.getValue().getSize();
+			String sizeStr = "";
+			if(size < 0){
+				sizeStr = (size - Short.MIN_VALUE) + " mục";
+			}
+			else if(size < 1024) {
+				sizeStr = size + " bytes";
+			}
+			else if(size < 1024 * 1024) {
+				sizeStr = size / 1024 + " KB";
+			}
+			else if(size < 1024 * 1024 * 1024) {
+				sizeStr = size / (1024 * 1024) + " MB";
+			}
+			else {
+				sizeStr = size / (1024 * 1024 * 1024) + " GB";
+			}
+			return new SimpleStringProperty(sizeStr);
+		});
+
+
+
+
+
+
+
+
+
+		breadcrumbList.clear();
+		HBox breadcrumb = createBreadcrumb(2, "Chung");
+		breadcrumbList.add(breadcrumb);
+		// Thêm các HBox breadcrumb vào container
+		path.getChildren().setAll(breadcrumbList);
+
+		dataTable.setRowFactory(dataTable -> {
+			TableRow<models.File> row = new TableRow<>();
+			row.setOnMouseClicked(event -> {
+				if(event.getButton() == MouseButton.PRIMARY && !row.isEmpty()){
+					dataTable.getSelectionModel().select(row.getIndex());
+					models.File file = row.getItem();
+					if(file.getTypeId() == 1){
+						currentFolderId = file.getId();
+						fillData();
+						// Tạo HBox breadcrumb mới
+						HBox _breadcrumb = createBreadcrumb(file.getId(), file.getName());
+						breadcrumbList.add(_breadcrumb);
+						// Thêm các HBox breadcrumb vào container
+						path.getChildren().setAll(breadcrumbList);
+					}
+					else {
+						// Open file
+					}
+				} else if(event.getButton() == MouseButton.SECONDARY && !row.isEmpty()){
+					dataTable.getSelectionModel().select(row.getIndex());
+					showOptionsPopup(event, row.getItem());
+				}
+			});
+
+			row.setOnMouseEntered(event -> {
+				if(!row.isEmpty() && !row.isSelected()){
+					row.setStyle("-fx-background-color: #f2f2f2");
+				}
+			});
+
+			row.setOnMouseExited(event -> {
+				if(!row.isEmpty()){
+					row.setStyle("");
+				}
+			});
+
+			return row;
+		});
+
+		dataTable.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/assets/css/tableview.css")).toExternalForm());
+
+		fillData();
+	}
+
+	public void showRecentOpenPage(MouseEvent mouseEvent) {
+
 	}
 }
