@@ -162,10 +162,10 @@ public class ItemService {
         }
     }
 
-    public boolean synchronize(int userId,  int currentFolderId) {
+    public boolean synchronizeFolder(int userId,  int currentFolderId) {
         try {
             SocketClientHelper socketClientHelper = new SocketClientHelper();
-            socketClientHelper.sendRequest("SYNCHRONIZE");
+            socketClientHelper.sendRequest("SYNCHRONIZE_FOLDER");
             socketClientHelper.sendRequest(String.valueOf(userId));
             socketClientHelper.sendRequest(String.valueOf(currentFolderId));
 
@@ -175,6 +175,36 @@ public class ItemService {
             Files.createDirectories(Paths.get(folderPath));
 
             socketClientHelper.syncFolder(folderPath);
+
+            boolean response = (boolean) socketClientHelper.receiveResponse();
+            socketClientHelper.close();
+            return response;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean synchronizeFile(int userId, int fileId) {
+        try {
+            SocketClientHelper socketClientHelper = new SocketClientHelper();
+            socketClientHelper.sendRequest("SYNCHRONIZE_FILE");
+            socketClientHelper.sendRequest(String.valueOf(userId));
+            socketClientHelper.sendRequest(String.valueOf(fileId));
+
+            String filePath = (String) socketClientHelper.receiveResponse();
+            int size = Integer.parseInt((String)socketClientHelper.receiveResponse());
+
+            Files.deleteIfExists(Paths.get(filePath));
+            java.io.File file = new java.io.File(filePath);
+            java.io.File parent = file.getParentFile();
+            if(!parent.exists()){
+                parent.mkdirs();
+            }
+            file.createNewFile();
+
+
+            socketClientHelper.syncFile(filePath, size);
 
             boolean response = (boolean) socketClientHelper.receiveResponse();
             socketClientHelper.close();
@@ -332,6 +362,40 @@ public class ItemService {
         } catch (Exception e) {
             e.printStackTrace();
             return false;
+        }
+    }
+
+    public boolean restore(int itemTypeId, int itemId) {
+        try {
+            SocketClientHelper socketClientHelper = new SocketClientHelper();
+            socketClientHelper.sendRequest("RESTORE");
+            socketClientHelper.sendRequest(String.valueOf(itemTypeId));
+            socketClientHelper.sendRequest(String.valueOf(itemId));
+
+            boolean response = (boolean) socketClientHelper.receiveResponse();
+            socketClientHelper.close();
+            return response;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public List<File> getAllDeletedItem(int userId, String txt) {
+        try {
+            SocketClientHelper socketClientHelper = new SocketClientHelper();
+            socketClientHelper.sendRequest("GET_ALL_DELETED_ITEM");
+            socketClientHelper.sendRequest(String.valueOf(userId));
+            socketClientHelper.sendRequest(txt);
+
+            Object obj = socketClientHelper.receiveResponse();
+            List<File> itemList = (List<File>) obj;
+
+            socketClientHelper.close();
+            return itemList;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
         }
     }
 }

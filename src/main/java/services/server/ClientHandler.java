@@ -84,6 +84,12 @@ public class ClientHandler implements Runnable{
                     List<File> response = getItemList(userId, folderId, searchText);
                     sendResponse(response);
                 }
+                case "GET_ALL_DELETED_ITEM" -> {
+                    int userId = Integer.parseInt((String) receiveRequest());
+                    String searchText = (String) receiveRequest();
+                    List<File> response = getDeletedItemList(userId, searchText);
+                    sendResponse(response);
+                }
                 case "CREATE_FOLDER" -> {
                     String folderName = (String) receiveRequest();
                     int ownerId = Integer.parseInt((String) receiveRequest());
@@ -134,7 +140,7 @@ public class ClientHandler implements Runnable{
 
                     sendResponse(response);
                 }
-                case "SYNCHRONIZE" -> {
+                case "SYNCHRONIZE_FOLDER" -> {
                     int userId = Integer.parseInt((String) receiveRequest());
                     int folderId = Integer.parseInt((String) receiveRequest());
 
@@ -148,6 +154,24 @@ public class ClientHandler implements Runnable{
                     boolean response = syncFolder(userId, folderId, folderService.getFolderPath(folderId));
 
                     sendResponse(response);
+                }
+                case "SYNCHRONIZE_FILE" -> {
+                    int userId = Integer.parseInt((String) receiveRequest());
+                    int fileId = Integer.parseInt((String) receiveRequest());
+
+                    services.server.user.UserService userService = new services.server.user.UserService();
+                    String userPath = userService.getUserPath(userId);
+
+                    services.server.user.FileService fileService = new services.server.user.FileService();
+                    String path = fileService.getPath(fileId);
+                    sendResponse(userPath + java.io.File.separator + path);
+
+                    String filePath = fileService.getFilePath(fileId);
+                    int size = fileService.getSize(fileId);
+                    sendResponse(String.valueOf(size));
+
+                    syncFile(filePath, size);
+                    sendResponse(true);
                 }
                 case "SEARCH_UNSHARED_USER" -> {
                     int itemTypeId = Integer.parseInt((String) receiveRequest());
@@ -235,6 +259,19 @@ public class ClientHandler implements Runnable{
                     }
                     sendResponse(response);
                 }
+                case "RESTORE" -> {
+                    int itemTypeId = Integer.parseInt((String) receiveRequest());
+                    int itemId = Integer.parseInt((String) receiveRequest());
+                    boolean response = false;
+                    if(itemTypeId == 1){
+                        FolderService folderService = new FolderService();
+                        response = folderService.restoreFolder(itemId);
+                    } else {
+                        FileService fileService = new FileService();
+                        response = fileService.restoreFile(itemId);
+                    }
+                    sendResponse(response);
+                }
                 default -> {
                     System.out.println("Unknown request: " + request);
                 }
@@ -252,6 +289,11 @@ public class ClientHandler implements Runnable{
                 e.printStackTrace();
             }
         }
+    }
+
+    private List<File> getDeletedItemList(int userId, String searchText) {
+        ItemService itemService = new ItemService();
+        return itemService.getAllDeletedItem(userId, searchText);
     }
 
 

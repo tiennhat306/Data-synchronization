@@ -122,13 +122,13 @@
             <HBox fx:id="HistoryBtn" alignment="CENTER_LEFT" layoutX="10.0" layoutY="124.0" prefHeight="26.0" prefWidth="159.0">
                <children>
                   <FontAwesomeIconView glyphName="HISTORY" />
-                  <Label fx:id="RecentOpenBtn"  onMouseClicked="#showRecentOpenPage" text="Gần đây" />
+                  <Label fx:id="lbRecentOpenBtn"  onMouseClicked="#showRecentOpenPage" text="Gần đây" />
                </children>
             </HBox>
             <HBox alignment="CENTER_LEFT" layoutX="10.0" layoutY="245.0" prefHeight="26.0" prefWidth="159.0">
                <children>
                   <FontAwesomeIconView glyphName="TRASH" />
-                  <Label fx:id="TrashBtn" onMouseClicked="#showTrashPage" text="Thùng rác" />
+                  <Label fx:id="lbTrashBtn" onMouseClicked="#showTrashPage" text="Thùng rác" />
                </children>
             </HBox>
          </children>

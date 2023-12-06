@@ -324,6 +324,10 @@ public class FolderService {
                 fileService.deleteFilePermanently(file.getId());
             }
 
+            deleteFolderIfExist(getFolderPath(id));
+            PermissionService permissionService = new PermissionService();
+            permissionService.deletePermissionByFolderId(id);
+
             session.remove(folder);
 
             session.getTransaction().commit();

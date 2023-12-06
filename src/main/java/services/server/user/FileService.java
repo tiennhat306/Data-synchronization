@@ -114,6 +114,11 @@ public class FileService {
             transaction = session.beginTransaction();
             File file = session.find(File.class, id);
             if(file == null) return false;
+
+            deleteFileIfExist(getFilePath(id));
+            PermissionService permissionService = new PermissionService();
+            permissionService.deletePermissionByFileId(id);
+
             session.remove(file);
             transaction.commit();
             return true;
@@ -283,6 +288,31 @@ public class FileService {
         } catch (Exception e){
             e.printStackTrace();
             return 0;
+        }
+    }
+
+    public String getPath(int fileId){
+        try(Session session = HibernateUtil.getSessionFactory().openSession()){
+            int folderId = session.createQuery("select f.folderId from File f where f.id = :fileId", Integer.class)
+                    .setParameter("fileId", fileId)
+                    .getSingleResult();
+
+            FolderService folderService = new FolderService();
+            String path = folderService.getPath(folderId);
+
+            String fileName = session.createQuery("select f.name from File f where f.id = :fileId", String.class)
+                    .setParameter("fileId", fileId)
+                    .getSingleResult();
+
+            TypeService typeService = new TypeService();
+            String type = typeService.getTypeName(session.createQuery("select f.typeId from File f where f.id = :fileId", Integer.class)
+                    .setParameter("fileId", fileId)
+                    .getSingleResult());
+
+            return path + java.io.File.separator + fileName + "." + type;
+        } catch (Exception e){
+            e.printStackTrace();
+            return "";
         }
     }
 
