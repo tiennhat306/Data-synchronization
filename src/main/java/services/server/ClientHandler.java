@@ -84,17 +84,17 @@ public class ClientHandler implements Runnable{
                     List<File> response = getItemList(userId, folderId, searchText);
                     sendResponse(response);
                 }
+                case "GET_ALL_DELETED_ITEM" -> {
+                    int userId = Integer.parseInt((String) receiveRequest());
+                    String searchText = (String) receiveRequest();
+                    List<File> response = getDeletedItemList(userId, searchText);
+                    sendResponse(response);
+                }
                 case "CREATE_FOLDER" -> {
                     String folderName = (String) receiveRequest();
                     int ownerId = Integer.parseInt((String) receiveRequest());
                     int currentFolderId = Integer.parseInt((String) receiveRequest());
                     boolean response = new FolderService().createFolder(folderName, ownerId, currentFolderId);
-
-                    FolderService folderService = new FolderService();
-                    int folderId = folderService.getFolderId(folderName, currentFolderId);
-
-                    PermissionService permissionService = new PermissionService();
-                    permissionService.addPermissionOfFolder(folderId);
                     sendResponse(response);
                 }
                 case "UPLOAD_FILE" -> {
@@ -127,14 +127,10 @@ public class ClientHandler implements Runnable{
                 }
                 case "DOWNLOAD_FILE" -> {
                     int fileId = Integer.parseInt((String) receiveRequest());
-                    FileService fileService = new FileService();
 
-                    String filePath = fileService.getFilePath(fileId);
+                    boolean response = downloadFile(fileId);
 
-                    int size = fileService.sizeOfFile(fileId);
-                    sendResponse(String.valueOf(size));
-
-                    syncFile(filePath, size);
+                    sendResponse(response);
                 }
                 case "DOWNLOAD_FOLDER" -> {
                     int userId = Integer.parseInt((String) receiveRequest());
@@ -144,7 +140,7 @@ public class ClientHandler implements Runnable{
 
                     sendResponse(response);
                 }
-                case "SYNCHRONIZE" -> {
+                case "SYNCHRONIZE_FOLDER" -> {
                     int userId = Integer.parseInt((String) receiveRequest());
                     int folderId = Integer.parseInt((String) receiveRequest());
 
@@ -158,6 +154,24 @@ public class ClientHandler implements Runnable{
                     boolean response = syncFolder(userId, folderId, folderService.getFolderPath(folderId));
 
                     sendResponse(response);
+                }
+                case "SYNCHRONIZE_FILE" -> {
+                    int userId = Integer.parseInt((String) receiveRequest());
+                    int fileId = Integer.parseInt((String) receiveRequest());
+
+                    services.server.user.UserService userService = new services.server.user.UserService();
+                    String userPath = userService.getUserPath(userId);
+
+                    services.server.user.FileService fileService = new services.server.user.FileService();
+                    String path = fileService.getPath(fileId);
+                    sendResponse(userPath + java.io.File.separator + path);
+
+                    String filePath = fileService.getFilePath(fileId);
+                    int size = fileService.getSize(fileId);
+                    sendResponse(String.valueOf(size));
+
+                    syncFile(filePath, size);
+                    sendResponse(true);
                 }
                 case "SEARCH_UNSHARED_USER" -> {
                     int itemTypeId = Integer.parseInt((String) receiveRequest());
@@ -203,12 +217,59 @@ public class ClientHandler implements Runnable{
                     int response = permissionService.getPermission(itemTypeId, itemId);
                     sendResponse(response);
                 }
+                case "GET_OWNER_ID" -> {
+                    int itemTypeId = Integer.parseInt((String) receiveRequest());
+                    int itemId = Integer.parseInt((String) receiveRequest());
+                    int response = new PermissionService().getOwnerId(itemTypeId, itemId);
+                    System.out.println("Owner id: " + response);
+                    sendResponse(response);
+                }
                 case "UPDATE_PERMISSION" -> {
                     int itemTypeId = Integer.parseInt((String) receiveRequest());
                     int itemId = Integer.parseInt((String) receiveRequest());
                     int finalPermissionId = Integer.parseInt((String) receiveRequest());
                     PermissionService permissionService = new PermissionService();
                     boolean response = permissionService.updatePermission(itemTypeId, itemId, finalPermissionId);
+                    sendResponse(response);
+                }
+                case "DELETE" -> {
+                    int itemTypeId = Integer.parseInt((String) receiveRequest());
+                    int itemId = Integer.parseInt((String) receiveRequest());
+                    int userId = Integer.parseInt((String) receiveRequest());
+                    boolean response = false;
+                    if(itemTypeId == 1){
+                        FolderService folderService = new FolderService();
+                        response = folderService.deleteFolder(itemId, userId);
+                    } else {
+                        FileService fileService = new FileService();
+                        response = fileService.deleteFile(itemId, userId);
+                    }
+                    sendResponse(response);
+                }
+                case "DELETE_PERMANENTLY" -> {
+                    int itemTypeId = Integer.parseInt((String) receiveRequest());
+                    int itemId = Integer.parseInt((String) receiveRequest());
+                    boolean response = false;
+                    if(itemTypeId == 1){
+                        FolderService folderService = new FolderService();
+                        response = folderService.deleteFolderPermanently(itemId);
+                    } else {
+                        FileService fileService = new FileService();
+                        response = fileService.deleteFilePermanently(itemId);
+                    }
+                    sendResponse(response);
+                }
+                case "RESTORE" -> {
+                    int itemTypeId = Integer.parseInt((String) receiveRequest());
+                    int itemId = Integer.parseInt((String) receiveRequest());
+                    boolean response = false;
+                    if(itemTypeId == 1){
+                        FolderService folderService = new FolderService();
+                        response = folderService.restoreFolder(itemId);
+                    } else {
+                        FileService fileService = new FileService();
+                        response = fileService.restoreFile(itemId);
+                    }
                     sendResponse(response);
                 }
                 default -> {
@@ -227,6 +288,29 @@ public class ClientHandler implements Runnable{
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        }
+    }
+
+    private List<File> getDeletedItemList(int userId, String searchText) {
+        ItemService itemService = new ItemService();
+        return itemService.getAllDeletedItem(userId, searchText);
+    }
+
+
+    private boolean downloadFile(int fileId){
+        try {
+            FileService fileService = new FileService();
+            String fileName = fileService.getFullFileName(fileId);
+            sendResponse(fileName);
+
+            int size = fileService.getSize(fileId);
+            sendResponse(String.valueOf(size));
+
+            syncFile(fileService.getFilePath(fileId), size);
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
         }
     }
 

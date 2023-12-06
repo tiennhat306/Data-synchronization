@@ -70,6 +70,10 @@ public class User implements Serializable {
     private Collection<Permission> permissionsById_0;
     @OneToMany(mappedBy = "usersByUserId")
     private Collection<RecentFile> recentfilesById;
+    @OneToMany(mappedBy = "usersByDeletedBy")
+    private Collection<File> filesById_1;
+    @OneToMany(mappedBy = "usersByDeletedBy")
+    private Collection<Folder> foldersById_0;
 
     public boolean isGender() {
         return gender;
@@ -183,14 +187,6 @@ public class User implements Serializable {
         this.refreshToken = refreshToken;
     }
 
-    public Timestamp getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Timestamp createdAt) {
-        this.createdAt = createdAt;
-    }
-
 //    @Override
 //    public boolean equals(Object o) {
 //        if (this == o) return true;
@@ -205,6 +201,14 @@ public class User implements Serializable {
 //        result = 31 * result + Arrays.hashCode(avatar);
 //        return result;
 //    }
+
+    public Timestamp getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(Timestamp createdAt) {
+        this.createdAt = createdAt;
+    }
 
     public Timestamp getUpdatedAt() {
         return updatedAt;
@@ -273,5 +277,21 @@ public class User implements Serializable {
 
     public void setRecentfilesById(Collection<RecentFile> recentfilesById) {
         this.recentfilesById = recentfilesById;
+    }
+
+    public Collection<File> getFilesById_1() {
+        return filesById_1;
+    }
+
+    public void setFilesById_1(Collection<File> filesById_1) {
+        this.filesById_1 = filesById_1;
+    }
+
+    public Collection<Folder> getFoldersById_0() {
+        return foldersById_0;
+    }
+
+    public void setFoldersById_0(Collection<Folder> foldersById_0) {
+        this.foldersById_0 = foldersById_0;
     }
 }

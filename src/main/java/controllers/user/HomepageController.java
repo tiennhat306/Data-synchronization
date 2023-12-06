@@ -3,7 +3,6 @@ package controllers.user;
 import DTO.LoginSession;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView;
-import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -39,15 +38,16 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class HomepageController implements Initializable {
-
+	@FXML
+	private Label lbRecentOpenBtn;
+	@FXML
+	private Label lbTrashBtn;
 	@FXML
 	private HBox HistoryBtn;
 	@FXML
 	private HBox SharedBtn;
 	@FXML
 	private HBox SharedByOtherBtn;
-	@FXML
-	private Label TrashBtn;
 	@FXML
 	private Button createFolderBtn;
 	@FXML
@@ -129,11 +129,27 @@ public class HomepageController implements Initializable {
 						ImageView icon = new ImageView();
 						icon.setFitHeight(20);
 						icon.setFitWidth(20);
-						if(getTableRow().getItem().getTypeId() > 1) {
-							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/file.png").toString()));
-						} else  {
+						if(getTableRow().getItem().getTypeId() == 1){
 							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/folder.png").toString()));
+						} else if (getTableRow().getItem().getTypesByTypeId().getName().equals("txt")){
+							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/txt.png").toString()));
 						}
+						else if (getTableRow().getItem().getTypesByTypeId().getName().matches("docx?|docm|dotx?|dotm")){
+							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/doc.png").toString()));
+						}
+						else if (getTableRow().getItem().getTypesByTypeId().getName().equals("pdf")){
+							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/pdf.png").toString()));
+						}
+						else if (getTableRow().getItem().getTypesByTypeId().getName().matches("mp4|mp3|avi|flv|wmv|mov|wav|wma|ogg|mkv")){
+							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/mp4.png").toString()));
+						}
+						else if (getTableRow().getItem().getTypesByTypeId().getName().matches("png|svg|jpg|jpeg|gif|bmp")){
+							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/picture.png").toString()));
+						}
+						else {
+							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/unknown.png").toString()));
+						}
+
 
 						setGraphic(icon);
 						setText(item);
@@ -185,6 +201,8 @@ public class HomepageController implements Initializable {
             return new SimpleStringProperty(sizeStr);
         });
 
+
+
 		breadcrumbList.clear();
 		HBox breadcrumb = createBreadcrumb(2, "Chung");
 		breadcrumbList.add(breadcrumb);
@@ -229,6 +247,8 @@ public class HomepageController implements Initializable {
 
 			return row;
 		});
+
+		dataTable.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/assets/css/tableview.css")).toExternalForm());
 
 		fillData();
     }
@@ -301,12 +321,53 @@ public class HomepageController implements Initializable {
 
 		downloadBtn.setOnAction(event -> {
 			// Download file
+			DirectoryChooser directoryChooser = new DirectoryChooser();
+			directoryChooser.setTitle("Choose a folder to save file");
+
+			File selectedFolder = directoryChooser.showDialog(null);
+
+			Task<Boolean> downloadFileTask = new Task<Boolean>() {
+				@Override
+				protected Boolean call() throws Exception {
+					ItemService itemService = new ItemService();
+					boolean rs = false;
+					int itemTypeId = selectedItem.getTypeId();
+					int itemId = selectedItem.getId();
+					if(selectedFolder != null) {
+						String path = selectedFolder.getAbsolutePath();
+						if(itemTypeId == 1) {
+							rs = itemService.downloadFolder(path, userId, itemId);
+						}
+						else {
+							rs = itemService.downloadFile(path, itemId);
+						}
+					}
+					return rs;
+				}
+			};
+
+			downloadFileTask.setOnSucceeded(e -> {
+				boolean response = downloadFileTask.getValue();
+				if(response) System.out.println("Download file thành công");
+				else System.out.println("Download file thất bại");
+			});
+
+			downloadFileTask.setOnFailed(e -> {
+				System.out.println("Download file thất bại");
+			});
+
+			Thread thread = new Thread(downloadFileTask);
+			thread.start();
 
 			popup.hide();
 		});
 
 		deleteBtn.setOnAction(event -> {
 			// Delete file
+			int itemTypeId = selectedItem.getTypeId();
+			int itemId = selectedItem.getId();
+
+			sendDeleteRequest(itemTypeId, itemId);
 
 			popup.hide();
 		});
@@ -340,6 +401,37 @@ public class HomepageController implements Initializable {
 
 		synchronizeBtn.setOnAction(event -> {
 			// Synchronize file
+
+			int itemTypeId = selectedItem.getTypeId();
+			int itemId = selectedItem.getId();
+			Task<Boolean> synchronizeTask = new Task<Boolean>() {
+				@Override
+				protected Boolean call() throws Exception {
+					ItemService itemService = new ItemService();
+					if(itemTypeId == 1) {
+						boolean rs = itemService.synchronizeFolder(userId, itemId);
+						return rs;
+					} else {
+						boolean rs = itemService.synchronizeFile(userId, itemId);
+						return rs;
+					}
+				}
+			};
+
+			synchronizeTask.setOnSucceeded(e -> {
+				boolean response = synchronizeTask.getValue();
+				if(response) {
+					System.out.println("Đồng bộ thành công");
+				}
+				else System.out.println("Đồng bộ thất bại");
+			});
+
+			synchronizeTask.setOnFailed(e -> {
+				System.out.println("Đồng bộ thất bại");
+			});
+
+			Thread thread = new Thread(synchronizeTask);
+			thread.start();
 
 			popup.hide();
 		});
@@ -391,7 +483,7 @@ public class HomepageController implements Initializable {
 			}
 		}
 
-		options.getChildren().addAll(openBtn, downloadBtn, renameBtn, moveBtn, copyBtn, shareBtn, synchronizeBtn);
+		options.getChildren().addAll(openBtn, downloadBtn, shareBtn, synchronizeBtn);
 
 		Task<Integer> checkPermissionTask = new Task<Integer>() {
 			@Override
@@ -406,6 +498,9 @@ public class HomepageController implements Initializable {
 
 			if(permissionType == 3) {
 				options.getChildren().add(2, deleteBtn);
+				options.getChildren().add(3, renameBtn);
+				options.getChildren().add(4, moveBtn);
+				options.getChildren().add(5, copyBtn);
 			}
 
 		});
@@ -444,6 +539,85 @@ public class HomepageController implements Initializable {
 
 	}
 
+	private void sendDeleteRequest(int itemTypeId, int itemId) {
+		Task<Boolean> deleteTask = new Task<Boolean>() {
+			@Override
+			protected Boolean call() throws Exception {
+				ItemService itemService = new ItemService();
+				boolean rs = itemService.deleteItem(itemTypeId, itemId, userId);
+				return rs;
+			}
+		};
+
+		deleteTask.setOnSucceeded(e -> {
+			boolean response = deleteTask.getValue();
+			if(response) {
+				fillData();
+				System.out.println("Xóa thành công");
+			}
+			else System.out.println("Xóa thất bại");
+		});
+
+		deleteTask.setOnFailed(e -> {
+			System.out.println("Xóa thất bại");
+		});
+
+		Thread thread = new Thread(deleteTask);
+		thread.start();
+	}
+	private void sendDeletePermanentlyRequest(int itemTypeId, int itemId) {
+		Task<Boolean> deleteTask = new Task<Boolean>() {
+			@Override
+			protected Boolean call() throws Exception {
+				ItemService itemService = new ItemService();
+				boolean rs = itemService.deleteItemPermanently(itemTypeId, itemId);
+				return rs;
+			}
+		};
+
+		deleteTask.setOnSucceeded(e -> {
+			boolean response = deleteTask.getValue();
+			if(response) {
+				fillDeletedData();
+				System.out.println("Xóa thành công");
+			}
+			else System.out.println("Xóa thất bại");
+		});
+
+		deleteTask.setOnFailed(e -> {
+			System.out.println("Xóa thất bại");
+		});
+
+		Thread thread = new Thread(deleteTask);
+		thread.start();
+	}
+
+	private void sendRestoreRequest(int itemTypeId, int itemId) {
+		Task<Boolean> restoreTask = new Task<Boolean>() {
+			@Override
+			protected Boolean call() throws Exception {
+				ItemService itemService = new ItemService();
+				boolean rs = itemService.restore(itemTypeId, itemId);
+				return rs;
+			}
+		};
+
+		restoreTask.setOnSucceeded(e -> {
+			boolean response = restoreTask.getValue();
+			if(response) {
+				fillDeletedData();
+				System.out.println("Khôi phục thành công");
+			}
+			else System.out.println("Khôi phục thất bại");
+		});
+
+		restoreTask.setOnFailed(e -> {
+			System.out.println("Khôi phục thất bại");
+		});
+
+		Thread thread = new Thread(restoreTask);
+		thread.start();
+	}
 	private void fillData() {
 		ItemService itemService = new ItemService();
 		List<models.File> itemList = itemService.getAllItem(userId, currentFolderId, "");
@@ -493,6 +667,8 @@ public class HomepageController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+		populateData();
+
 		SortedList<models.File> sortedList = new SortedList<>(items, (file1, file2) -> {
 			if (file1.getTypeId() == 1 && file2.getTypeId() != 1) {
 				return -1;
@@ -525,7 +701,6 @@ public class HomepageController implements Initializable {
 		});
 		dataTable.setItems(sortedList);
 		sortedList.comparatorProperty().bind(dataTable.comparatorProperty());
-		populateData();
     }
 
 	@FXML
@@ -636,7 +811,43 @@ public class HomepageController implements Initializable {
 		ComboBox<String> permissionCbb = new ComboBox<>();
 
 		permissionCbb.getItems().addAll("Chỉ xem", "Chỉnh sửa");
-		permissionCbb.setValue("Chỉ xem");
+
+		final int[] ownerId = {-1};
+		Task<Integer> getPermissionTask = new Task<Integer>() {
+			@Override
+			protected Integer call() throws Exception {
+				PermissionService permissionService = new PermissionService();
+				int permission = permissionService.getPermission(itemTypeId, itemId);
+				ownerId[0] = permissionService.getOwnerId(itemTypeId, itemId);
+				return permission;
+			}
+		};
+
+		getPermissionTask.setOnSucceeded(e -> {
+			int permission = getPermissionTask.getValue();
+			if(permission == 2) {
+				permissionCbb.setValue("Chỉ xem");
+				permissionCbb.setDisable(true);
+
+				if(userId == ownerId[0]) {
+					permissionCbb.setDisable(false);
+				}
+			}
+			else if(permission == 3){
+				permissionCbb.setValue("Chỉnh sửa");
+				permissionCbb.setDisable(false);
+			}
+			else {
+				shareStage.close();
+			}
+		});
+
+		getPermissionTask.setOnFailed(e -> {
+			System.out.println("Lỗi khi lấy quyền truy cập");
+		});
+
+		Thread thread1 = new Thread(getPermissionTask);
+		thread1.start();
 
 		permissionCbb.setStyle("-fx-background-color: white; -fx-border-color: gray; -fx-border-width: 1px; -fx-background-radius: 15px;");
 		permissionCbb.setPrefWidth(100);
@@ -671,7 +882,7 @@ public class HomepageController implements Initializable {
 		VBox sharedContainer = new VBox();
 		sharedContainer.setSpacing(10);
 		sharedContainer.setPadding(new Insets(10));
-		sharedContainer.setStyle("-fx-background-color: white; -fx-border-color: gray; -fx-border-width: 1px; -fx-background-radius: 15px;");
+		sharedContainer.setStyle("-fx-background-color: white; -fx-border-color: gray; -fx-border-width: 0px; -fx-background-radius: 15px;");
 
 		Label sharedTitle = new Label("Đã chia sẻ");
 		sharedTitle.setStyle("-fx-font-size: 16; -fx-font-weight: bold;");
@@ -730,8 +941,8 @@ public class HomepageController implements Initializable {
 			System.out.println("Lỗi khi lấy danh sách người dùng đã chia sẻ");
 		});
 
-		Thread thread1 = new Thread(getSharedUserTask);
-		thread1.start();
+		Thread thread2 = new Thread(getSharedUserTask);
+		thread2.start();
 
 		shareTxt.setOnKeyReleased(e -> {
 			userContainer.getChildren().clear();
@@ -927,7 +1138,7 @@ public class HomepageController implements Initializable {
 			@Override
 			protected Boolean call() throws Exception {
 				ItemService itemService = new ItemService();
-				boolean rs = itemService.synchronize(userId , currentFolderId);
+				boolean rs = itemService.synchronizeFolder(userId , currentFolderId);
 				return rs;
 			}
 		};
@@ -1045,27 +1256,31 @@ public class HomepageController implements Initializable {
 		ComboBox<String> permissionCbb = new ComboBox<>();
 		permissionCbb.getItems().addAll("Riêng tư","Chỉ xem", "Chỉnh sửa");
 
-		Task<Integer> getPermissionTask = new Task<Integer>() {
-			@Override
-			protected Integer call() throws Exception {
-				PermissionService permissionService = new PermissionService();
-				return permissionService.getPermission(itemTypeId, itemId);
-			}
-		};
+//		Task<Integer> getPermissionTask = new Task<Integer>() {
+//			@Override
+//			protected Integer call() throws Exception {
+//				PermissionService permissionService = new PermissionService();
+//				return permissionService.getPermission(itemTypeId, itemId);
+//			}
+//		};
+//
+//		getPermissionTask.setOnSucceeded(e -> {
+//			int permission = getPermissionTask.getValue();
+//			if(permission == 1) permissionCbb.setValue("Riêng tư");
+//			else if(permission == 2) permissionCbb.setValue("Chỉ xem");
+//			else if(permission == 3) permissionCbb.setValue("Chỉnh sửa");
+//		});
+//
+//		getPermissionTask.setOnFailed(e -> {
+//			System.out.println("Lỗi khi lấy quyền truy cập");
+//		});
 
-		getPermissionTask.setOnSucceeded(e -> {
-			int permission = getPermissionTask.getValue();
-			if(permission == 1) permissionCbb.setValue("Riêng tư");
-			else if(permission == 2) permissionCbb.setValue("Chỉ xem");
-			else if(permission == 3) permissionCbb.setValue("Chỉnh sửa");
-		});
-
-		getPermissionTask.setOnFailed(e -> {
-			System.out.println("Lỗi khi lấy quyền truy cập");
-		});
-
-		Thread thread1 = new Thread(getPermissionTask);
-		thread1.start();
+		PermissionService permissionService = new PermissionService();
+		int permission = permissionService.getPermission(itemTypeId, itemId);
+		if(permission == 1) permissionCbb.setValue("Riêng tư");
+		else if(permission == 2) permissionCbb.setValue("Chỉ xem");
+		else if(permission == 3) permissionCbb.setValue("Chỉnh sửa");
+		else permissionCbb.setValue("");
 
 		permissionCbb.setStyle("-fx-background-color: white; -fx-border-color: gray; -fx-border-width: 1px; -fx-background-radius: 15px;");
 		permissionCbb.setPrefWidth(200);
@@ -1135,7 +1350,7 @@ public class HomepageController implements Initializable {
 		accessStage.showAndWait();
 	}
 	public void setFontLabel(int number) {
-		for (int i = 0; i < 4; ++i) {
+		for (int i = 0; i <= 5; ++i) {
 			if (i == number) continue;
 			switch (i) {
 				case 0:
@@ -1150,10 +1365,16 @@ public class HomepageController implements Initializable {
 				case 3:
 					lbOtherFileShare.setFont(Font.font("System", FontWeight.NORMAL, FontPosture.REGULAR, lbOtherFileShare.getFont().getSize()));
 					break;
+				case 4:
+					lbRecentOpenBtn.setFont(Font.font("System", FontWeight.NORMAL, FontPosture.REGULAR, lbRecentOpenBtn.getFont().getSize()));
+					break;
+				case 5:
+					lbTrashBtn.setFont(Font.font("System", FontWeight.NORMAL, FontPosture.REGULAR, lbTrashBtn.getFont().getSize()));
 			}
 		}
 	}
 	public void generalPage(MouseEvent event) throws IOException {
+		resetDatatable();
 		lbGeneral.setFont(Font.font("System", FontWeight.BOLD, FontPosture.REGULAR, lbGeneral.getFont().getSize()));
 		setFontLabel(0);
 		searchTxt.setText("");
@@ -1178,8 +1399,22 @@ public class HomepageController implements Initializable {
 			dataTable.setItems(items);
 			System.out.println("not null");
 		}
+
+		PermissionService permissionService = new PermissionService();
+		int permissionType = permissionService.checkPermission(userId, 1, currentFolderId);
+		if(permissionType == 3) {
+			createFolderBtn.setDisable(false);
+			uploadFileBtn.setDisable(false);
+			uploadFolderBtn.setDisable(false);
+		}
+		else {
+			createFolderBtn.setDisable(true);
+			uploadFileBtn.setDisable(true);
+			uploadFolderBtn.setDisable(true);
+		}
 	}
 	public void myFilePage(MouseEvent event) throws IOException {
+		resetDatatable();
 		lbMyFile.setFont(Font.font("System", FontWeight.BOLD, FontPosture.REGULAR, lbMyFile.getFont().getSize()));
 		setFontLabel(1);
 		searchTxt.setText("");
@@ -1206,8 +1441,13 @@ public class HomepageController implements Initializable {
 			dataTable.setItems(items);
 			System.out.println("not null");
 		}
+
+		createFolderBtn.setDisable(true);
+		uploadFileBtn.setDisable(true);
+		uploadFolderBtn.setDisable(true);
 	}
 	public void myShareFile(MouseEvent event) throws IOException {
+		resetDatatable();
 		lbMyFileShare.setFont(Font.font("System", FontWeight.BOLD, FontPosture.REGULAR, lbMyFileShare.getFont().getSize()));
 		setFontLabel(2);
 		searchTxt.setText("");
@@ -1234,8 +1474,13 @@ public class HomepageController implements Initializable {
 			dataTable.setItems(items);
 			System.out.println("not null");
 		}
+
+		createFolderBtn.setDisable(true);
+		uploadFileBtn.setDisable(true);
+		uploadFolderBtn.setDisable(true);
 	}
 	public void otherFileShare(MouseEvent event) throws IOException {
+		resetDatatable();
 		lbOtherFileShare.setFont(Font.font("System", FontWeight.BOLD, FontPosture.REGULAR, lbOtherFileShare.getFont().getSize()));
 		setFontLabel(3);
 		searchTxt.setText("");
@@ -1262,8 +1507,13 @@ public class HomepageController implements Initializable {
 			dataTable.setItems(items);
 			System.out.println("not null");
 		}
+
+		createFolderBtn.setDisable(true);
+		uploadFileBtn.setDisable(true);
+		uploadFolderBtn.setDisable(true);
 	}
 	public void search(ActionEvent event) throws IOException {
+		resetDatatable();
 		String txt = searchTxt.getText();
 		System.out.println(txt);
 		ItemService itemService = new ItemService();
@@ -1290,6 +1540,18 @@ public class HomepageController implements Initializable {
 			} else {
 				itemList = itemService.getAllItem(userId, currentFolderId, txt);
 			}
+		} else if (currentSideBarIndex == 4){
+			if (currentFolderId == -4) {
+//				itemList = itemService.getAllRecentOpenedItem(userId, txt);
+			} else {
+				itemList = itemService.getAllItem(userId, currentFolderId, txt);
+			}
+		} else if (currentSideBarIndex == 5){
+			if (currentFolderId == -5) {
+				itemList = itemService.getAllDeletedItem(userId, txt);
+			} else {
+				itemList = itemService.getAllItem(userId, currentFolderId, txt);
+			}
 		}
 		System.out.println("itemList: " + itemList);
 
@@ -1302,8 +1564,13 @@ public class HomepageController implements Initializable {
 			dataTable.setItems(items);
 			System.out.println("not null");
 		}
+
+		createFolderBtn.setDisable(true);
+		uploadFileBtn.setDisable(true);
+		uploadFolderBtn.setDisable(true);
 	}
 	private void fillDataBreadCrumb(int index) {
+		resetDatatable();
 		ItemService itemService = new ItemService();
 		List<models.File> itemList = null;
 		LoginSession loginSession = LoginService.getCurrentSession();
@@ -1367,5 +1634,433 @@ public class HomepageController implements Initializable {
 			}
 		});
 		return breadcrumb;
+	}
+
+
+	public void resetDatatable() {
+		dataTable.getColumns().clear();
+		TableColumn<models.File, String> nameColumn = new TableColumn<>("Tên");
+		TableColumn<models.File, String> ownerNameColumn = new TableColumn<>("Chủ sở hữu");
+		TableColumn<models.File, Date> dateModifiedColumn = new TableColumn<>("Đã sửa đổi");
+		TableColumn<models.File, String> lastModifiedByColumn = new TableColumn<>("Người sửa đổi");
+		TableColumn<models.File, String> sizeColumn = new TableColumn<>("Kích thước");
+
+		dataTable.getColumns().addAll(nameColumn, ownerNameColumn, dateModifiedColumn, lastModifiedByColumn, sizeColumn);
+
+		nameColumn.setCellValueFactory(column -> {
+			return new SimpleStringProperty(column.getValue().getName() + (column.getValue().getTypeId() != 1 ? "." + column.getValue().getTypesByTypeId().getName() : ""));
+		});
+		nameColumn.setCellFactory(column -> {
+			return new TableCell<models.File, String>() {
+				@Override
+				protected void updateItem(String item, boolean empty) {
+					super.updateItem(item, empty);
+					if(empty || item == null || getTableRow() == null ||getTableRow().getItem() == null) {
+						setText(null);
+						setGraphic(null);
+					}
+					else {
+						ImageView icon = new ImageView();
+						icon.setFitHeight(20);
+						icon.setFitWidth(20);
+						if(getTableRow().getItem().getTypeId() == 1){
+							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/folder.png").toString()));
+						} else if (getTableRow().getItem().getTypesByTypeId().getName().equals("txt")){
+							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/txt.png").toString()));
+						}
+						else if (getTableRow().getItem().getTypesByTypeId().getName().matches("docx?|docm|dotx?|dotm")){
+							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/doc.png").toString()));
+						}
+						else if (getTableRow().getItem().getTypesByTypeId().getName().equals("pdf")){
+							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/pdf.png").toString()));
+						}
+						else if (getTableRow().getItem().getTypesByTypeId().getName().matches("mp4|mp3|avi|flv|wmv|mov|wav|wma|ogg|mkv")){
+							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/mp4.png").toString()));
+						}
+						else if (getTableRow().getItem().getTypesByTypeId().getName().matches("png|svg|jpg|jpeg|gif|bmp")){
+							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/picture.png").toString()));
+						}
+						else {
+							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/unknown.png").toString()));
+						}
+
+
+						setGraphic(icon);
+						setText(item);
+					}
+				}
+			};
+		});
+
+		ownerNameColumn.setCellValueFactory(column -> {
+			return new SimpleStringProperty(column.getValue().getUsersByOwnerId().getName() == null ? "" : column.getValue().getUsersByOwnerId().getName());
+		});
+		dateModifiedColumn.setCellFactory(column -> {
+			return new TableCell<models.File, Date>() {
+				private final SimpleDateFormat format = new SimpleDateFormat("dd/MM/yyyy HH:mm");
+				@Override
+				protected void updateItem(Date item, boolean empty) {
+					super.updateItem(item, empty);
+					if(empty || item == null) {
+						setText(null);
+					}
+					else {
+						setText(format.format(item));
+					}
+				}
+			};
+		});
+		dateModifiedColumn.setCellValueFactory(new PropertyValueFactory<models.File, Date>("updatedAt"));
+		lastModifiedByColumn.setCellValueFactory(column -> {
+			return new SimpleStringProperty(column.getValue().getUsersByUpdatedBy() == null ? "" : column.getValue().getUsersByUpdatedBy().getName());
+		});
+		sizeColumn.setCellValueFactory(column -> {
+			int size = column.getValue().getSize();
+			String sizeStr = "";
+			if(size < 0){
+				sizeStr = (size - Short.MIN_VALUE) + " mục";
+			}
+			else if(size < 1024) {
+				sizeStr = size + " bytes";
+			}
+			else if(size < 1024 * 1024) {
+				sizeStr = size / 1024 + " KB";
+			}
+			else if(size < 1024 * 1024 * 1024) {
+				sizeStr = size / (1024 * 1024) + " MB";
+			}
+			else {
+				sizeStr = size / (1024 * 1024 * 1024) + " GB";
+			}
+			return new SimpleStringProperty(sizeStr);
+		});
+
+		dataTable.setRowFactory(dataTable -> {
+			TableRow<models.File> row = new TableRow<>();
+			row.setOnMouseClicked(event -> {
+				if(event.getButton() == MouseButton.PRIMARY && !row.isEmpty()){
+					dataTable.getSelectionModel().select(row.getIndex());
+					models.File file = row.getItem();
+					if(file.getTypeId() == 1){
+						currentFolderId = file.getId();
+						fillData();
+						// Tạo HBox breadcrumb mới
+						HBox _breadcrumb = createBreadcrumb(file.getId(), file.getName());
+						breadcrumbList.add(_breadcrumb);
+						// Thêm các HBox breadcrumb vào container
+						path.getChildren().setAll(breadcrumbList);
+					}
+					else {
+						// Open file
+					}
+				} else if(event.getButton() == MouseButton.SECONDARY && !row.isEmpty()){
+					dataTable.getSelectionModel().select(row.getIndex());
+					showOptionsPopup(event, row.getItem());
+				}
+			});
+
+			row.setOnMouseEntered(event -> {
+				if(!row.isEmpty() && !row.isSelected()){
+					row.setStyle("-fx-background-color: #f2f2f2");
+				}
+			});
+
+			row.setOnMouseExited(event -> {
+				if(!row.isEmpty()){
+					row.setStyle("");
+				}
+			});
+
+			return row;
+		});
+
+		dataTable.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/assets/css/tableview.css")).toExternalForm());
+	}
+
+
+	public void showTrashPage(MouseEvent mouseEvent) {
+		dataTable.getColumns().clear();
+		TableColumn<models.File, String> nameColumn = new TableColumn<>("Tên");
+		TableColumn<models.File, Date> dateDeletedColumn = new TableColumn<>("Ngày xóa");
+		TableColumn<models.File, String> deletedByColumn = new TableColumn<>("Người xóa");
+		TableColumn<models.File, String> sizeColumn = new TableColumn<>("Kích thước");
+		TableColumn<models.File, String> addressColumn = new TableColumn<>("Vị trí ban đầu");
+
+		dataTable.getColumns().addAll(nameColumn, dateDeletedColumn, deletedByColumn, sizeColumn, addressColumn);
+
+		nameColumn.setCellValueFactory(column -> {
+			return new SimpleStringProperty(column.getValue().getName() + (column.getValue().getTypeId() != 1 ? "." + column.getValue().getTypesByTypeId().getName() : ""));
+		});
+		nameColumn.setCellFactory(column -> {
+			return new TableCell<models.File, String>() {
+				@Override
+				protected void updateItem(String item, boolean empty) {
+					super.updateItem(item, empty);
+					if(empty || item == null || getTableRow() == null ||getTableRow().getItem() == null) {
+						setText(null);
+						setGraphic(null);
+					}
+					else {
+						ImageView icon = new ImageView();
+						icon.setFitHeight(20);
+						icon.setFitWidth(20);
+						if(getTableRow().getItem().getTypeId() == 1){
+							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/folder.png").toString()));
+						} else if (getTableRow().getItem().getTypesByTypeId().getName().equals("txt")){
+							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/txt.png").toString()));
+						}
+						else if (getTableRow().getItem().getTypesByTypeId().getName().matches("docx?|docm|dotx?|dotm")){
+							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/doc.png").toString()));
+						}
+						else if (getTableRow().getItem().getTypesByTypeId().getName().equals("pdf")){
+							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/pdf.png").toString()));
+						}
+						else if (getTableRow().getItem().getTypesByTypeId().getName().matches("mp4|mp3|avi|flv|wmv|mov|wav|wma|ogg|mkv")){
+							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/mp4.png").toString()));
+						}
+						else if (getTableRow().getItem().getTypesByTypeId().getName().matches("png|svg|jpg|jpeg|gif|bmp")){
+							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/picture.png").toString()));
+						}
+						else {
+							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/unknown.png").toString()));
+						}
+
+
+						setGraphic(icon);
+						setText(item);
+					}
+				}
+			};
+		});
+
+		dateDeletedColumn.setCellFactory(column -> {
+			return new TableCell<models.File, Date>() {
+				private final SimpleDateFormat format = new SimpleDateFormat("dd/MM/yyyy HH:mm");
+				@Override
+				protected void updateItem(Date item, boolean empty) {
+					super.updateItem(item, empty);
+					if(empty || item == null) {
+						setText(null);
+					}
+					else {
+						setText(format.format(item));
+					}
+				}
+			};
+		});
+		dateDeletedColumn.setCellValueFactory(new PropertyValueFactory<models.File, Date>("dateDeleted"));
+		deletedByColumn.setCellValueFactory(column -> {
+			return new SimpleStringProperty(column.getValue().getUsersByDeletedBy() == null ? "" : column.getValue().getUsersByDeletedBy().getName());
+		});
+		sizeColumn.setCellValueFactory(column -> {
+			int size = column.getValue().getSize();
+			String sizeStr = "";
+			if(size < 0){
+				sizeStr = (size - Short.MIN_VALUE) + " mục";
+			}
+			else if(size < 1024) {
+				sizeStr = size + " bytes";
+			}
+			else if(size < 1024 * 1024) {
+				sizeStr = size / 1024 + " KB";
+			}
+			else if(size < 1024 * 1024 * 1024) {
+				sizeStr = size / (1024 * 1024) + " MB";
+			}
+			else {
+				sizeStr = size / (1024 * 1024 * 1024) + " GB";
+			}
+			return new SimpleStringProperty(sizeStr);
+		});
+		addressColumn.setCellValueFactory(new PropertyValueFactory<models.File, String>("finalpath"));
+
+		dataTable.setRowFactory(dataTable -> {
+			TableRow<models.File> row = new TableRow<>();
+			row.setOnMouseClicked(event -> {
+				if(event.getButton() == MouseButton.PRIMARY && !row.isEmpty()){
+					dataTable.getSelectionModel().select(row.getIndex());
+					models.File file = row.getItem();
+					if(file.getTypeId() == 1){
+						currentFolderId = file.getId();
+						fillData();
+						// Tạo HBox breadcrumb mới
+						HBox _breadcrumb = createBreadcrumb(file.getId(), file.getName());
+						breadcrumbList.add(_breadcrumb);
+						// Thêm các HBox breadcrumb vào container
+						path.getChildren().setAll(breadcrumbList);
+					}
+					else {
+						// Open file
+					}
+				} else if(event.getButton() == MouseButton.SECONDARY && !row.isEmpty()){
+					dataTable.getSelectionModel().select(row.getIndex());
+					showDeleteOptionsPopup(event, row.getItem());
+				}
+			});
+
+			row.setOnMouseEntered(event -> {
+				if(!row.isEmpty() && !row.isSelected()){
+					row.setStyle("-fx-background-color: #f2f2f2");
+				}
+			});
+
+			row.setOnMouseExited(event -> {
+				if(!row.isEmpty()){
+					row.setStyle("");
+				}
+			});
+
+			return row;
+		});
+
+		dataTable.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/assets/css/tableview.css")).toExternalForm());
+
+		lbTrashBtn.setFont(Font.font("System", FontWeight.BOLD, FontPosture.REGULAR, lbTrashBtn.getFont().getSize()));
+		setFontLabel(5);
+		searchTxt.setText("");
+		currentSideBarIndex = 5;
+		currentFolderId = -5;
+		breadcrumbList.clear();
+		HBox breadcrumb = createBreadcrumb(-5, "Thùng rác");
+		breadcrumbList.add(breadcrumb);
+		// Thêm các HBox breadcrumb vào container
+		path.getChildren().setAll(breadcrumbList);
+
+		ItemService itemService = new ItemService();
+		List<models.File> itemList = itemService.getAllDeletedItem(userId, "");
+
+		System.out.println("itemList: " + itemList);
+
+		if(itemList == null) {
+			System.out.println("null");
+			dataTable.setPlaceholder(new Label("Không có dữ liệu"));
+		}
+		else {
+			final ObservableList<models.File> items = FXCollections.observableArrayList(itemList);
+			dataTable.setItems(items);
+			System.out.println("not null");
+		}
+
+		createFolderBtn.setDisable(true);
+		uploadFileBtn.setDisable(true);
+		uploadFolderBtn.setDisable(true);
+	}
+
+	private void fillDeletedData() {
+		ItemService itemService = new ItemService();
+		List<models.File> itemList = itemService.getAllDeletedItem(userId, "");
+
+		if(itemList == null) {
+			dataTable.setPlaceholder(new Label("Không có dữ liệu"));
+		}
+		else {
+			items.clear();
+			items.addAll(itemList);
+
+			// Tạo SortedList với Comparator để xác định thứ tự của folders và files
+			SortedList<models.File> sortedData = new SortedList<>(items, (file1, file2) -> {
+				if (file1.getTypeId() == 1 && file2.getTypeId() != 1) {
+					return -1;
+				} else if (file1.getTypeId() != 1 && file2.getTypeId() == 1) {
+					return 1;
+				}
+				return 0;
+
+			});
+
+			dataTable.setItems(sortedData);
+			sortedData.comparatorProperty().bind(dataTable.comparatorProperty());
+		}
+
+		createFolderBtn.setDisable(true);
+		uploadFileBtn.setDisable(true);
+		uploadFolderBtn.setDisable(true);
+	}
+
+	private void showDeleteOptionsPopup(MouseEvent mouseEvent, models.File selectedItem) {
+		Popup popup = new Popup();
+		popup.setAutoHide(true);
+		popup.setAutoFix(true);
+		popup.setHideOnEscape(true);
+
+		FontAwesomeIconView deleteIcon = new FontAwesomeIconView();
+		deleteIcon.setGlyphName("TRASH");
+		deleteIcon.setSize("20");
+		deleteIcon.setStyleClass("icon");
+		Button deleteBtn = new Button("Xóa vĩnh viễn", deleteIcon);
+
+		FontAwesomeIconView restoreIcon = new FontAwesomeIconView();
+		restoreIcon.setGlyphName("REFRESH");
+		restoreIcon.setSize("20");
+		restoreIcon.setStyleClass("icon");
+		Button restoreBtn = new Button("Khôi phục", restoreIcon);
+
+		deleteBtn.setOnAction(event -> {
+			// Delete file
+			int itemTypeId = selectedItem.getTypeId();
+			int itemId = selectedItem.getId();
+
+			sendDeletePermanentlyRequest(itemTypeId, itemId);
+
+			popup.hide();
+		});
+
+		restoreBtn.setOnAction(event -> {
+			// Restore file
+			int itemTypeId = selectedItem.getTypeId();
+			int itemId = selectedItem.getId();
+			sendRestoreRequest(itemTypeId, itemId);
+
+			popup.hide();
+		});
+
+		VBox options = new VBox();
+		options.setPrefWidth(150);
+		options.setStyle("-fx-background-color: white; -fx-border-color: gray; -fx-border-radius: 15px; -fx-border-width: 1px; -fx-background-radius: 15px;");
+
+		options.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+
+		for (Button button : Arrays.asList(deleteBtn, restoreBtn)) {
+			if (button != null) {
+				button.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+				button.setPadding(new Insets(5, 5, 5, 15));
+				button.setPrefWidth(150);
+
+				if (button == deleteBtn) {
+					button.setStyle("-fx-background-color: transparent; -fx-background-radius: 15px 15px 0px 0px; -fx-background-insets: 0px; -fx-border-width: 0;");
+					button.setOnMouseEntered(event -> {
+						button.setStyle("-fx-background-color: #f1f1f1; -fx-background-radius: 15px 15px 0px 0px; -fx-background-insets: 0px; -fx-border-width: 0;");
+					});
+					button.setOnMouseExited(event -> {
+						button.setStyle("-fx-background-color: transparent; -fx-background-radius: 15px 15px 0px 0px; -fx-background-insets: 0px; -fx-border-width: 0;");
+					});
+				} else if(button == restoreBtn) {
+					button.setStyle("-fx-background-color: transparent; -fx-background-radius: 0px 0px 15px 15px; -fx-background-insets: 0px; -fx-border-width: 0;");
+					button.setOnMouseEntered(event -> {
+						button.setStyle("-fx-background-color: #f1f1f1; -fx-background-radius: 0px 0px 15px 15px; -fx-background-insets: 0px; -fx-border-width: 0;");
+					});
+					button.setOnMouseExited(event -> {
+						button.setStyle("-fx-background-color: transparent; -fx-background-radius: 0px 0px 15px 15px; -fx-background-insets: 0px; -fx-border-width: 0;");
+					});
+				}
+			}
+		}
+
+		options.getChildren().addAll(deleteBtn, restoreBtn);
+		popup.getContent().add(options);
+
+		popup.show(dataTable.getScene().getWindow(), mouseEvent.getScreenX(), mouseEvent.getScreenY());
+
+		Scene scene = dataTable.getScene();
+		scene.setOnMousePressed(event -> {
+			Node target = (Node) event.getTarget();
+			if (!popup.getScene().getRoot().getBoundsInParent().contains(event.getSceneX(), event.getSceneY())) {
+				popup.hide();
+			}
+		});
+	}
+
+	public void showRecentOpenPage(MouseEvent mouseEvent) {
+
 	}
 }

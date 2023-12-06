@@ -158,4 +158,12 @@ public class SocketClientHelper {
 //            return false;
 //        }
     }
+
+    public void downloadFile(String filePath, int size) {
+        try{
+            syncFile(filePath, size);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 }

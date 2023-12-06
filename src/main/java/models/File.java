@@ -60,6 +60,18 @@ public class File implements Serializable {
     private boolean isDeleted;
     @OneToMany(mappedBy = "filesByFileId")
     private Collection<RecentFile> recentfilesById;
+    @Basic
+    @Column(name = "finalpath")
+    private String finalpath;
+    @Basic
+    @Column(name = "date_deleted")
+    private Timestamp dateDeleted;
+    @Basic
+    @Column(name = "deleted_by")
+    private Integer deletedBy;
+    @ManyToOne(optional=true)
+    @JoinColumn(name = "deleted_by", referencedColumnName = "id", insertable=false, updatable=false)
+    private User usersByDeletedBy;
 
     public int getId() {
         return id;
@@ -200,5 +212,37 @@ public class File implements Serializable {
 
     public void setRecentfilesById(Collection<RecentFile> recentfilesById) {
         this.recentfilesById = recentfilesById;
+    }
+
+    public String getFinalpath() {
+        return finalpath;
+    }
+
+    public void setFinalpath(String finalpath) {
+        this.finalpath = finalpath;
+    }
+
+    public Timestamp getDateDeleted() {
+        return dateDeleted;
+    }
+
+    public void setDateDeleted(Timestamp dateDeleted) {
+        this.dateDeleted = dateDeleted;
+    }
+
+    public Integer getDeletedBy() {
+        return deletedBy;
+    }
+
+    public void setDeletedBy(Integer deletedBy) {
+        this.deletedBy = deletedBy;
+    }
+
+    public User getUsersByDeletedBy() {
+        return usersByDeletedBy;
+    }
+
+    public void setUsersByDeletedBy(User usersByDeletedBy) {
+        this.usersByDeletedBy = usersByDeletedBy;
     }
 }
