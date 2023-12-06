@@ -3,6 +3,7 @@ package models;
 import jakarta.persistence.*;
 
 import java.io.Serializable;
+import java.sql.Timestamp;
 import java.util.Collection;
 import java.util.Objects;
 
@@ -154,5 +155,17 @@ public class Folder implements Serializable {
 
     public void setDateDeleted(Timestamp dateDeleted) {
         this.dateDeleted = dateDeleted;
+    }
+
+    @Basic
+    @Column(name = "deleted_by")
+    private Integer deletedBy;
+
+    public Integer getDeletedBy() {
+        return deletedBy;
+    }
+
+    public void setDeletedBy(Integer deletedBy) {
+        this.deletedBy = deletedBy;
     }
 }

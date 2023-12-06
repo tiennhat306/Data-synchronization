@@ -224,4 +224,16 @@ public class File implements Serializable {
     public void setDateDeleted(Timestamp dateDeleted) {
         this.dateDeleted = dateDeleted;
     }
+
+    @Basic
+    @Column(name = "deleted_by")
+    private Integer deletedBy;
+
+    public Integer getDeletedBy() {
+        return deletedBy;
+    }
+
+    public void setDeletedBy(Integer deletedBy) {
+        this.deletedBy = deletedBy;
+    }
 }
