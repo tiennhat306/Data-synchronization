@@ -282,12 +282,13 @@ public class ItemService {
         }
     }
 
-    public boolean deleteItem(int itemTypeId, int itemId) {
+    public boolean deleteItem(int itemTypeId, int itemId, int userId) {
         try {
             SocketClientHelper socketClientHelper = new SocketClientHelper();
             socketClientHelper.sendRequest("DELETE");
             socketClientHelper.sendRequest(String.valueOf(itemTypeId));
             socketClientHelper.sendRequest(String.valueOf(itemId));
+            socketClientHelper.sendRequest(String.valueOf(userId));
 
             boolean response = (boolean) socketClientHelper.receiveResponse();
             socketClientHelper.close();

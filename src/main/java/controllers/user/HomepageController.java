@@ -519,7 +519,7 @@ public class HomepageController implements Initializable {
 			@Override
 			protected Boolean call() throws Exception {
 				ItemService itemService = new ItemService();
-				boolean rs = itemService.deleteItem(itemTypeId, itemId);
+				boolean rs = itemService.deleteItem(itemTypeId, itemId, userId);
 				return rs;
 			}
 		};
@@ -1654,12 +1654,12 @@ public class HomepageController implements Initializable {
 	public void showTrashPage(MouseEvent mouseEvent) {
 		dataTable.getColumns().clear();
 		TableColumn<models.File, String> nameColumn = new TableColumn<>("Tên");
-		TableColumn<models.File, String> ownerNameColumn = new TableColumn<>("Chủ sở hữu");
-		TableColumn<models.File, Date> dateModifiedColumn = new TableColumn<>("Đã sửa đổi");
-		TableColumn<models.File, String> lastModifiedByColumn = new TableColumn<>("Người sửa đổi");
+		TableColumn<models.File, Date> dateDeletedColumn = new TableColumn<>("Ngày xóa");
+		TableColumn<models.File, String> lastDeletedByColumn = new TableColumn<>("Người xóa");
 		TableColumn<models.File, String> sizeColumn = new TableColumn<>("Kích thước");
+		TableColumn<models.File, String> addressColumn = new TableColumn<>("Vị trí ban đầu");
 
-		dataTable.getColumns().addAll(nameColumn, ownerNameColumn, dateModifiedColumn, lastModifiedByColumn, sizeColumn);
+		dataTable.getColumns().addAll(nameColumn, dateDeletedColumn, lastDeletedByColumn, sizeColumn, addressColumn);
 
 		nameColumn.setCellValueFactory(column -> {
 			return new SimpleStringProperty(column.getValue().getName() + (column.getValue().getTypeId() != 1 ? "." + column.getValue().getTypesByTypeId().getName() : ""));
@@ -1706,10 +1706,7 @@ public class HomepageController implements Initializable {
 			};
 		});
 
-		ownerNameColumn.setCellValueFactory(column -> {
-			return new SimpleStringProperty(column.getValue().getUsersByOwnerId().getName() == null ? "" : column.getValue().getUsersByOwnerId().getName());
-		});
-		dateModifiedColumn.setCellFactory(column -> {
+		dateDeletedColumn.setCellFactory(column -> {
 			return new TableCell<models.File, Date>() {
 				private final SimpleDateFormat format = new SimpleDateFormat("dd/MM/yyyy HH:mm");
 				@Override
@@ -1724,8 +1721,8 @@ public class HomepageController implements Initializable {
 				}
 			};
 		});
-		dateModifiedColumn.setCellValueFactory(new PropertyValueFactory<models.File, Date>("updatedAt"));
-		lastModifiedByColumn.setCellValueFactory(column -> {
+		dateDeletedColumn.setCellValueFactory(new PropertyValueFactory<models.File, Date>("dateDeleted"));
+		lastDeletedByColumn.setCellValueFactory(column -> {
 			return new SimpleStringProperty(column.getValue().getUsersByUpdatedBy() == null ? "" : column.getValue().getUsersByUpdatedBy().getName());
 		});
 		sizeColumn.setCellValueFactory(column -> {
@@ -1748,7 +1745,9 @@ public class HomepageController implements Initializable {
 			}
 			return new SimpleStringProperty(sizeStr);
 		});
-
+		addressColumn.setCellValueFactory(column -> {
+			return new SimpleStringProperty(column.getValue().getUsersByOwnerId().getName() == null ? "" : column.getValue().getUsersByOwnerId().getName());
+		});
 
 
 

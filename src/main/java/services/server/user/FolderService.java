@@ -241,29 +241,67 @@ public class FolderService {
         }
     }
 
-    public boolean deleteFolder(int itemId) {
+    public boolean deleteFolder(int itemId, int userId) {
         try(Session session = HibernateUtil.getSessionFactory().openSession()) {
             session.beginTransaction();
             Folder folder = session.find(Folder.class, itemId);
             if (folder == null) return false;
             folder.setDeleted(true);
+            folder.setDeletedBy(userId);
+            folder.setDateDeleted(new Timestamp(System.currentTimeMillis()));
             folder.setFinalpath(getPath(folder.getParentId()));
             session.merge(folder);
 
             // recursively delete all subfolders and files
-            List<Folder> folderList = session.createQuery("select fd from Folder fd where fd.parentId = :id", Folder.class).setParameter("id", itemId).list();
+            List<Folder> folderList = session.createQuery("select fd from Folder fd where fd.parentId = :id", Folder.class)
+                    .setParameter("id", itemId)
+                    .list();
             for (Folder subFolder : folderList) {
-                deleteFolder(subFolder.getId());
+                deleteFolder(subFolder.getId(), userId);
             }
             List<models.File> fileList = session.createQuery("select f from File f where f.folderId = :id", models.File.class).setParameter("id", itemId).list();
             for (models.File file : fileList) {
                 FileService fileService = new FileService();
-                fileService.deleteFile(file.getId());
+                fileService.deleteFile(file.getId(), userId);
             }
 
             session.getTransaction().commit();
             return true;
         } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean restoreFolder(int folderId){
+        try(Session session = HibernateUtil.getSessionFactory().openSession()){
+            session.beginTransaction();
+            Folder folder = session.find(Folder.class, folderId);
+            if (folder == null) return false;
+            folder.setDeleted(false);
+            folder.setDeletedBy(null);
+            folder.setDateDeleted(null);
+            folder.setFinalpath(null);
+            session.merge(folder);
+
+            // recursively restore all subfolders and files
+            List<Folder> folderList = session.createQuery("select fd from Folder fd where fd.parentId = :id", Folder.class)
+                    .setParameter("id", folderId)
+                    .list();
+            for (Folder subFolder : folderList) {
+                restoreFolder(subFolder.getId());
+            }
+            List<models.File> fileList = session.createQuery("select f from File f where f.folderId = :id", models.File.class)
+                    .setParameter("id", folderId)
+                    .list();
+            for (models.File file : fileList) {
+                FileService fileService = new FileService();
+                fileService.restoreFile(file.getId());
+            }
+
+            session.getTransaction().commit();
+            return true;
+        } catch (Exception e){
             e.printStackTrace();
             return false;
         }

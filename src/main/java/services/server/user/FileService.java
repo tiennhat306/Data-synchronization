@@ -69,15 +69,36 @@ public class FileService {
             return false;
         }
     }
-    public boolean deleteFile(int id) {
+    public boolean deleteFile(int id, int userId) {
         Transaction transaction = null;
         try (Session session = HibernateUtil.getSessionFactory().openSession()){
             transaction = session.beginTransaction();
             File file = session.find(File.class, id);
             if(file == null) return false;
             file.setDeleted(true);
+            file.setDeletedBy(userId);
+            file.setDateDeleted(new Timestamp(System.currentTimeMillis()));
             FolderService folderService = new FolderService();
             file.setFinalpath(folderService.getPath(file.getFolderId()));
+            session.merge(file);
+            transaction.commit();
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean restoreFile(int id){
+        Transaction transaction = null;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()){
+            transaction = session.beginTransaction();
+            File file = session.find(File.class, id);
+            if(file == null) return false;
+            file.setDeleted(false);
+            file.setDeletedBy(null);
+            file.setDateDeleted(null);
+            file.setFinalpath(null);
             session.merge(file);
             transaction.commit();
             return true;

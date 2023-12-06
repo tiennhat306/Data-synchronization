@@ -211,13 +211,14 @@ public class ClientHandler implements Runnable{
                 case "DELETE" -> {
                     int itemTypeId = Integer.parseInt((String) receiveRequest());
                     int itemId = Integer.parseInt((String) receiveRequest());
+                    int userId = Integer.parseInt((String) receiveRequest());
                     boolean response = false;
                     if(itemTypeId == 1){
                         FolderService folderService = new FolderService();
-                        response = folderService.deleteFolder(itemId);
+                        response = folderService.deleteFolder(itemId, userId);
                     } else {
                         FileService fileService = new FileService();
-                        response = fileService.deleteFile(itemId);
+                        response = fileService.deleteFile(itemId, userId);
                     }
                     sendResponse(response);
                 }
