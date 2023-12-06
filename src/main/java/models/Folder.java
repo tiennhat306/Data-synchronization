@@ -43,6 +43,15 @@ public class Folder implements Serializable {
     @Basic
     @Column(name = "finalpath")
     private String finalpath;
+    @Basic
+    @Column(name = "date_deleted")
+    private Timestamp dateDeleted;
+    @Basic
+    @Column(name = "deleted_by")
+    private Integer deletedBy;
+    @ManyToOne(optional=true)
+    @JoinColumn(name = "deleted_by", referencedColumnName = "id", insertable=false, updatable=false)
+    private User usersByDeletedBy;
 
     public int getId() {
         return id;
@@ -145,10 +154,6 @@ public class Folder implements Serializable {
         return Objects.hash(id, folderName, ownerId, parentId, isDeleted, finalpath);
     }
 
-    @Basic
-    @Column(name = "date_deleted")
-    private Timestamp dateDeleted;
-
     public Timestamp getDateDeleted() {
         return dateDeleted;
     }
@@ -157,15 +162,19 @@ public class Folder implements Serializable {
         this.dateDeleted = dateDeleted;
     }
 
-    @Basic
-    @Column(name = "deleted_by")
-    private Integer deletedBy;
-
     public Integer getDeletedBy() {
         return deletedBy;
     }
 
     public void setDeletedBy(Integer deletedBy) {
         this.deletedBy = deletedBy;
+    }
+
+    public User getUsersByDeletedBy() {
+        return usersByDeletedBy;
+    }
+
+    public void setUsersByDeletedBy(User usersByDeletedBy) {
+        this.usersByDeletedBy = usersByDeletedBy;
     }
 }
