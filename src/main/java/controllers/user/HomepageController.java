@@ -32,6 +32,7 @@ import models.User;
 import services.client.user.ItemService;
 import services.client.user.PermissionService;
 import services.login.LoginService;
+import services.server.user.FileService;
 
 import java.io.*;
 import java.net.URL;
@@ -116,6 +117,17 @@ public class HomepageController implements Initializable {
         nameColumn.setCellValueFactory(column -> {
             return new SimpleStringProperty(column.getValue().getName() + (column.getValue().getTypeId() != 1 ? "." + column.getValue().getTypesByTypeId().getName() : ""));
         });
+        
+        nameColumn.setComparator((file1, file2) -> {
+            if (!file1.contains(".") && file2.contains(".")) {
+                return -1; // file1 is a folder, prioritize over file2
+            } else if (file1.contains(".") && !file2.contains(".")) {
+                return 1;  // file2 is a folder, prioritize over file1
+            } else {
+                return file1.compareTo(file2);
+            }
+        });
+        
 		nameColumn.setCellFactory(column -> {
 			return new TableCell<models.File, String>() {
 				@Override
@@ -295,13 +307,17 @@ public class HomepageController implements Initializable {
 
 		openBtn.setOnAction(event -> {
 			// Open file
-
+			ItemService itemService = new ItemService();
+            String result = itemService.getFolderPath(selectedItem.getId());
+            System.out.println(result);
 			popup.hide();
 		});
 
 		downloadBtn.setOnAction(event -> {
 			// Download file
-
+			//downloadFileClicked(selectedItem.getId(), selectedItem.getName(), selectedItem.getTypeId());
+			ItemService itemService = new ItemService();
+			downloadFolderClicked(selectedItem.getId(), selectedItem.getOwnerId());
 			popup.hide();
 		});
 
@@ -313,19 +329,53 @@ public class HomepageController implements Initializable {
 
 		renameBtn.setOnAction(event -> {
 			// Rename file
-
 			popup.hide();
+
+		    // Get the new name from the user
+		    TextInputDialog dialog = new TextInputDialog();
+		    dialog.setTitle("Rename Item");
+		    dialog.setHeaderText("Rename");
+		    dialog.setContentText("Enter the new name:");
+
+		    // Show the dialog and wait for the user's input
+		    dialog.showAndWait().ifPresent(newName -> {
+		        // Ensure the new name is not empty
+		        if (!newName.trim().isEmpty()) {
+		            if (selectedItem.toString().contains("typeId=1")) {
+		                // Call the renameFile method with the selected item's ID and the new name
+		            	ItemService itemService = new ItemService();
+		                String result = itemService.getFolderPath(selectedItem.getId());
+		            	renameFolder(selectedItem.getId(), newName, selectedItem.getOwnerId(), result);
+		            } else {
+		            	ItemService itemService = new ItemService();
+		            	String result = itemService.getFilePath(selectedItem.getId());
+		            	renameFile(selectedItem.getId(), newName, selectedItem.getSize(), result);
+		            } 
+		        } else {
+		            // Handle the case where the user entered an empty name
+		            System.out.println("Invalid name");
+		        }
+		    });
 		});
 
 		moveBtn.setOnAction(event -> {
 			// Move file
 
+			int itemTypeId = selectedItem.getTypeId();
+			int itemId = selectedItem.getId();
+
+//			showCopyMovePopup(selectedItem.get);
 			popup.hide();
 		});
 
 		copyBtn.setOnAction(event -> {
 			// Copy file
 
+			int itemTypeId = selectedItem.getTypeId();
+			int itemId = selectedItem.getId();
+
+//			showSharePopup(itemTypeId, itemId);
+//			showCopyMovePopup();
 			popup.hide();
 		});
 
@@ -446,29 +496,31 @@ public class HomepageController implements Initializable {
 
 	private void fillData() {
 		ItemService itemService = new ItemService();
-		List<models.File> itemList = itemService.getAllItem(userId, currentFolderId, "");
+	    List<models.File> itemList = itemService.getAllItem(userId, currentFolderId, "");
 
-		if(itemList == null) {
-			dataTable.setPlaceholder(new Label("Không có dữ liệu"));
-		}
-		else {
-			items.clear();
-			items.addAll(itemList);
+	    if (itemList == null) {
+	        dataTable.setPlaceholder(new Label("Không có dữ liệu"));
+	    } else {
+	        items.clear();
+	        items.addAll(itemList);
 
-			// Tạo SortedList với Comparator để xác định thứ tự của folders và files
-			SortedList<models.File> sortedData = new SortedList<>(items, (file1, file2) -> {
-				if (file1.getTypeId() == 1 && file2.getTypeId() != 1) {
-					return -1;
-				} else if (file1.getTypeId() != 1 && file2.getTypeId() == 1) {
-					return 1;
-				}
-				return 0;
+	        // Tạo SortedList với Comparator để xác định thứ tự của folders và files
+	        SortedList<models.File> sortedData = new SortedList<>(items, (file1, file2) -> {
+	            // Compare based on folder/file priority
+	            if (file1.getTypeId() == 1 && file2.getTypeId() != 1) {
+	                return -1; // Folder comes first
+	            } else if (file1.getTypeId() != 1 && file2.getTypeId() == 1) {
+	                return 1;  // File comes after folder
+	            }
 
-			});
+	            // If both are of the same type, apply a secondary sorting criterion
+	            return file1.getName().compareTo(file2.getName());
+	        });
 
-			dataTable.setItems(sortedData);
-			sortedData.comparatorProperty().bind(dataTable.comparatorProperty());
-		}
+	        dataTable.setItems(sortedData);
+	        sortedData.comparatorProperty().bind(dataTable.comparatorProperty());
+	        dataTable.setItems(items);
+	    }
 
 		PermissionService permissionService = new PermissionService();
 		int permissionType = permissionService.checkPermission(userId, 1, currentFolderId);
@@ -493,40 +545,104 @@ public class HomepageController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-		SortedList<models.File> sortedList = new SortedList<>(items, (file1, file2) -> {
-			if (file1.getTypeId() == 1 && file2.getTypeId() != 1) {
-				return -1;
-			} else if (file1.getTypeId() != 1 && file2.getTypeId() == 1) {
-				return 1;
-			}
-			return 0;
-		});
-		dataTable.comparatorProperty().addListener((observable, oldValue, newValue) -> {
-			if (newValue != null) {
-				sortedList.setComparator((file1, file2) -> {
-					if (file1.getTypeId() == 1 && file2.getTypeId() != 1) {
-						return -1;
-					} else if (file1.getTypeId() != 1 && file2.getTypeId() == 1) {
-						return 1;
-					} else {
-						return newValue.compare(file1, file2);
-					}
-				});
-			} else {
-				sortedList.setComparator((file1, file2) -> {
-					if (file1.getTypeId() == 1 && file2.getTypeId() != 1) {
-						return -1;
-					} else if (file1.getTypeId() != 1 && file2.getTypeId() == 1) {
-						return 1;
-					}
-					return 0;
-				});
-			}
-		});
-		dataTable.setItems(sortedList);
-		sortedList.comparatorProperty().bind(dataTable.comparatorProperty());
+//		SortedList<models.File> sortedList = new SortedList<>(items, (file1, file2) -> {
+//			if (file1.getTypeId() == 1 && file2.getTypeId() != 1) {
+//				return -1;
+//			} else if (file1.getTypeId() != 1 && file2.getTypeId() == 1) {
+//				return 1;
+//			}
+//			return 0;
+//		});
+//		dataTable.comparatorProperty().addListener((observable, oldValue, newValue) -> {
+//			if (newValue != null) {
+//				sortedList.setComparator((file1, file2) -> {
+//					if (file1.getTypeId() == 1 && file2.getTypeId() != 1) {
+//						return -1;
+//					} else if (file1.getTypeId() != 1 && file2.getTypeId() == 1) {
+//						return 1;
+//					} else {
+//						return newValue.compare(file1, file2);
+//					}
+//				});
+//			} else {
+//				sortedList.setComparator((file1, file2) -> {
+//					if (file1.getTypeId() == 1 && file2.getTypeId() != 1) {
+//						return -1;
+//					} else if (file1.getTypeId() != 1 && file2.getTypeId() == 1) {
+//						return 1;
+//					}
+//					return 0;
+//				});
+//			}
+//		});
+//		dataTable.setItems(sortedList);
+//		sortedList.comparatorProperty().bind(dataTable.comparatorProperty());
 		populateData();
     }
+    
+    public void renameFile(int fileID, String fileName, int fileSize, String filePath) {
+	    Task<Boolean> renameFileTask = new Task<Boolean>() {
+	        @Override
+	        protected Boolean call() throws Exception {
+	            try {
+	                // Initialize your service outside the call method if it's not a short-lived service
+	                ItemService itemService = new ItemService();
+	                // Perform the background operation
+	                return itemService.renameFile(fileID, fileName, fileSize, filePath);
+	            } catch (Exception e) {
+	                // Handle exceptions gracefully, you might want to log them or show an error dialog
+	                e.printStackTrace();
+	                return false;
+	            }
+	        }
+	    };
+
+	    renameFileTask.setOnSucceeded(e -> {
+	        boolean response = renameFileTask.getValue();
+			if(response) fillData();
+			else System.out.println("Đổi tên file thành công");
+	    });
+
+	    renameFileTask.setOnFailed(e -> {
+	    	System.out.println("Đổi tên file thất bại");
+	    });
+
+	    // Start the task in a new thread
+	    Thread thread = new Thread(renameFileTask);
+	    thread.start();
+	}
+    
+    public void renameFolder(int folderID, String folderName, int ownerID, String folderPath) {
+	    Task<Boolean> renameFolderTask = new Task<Boolean>() {
+	        @Override
+	        protected Boolean call() throws Exception {
+	            try {
+	                // Initialize your service outside the call method if it's not a short-lived service
+	                ItemService itemService = new ItemService();
+	                // Perform the background operation
+	                return itemService.renameFolder(folderID, folderName, ownerID, folderPath);
+	            } catch (Exception e) {
+	                // Handle exceptions gracefully, you might want to log them or show an error dialog
+	                e.printStackTrace();
+	                return false;
+	            }
+	        }
+	    };
+
+	    renameFolderTask.setOnSucceeded(e -> {
+	        boolean response = renameFolderTask.getValue();
+			if(response) fillData();
+			else System.out.println("Đổi tên folder thành công");
+	    });
+
+	    renameFolderTask.setOnFailed(e -> {
+	    	System.out.println("Đổi tên folder thất bại");
+	    });
+
+	    // Start the task in a new thread
+	    Thread thread = new Thread(renameFolderTask);
+	    thread.start();
+	}
 
 	@FXML
 	public void handleUploadFileButtonAction() {
@@ -614,6 +730,231 @@ public class HomepageController implements Initializable {
 	public void handleOpenButtonAction(ActionEvent event) {
 	}
 
+	public void showCopyMovePopup(int userID, int folderID, String searchText) {
+		Stage shareStage = new Stage();
+		shareStage.initModality(Modality.APPLICATION_MODAL);
+		shareStage.setTitle("Đích đến");
+
+		shareStage.initStyle(StageStyle.UTILITY);
+
+		ArrayList<Integer> userIds = new ArrayList<>();
+
+		BorderPane shareLayout = new BorderPane();
+		shareLayout.setPadding(new Insets(10));
+
+		HBox topContainer = new HBox();
+		topContainer.setSpacing(10);
+		topContainer.setPadding(new Insets(10));
+
+		Label title = new Label("Đích đến");
+		title.setStyle("-fx-font-size: 18;");
+		
+		VBox centerContainer = new VBox();
+		centerContainer.setSpacing(10);
+		centerContainer.setPadding(new Insets(10));
+		centerContainer.setStyle("-fx-background-color: white; -fx-border-color: gray; -fx-border-width: 1px; -fx-background-radius: 15px;");
+
+		ScrollPane scrollPane = new ScrollPane();
+		scrollPane.setContent(centerContainer);
+		scrollPane.setFitToWidth(true);
+		scrollPane.setPadding(new Insets(10));
+
+		TextField shareTxt = new TextField();
+		shareTxt.setPromptText("Nhập thư mục cần tìm");
+		shareTxt.setPrefWidth(200);
+		shareTxt.setPrefHeight(30);
+		shareTxt.setStyle("-fx-background-color: white");
+		shareTxt.setStyle("-fx-border-color: gray");
+		shareTxt.setStyle("-fx-border-width: 1px");
+
+		centerContainer.getChildren().add(shareTxt);
+
+		VBox sharedContainer = new VBox();
+		sharedContainer.setSpacing(10);
+		sharedContainer.setPadding(new Insets(10));
+		sharedContainer.setStyle("-fx-background-color: white; -fx-border-color: gray; -fx-border-width: 1px; -fx-background-radius: 15px;");
+
+		VBox userSelectedContainer = new VBox();
+		userSelectedContainer.setSpacing(10);
+		userSelectedContainer.setPadding(new Insets(10));
+		userSelectedContainer.setStyle("-fx-background-color: white; -fx-border-color: gray; -fx-border-width: 1px; -fx-background-radius: 15px;");
+
+		VBox userContainer = new VBox();
+		userContainer.setSpacing(10);
+		userContainer.setPadding(new Insets(10));
+		userContainer.setStyle("-fx-background-color: white; -fx-border-color: gray; -fx-border-width: 1px; -fx-background-radius: 15px;");
+
+
+		Task<List<models.File>> getSharedUserTask = new Task<List<models.File>>() {
+			@Override
+			protected List<models.File> call() throws Exception {
+				ItemService itemService = new ItemService();
+				List<models.File> fileList = itemService.getAllItem(userID, folderID, searchText);
+				return fileList;
+			}
+		};
+
+		getSharedUserTask.setOnSucceeded(event -> {
+			List<models.File> fileList = getSharedUserTask.getValue();
+			if(fileList != null) {
+				for (models.File file : fileList) {
+					HBox userBox = new HBox();
+					userBox.setSpacing(10);
+					userBox.setAlignment(Pos.CENTER_LEFT);
+
+					FontAwesomeIconView userIcon = new FontAwesomeIconView();
+					userIcon.setGlyphName("USER");
+					userIcon.setSize("20");
+					userIcon.setStyleClass("icon");
+					userBox.getChildren().add(userIcon);
+
+					userBox.setId(file.getId() + "");
+
+					Label userName = new Label(file.getName());
+					userBox.getChildren().add(userName);
+
+					Label userEmail = new Label("("+file.getName()+")");
+					userBox.getChildren().add(userEmail);
+
+					sharedContainer.getChildren().add(userBox);
+				}
+
+				centerContainer.getChildren().add(sharedContainer);
+			}
+		});
+
+		getSharedUserTask.setOnFailed(event -> {
+			System.out.println("Lỗi khi lấy danh sách người dùng đã chia sẻ");
+		});
+
+		Thread thread1 = new Thread(getSharedUserTask);
+		thread1.start();
+
+//		shareTxt.setOnKeyReleased(e -> {
+//			userContainer.getChildren().clear();
+//			centerContainer.getChildren().remove(userContainer);
+//
+//			String keyword = shareTxt.getText();
+//			if(keyword.length() > 0) {
+//				Task<List<User>> searchUserTask = new Task<List<User>>() {
+//					@Override
+//					protected List<User> call() throws Exception {
+////						ItemService itemService = new ItemService();
+////						List<User> userList = itemService.searchUnsharedUser(itemTypeId, itemId, keyword);
+////						return userList;
+//					}
+//				};
+//
+//				searchUserTask.setOnSucceeded(event1 -> {
+//					List<User> userList = searchUserTask.getValue();
+//					if(userList != null) {
+//						for (User user : userList) {
+//							HBox userBox = new HBox();
+//							userBox.setSpacing(10);
+//							userBox.setAlignment(Pos.CENTER_LEFT);
+//
+//							FontAwesomeIconView userIcon = new FontAwesomeIconView();
+//							userIcon.setGlyphName("USER");
+//							userIcon.setSize("20");
+//							userIcon.setStyleClass("icon");
+//							userBox.getChildren().add(userIcon);
+//
+//							userBox.setId(user.getId() + "");
+//
+//							Label userName = new Label(user.getName());
+//							userBox.getChildren().add(userName);
+//
+//							Label userEmail = new Label("("+user.getEmail()+")");
+//							userBox.getChildren().add(userEmail);
+//
+//
+//							userBox.setOnMouseClicked(e1 -> {
+//								if(!userIds.contains(user.getId())) {
+//									userIds.add(user.getId());
+//
+//									// copy userBox to newUserBox
+//									HBox newUserBox = new HBox();
+//									newUserBox.setSpacing(10);
+//									newUserBox.setAlignment(Pos.CENTER_LEFT);
+//									newUserBox.setId(user.getId() + "");
+//
+//									Label newUserName = new Label(user.getName());
+//									newUserBox.getChildren().add(newUserName);
+//
+//									Label newUserEmail = new Label("("+user.getEmail()+")");
+//									newUserBox.getChildren().add(newUserEmail);
+//
+//									FontAwesomeIconView iconSelected = new FontAwesomeIconView();
+//									iconSelected.setGlyphName("CHECK");
+//									iconSelected.setSize("20");
+//									iconSelected.setStyleClass("icon");
+//									newUserBox.getChildren().add(iconSelected);
+//
+//									userSelectedContainer.getChildren().add(newUserBox);
+//								}
+//							});
+//
+//							userContainer.getChildren().add(userBox);
+//						}
+//
+//						centerContainer.getChildren().add(userContainer);
+//					}
+//				});
+//
+//				searchUserTask.setOnFailed(event1 -> {
+//					System.out.println("Tìm kiếm thất bại");
+//				});
+//
+//				Thread thread = new Thread(searchUserTask);
+//				thread.start();
+//			}
+//		});
+
+		// if user click on the selected user, remove it from the list
+		userSelectedContainer.setOnMouseClicked(e -> {
+			Node target = (Node) e.getTarget();
+			if(target instanceof HBox) {
+				HBox userBox = (HBox) target;
+				if(userBox.getId() != null) {
+					int userId = Integer.parseInt(userBox.getId());
+					userIds.remove((Integer) userId);
+					userSelectedContainer.getChildren().remove(userBox);
+				}
+			}
+		});
+		centerContainer.getChildren().add(userSelectedContainer);
+		shareLayout.setCenter(scrollPane);
+
+		Button shareBtn = new Button("Chuyển đến");
+		shareBtn.setPrefWidth(100);
+		shareBtn.setPrefHeight(30);
+		shareBtn.setStyle("-fx-background-color: white");
+		shareBtn.setStyle("-fx-border-color: gray");
+		shareBtn.setStyle("-fx-border-width: 1px");
+
+		Button cancelBtn = new Button("Hủy");
+		cancelBtn.setPrefWidth(100);
+		cancelBtn.setPrefHeight(30);
+		cancelBtn.setStyle("-fx-background-color: white");
+		cancelBtn.setStyle("-fx-border-color: gray");
+		cancelBtn.setStyle("-fx-border-width: 1px");
+
+		cancelBtn.setOnAction(e -> {
+			shareStage.close();
+		});
+
+		HBox btnContainer = new HBox();
+		btnContainer.setSpacing(10);
+		btnContainer.setAlignment(Pos.CENTER);
+		btnContainer.getChildren().addAll(shareBtn, cancelBtn);
+
+		shareLayout.setBottom(btnContainer);
+
+		Scene scene = new Scene(shareLayout, 450, 300);
+		shareStage.setScene(scene);
+		shareStage.show();
+	}
+	
 	public void showSharePopup(int itemTypeId, int itemId) {
 		Stage shareStage = new Stage();
 		shareStage.initModality(Modality.APPLICATION_MODAL);
@@ -884,9 +1225,171 @@ public class HomepageController implements Initializable {
 		shareStage.setScene(scene);
 		shareStage.show();
 	}
+	
+//	public void showCopyMoveForm(int itemTypeId, int itemId) {
+//        Stage copyMoveStage = new Stage();
+//        copyMoveStage.initModality(Modality.APPLICATION_MODAL);
+//        copyMoveStage.setTitle("Sao chép hoặc Di chuyển");
+//
+//        ArrayList<Integer> userIds = new ArrayList<>();
+//
+//        BorderPane copyMoveLayout = new BorderPane();
+//        copyMoveLayout.setPadding(new Insets(10));
+//
+//        HBox topContainer = new HBox();
+//        topContainer.setSpacing(10);
+//        topContainer.setPadding(new Insets(10));
+//
+//        Label title = new Label("Sao chép hoặc Di chuyển");
+//        title.setStyle("-fx-font-size: 18;");
+//
+//        ComboBox<String> destinationCbb = new ComboBox<>();
+//        // Assuming you have a method to get a list of destination folders
+//        destinationCbb.getItems().addAll(getDestinationFolders());
+//        destinationCbb.setValue("Chọn thư mục đích");
+//
+//        destinationCbb.setStyle("-fx-background-color: white; -fx-border-color: gray; -fx-border-width: 1px; -fx-background-radius: 15px;");
+//        destinationCbb.setPrefWidth(200);
+//        destinationCbb.setPrefHeight(30);
+//        destinationCbb.setPadding(new Insets(5));
+//
+//        topContainer.getChildren().addAll(title, destinationCbb);
+//        copyMoveLayout.setTop(topContainer);
+//
+//        VBox centerContainer = new VBox();
+//        centerContainer.setSpacing(10);
+//        centerContainer.setPadding(new Insets(10));
+//        centerContainer.setStyle("-fx-background-color: white; -fx-border-color: gray; -fx-border-width: 1px; -fx-background-radius: 15px;");
+//
+//        TextField shareTxt = new TextField();
+//        shareTxt.setPromptText("Nhập tên mới");
+//        shareTxt.setPrefWidth(200);
+//        shareTxt.setPrefHeight(30);
+//        shareTxt.setStyle("-fx-background-color: white");
+//        shareTxt.setStyle("-fx-border-color: gray");
+//        shareTxt.setStyle("-fx-border-width: 1px");
+//
+//        centerContainer.getChildren().add(shareTxt);
+//
+//        HBox btnContainer = new HBox();
+//        btnContainer.setSpacing(10);
+//        btnContainer.setAlignment(Pos.CENTER);
+//
+//        Button copyBtn = new Button("Sao chép");
+//        copyBtn.setPrefWidth(100);
+//        copyBtn.setPrefHeight(30);
+//        copyBtn.setStyle("-fx-background-color: white");
+//        copyBtn.setStyle("-fx-border-color: gray");
+//        copyBtn.setStyle("-fx-border-width: 1px");
+//
+//        Button moveBtn = new Button("Di chuyển");
+//        moveBtn.setPrefWidth(100);
+//        moveBtn.setPrefHeight(30);
+//        moveBtn.setStyle("-fx-background-color: white");
+//        moveBtn.setStyle("-fx-border-color: gray");
+//        moveBtn.setStyle("-fx-border-width: 1px");
+//
+//        copyBtn.setOnAction(e -> {
+//            String destinationFolder = destinationCbb.getValue();
+//            String newName = shareTxt.getText();
+//            copyMoveStage.close();
+//
+//            // Perform copy logic here
+//            boolean success = copyItem(itemTypeId, itemId, destinationFolder, newName);
+//            if (success) {
+//                System.out.println("Sao chép thành công");
+//            } else {
+//                System.out.println("Sao chép thất bại");
+//            }
+//        });
+//
+//        moveBtn.setOnAction(e -> {
+//            String destinationFolder = destinationCbb.getValue();
+//            String newName = shareTxt.getText();
+//            copyMoveStage.close();
+//
+//            // Perform move logic here
+//            boolean success = moveItem(itemTypeId, itemId, destinationFolder, newName);
+//            if (success) {
+//                System.out.println("Di chuyển thành công");
+//            } else {
+//                System.out.println("Di chuyển thất bại");
+//            }
+//        });
+//
+//        btnContainer.getChildren().addAll(copyBtn, moveBtn);
+//        copyMoveLayout.setCenter(centerContainer);
+//        copyMoveLayout.setBottom(btnContainer);
+//
+//        Scene scene = new Scene(copyMoveLayout, 450, 200);
+//        copyMoveStage.setScene(scene);
+//        copyMoveStage.show();
+//    }
+	
 	@FXML
 	public void shareClicked(ActionEvent event) {
 		showSharePopup(1, currentFolderId);
+	}
+	
+	public void downloadFileClicked(int fileID, String fileName, int TypeID) {
+		// Create a FileChooser to choose the path to save file
+		DirectoryChooser directoryChooser = new DirectoryChooser();
+		directoryChooser.setTitle("Choose a folder to save file");
+//		directoryChooser.setInitialDirectory(new File(System.getProperty("user.home")));
+		File selectedFolder = directoryChooser.showDialog(null);
+
+		Task<Boolean> downloadFileTask = new Task<Boolean>() {
+			@Override
+			protected Boolean call() throws Exception {
+				ItemService itemService = new ItemService();
+				boolean rs = itemService.downloadFile(selectedFolder.getAbsolutePath(), fileID, fileName, TypeID);
+				return rs;
+			}
+		};
+
+		downloadFileTask.setOnSucceeded(e -> {
+			boolean response = downloadFileTask.getValue();
+			if(response) fillData();
+			else System.out.println("Download file thành công");
+		});
+
+		downloadFileTask.setOnFailed(e -> {
+			System.out.println("Download file thất bại");
+		});
+
+		Thread thread = new Thread(downloadFileTask);
+		thread.start();
+	}
+	
+	public void downloadFolderClicked(int folderID, int ownerID) {
+		// Create a FileChooser to choose the path to save file
+				DirectoryChooser directoryChooser = new DirectoryChooser();
+				directoryChooser.setTitle("Choose a folder to save file");
+//				directoryChooser.setInitialDirectory(new File(System.getProperty("user.home")));
+
+				File selectedFolder = directoryChooser.showDialog(null);
+
+				Task<Boolean> downloadFileTask = new Task<Boolean>() {
+					@Override
+					protected Boolean call() throws Exception {
+						ItemService itemService = new ItemService();
+						boolean rs = itemService.downloadFolder(selectedFolder.getAbsolutePath(), userId, folderID);
+						return rs;
+					}
+				};
+
+				downloadFileTask.setOnSucceeded(e -> {
+					boolean response = downloadFileTask.getValue();
+					if(response) System.out.println("Download file thành công");
+					else System.out.println("Download file thất bại");
+				});
+
+				downloadFileTask.setOnFailed(e -> {
+					System.out.println("Download file thất bại");
+				});
+
+				Thread thread = new Thread(downloadFileTask);
+				thread.start();
 	}
 
 	@FXML

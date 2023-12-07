@@ -69,7 +69,15 @@ public class SocketClientHelper {
             }
             fileOutputStream.flush();
         }
-
+    }
+    
+    public void deleteFile(String filePath) {
+        File fileToDelete = new File(filePath);
+        if (fileToDelete.delete()) {
+            System.out.println("File deleted successfully.");
+        } else {
+            System.out.println("Failed to delete the file.");
+        }
     }
 
     public void sendFolder(int ownerId, String folderPath) throws IOException {
@@ -97,6 +105,23 @@ public class SocketClientHelper {
                 }
             }
             sendRequest("END_FOLDER");
+        }
+    }
+    
+    public void renameFolder(String folderPath, String folderName) {
+        try {            
+            // Perform the renaming operation
+            File folder = new File(folderPath);
+            File newFolder = new File(folder.getParent(), folderName);
+            boolean renameSuccess = folder.renameTo(newFolder);
+
+            if (renameSuccess) {
+                System.out.println("Rename folder " + folderName + " thành công");
+            } else {
+                System.out.println("Rename folder " + folderName + " thất bại");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
@@ -133,6 +158,25 @@ public class SocketClientHelper {
                 syncFile(folderPath + java.io.File.separator + fileName, Integer.parseInt(size));
             }
             type = (String) receiveResponse();
+        }
+    }
+    
+    public boolean downloadFile(String folderPath, int size, String endFile) {
+        String FilePath = folderPath + "." + endFile;
+        byte[] buffer = new byte[1024];
+
+        try(FileOutputStream fileOutputStream = new FileOutputStream(FilePath)) {
+            InputStream fileInputStream = socket.getInputStream();
+            int bytesRead;
+            while(size > 0 && (bytesRead = fileInputStream.read(buffer, 0, Math.min(buffer.length, size))) != -1) {
+                fileOutputStream.write(buffer, 0, bytesRead);
+                size -= bytesRead;
+            }
+            System.out.println("File downloaded: " + FilePath);
+            return true;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
         }
     }
 
