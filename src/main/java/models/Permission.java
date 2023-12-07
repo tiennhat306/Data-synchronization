@@ -40,9 +40,9 @@ public class Permission implements Serializable {
     @Column(name = "shared_by")
     private Integer sharedBy;
 
-    public void setSharedBy(Integer sharedBy) {
-        this.sharedBy = sharedBy;
-    }
+//     public void setSharedBy(Integer sharedBy) {
+//         this.sharedBy = sharedBy;
+//     }
 
     @Basic
     @Column(name = "shared_at")

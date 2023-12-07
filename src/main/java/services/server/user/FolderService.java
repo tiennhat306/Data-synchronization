@@ -5,6 +5,7 @@ import javafx.util.Pair;
 import models.Folder;
 import models.Permission;
 import org.hibernate.Session;
+import org.hibernate.Transaction;
 import org.hibernate.query.Query;
 import utils.HibernateUtil;
 
@@ -119,6 +120,79 @@ public class FolderService {
             }
         }
     }
+    
+    public boolean copyFolder(int id, int parentId) {
+    	Transaction transaction = null;
+    	try(Session session = HibernateUtil.getSessionFactory().openSession()){
+    		transaction = session.beginTransaction();
+    		Folder folder = session.find(Folder.class, id);
+    		
+    		Folder newfolder = new Folder();
+            // Set the properties of the File entity
+            newfolder.setFolderName(folder.getFolderName());
+            newfolder.setParentId(parentId);
+            newfolder.setOwnerId(folder.getOwnerId());
+
+            // Persist the File entity
+            session.persist(newfolder);
+            session.getTransaction().commit();
+            return true;
+    	} catch (Exception e) {
+			// TODO: handle exception
+    		e.printStackTrace();
+    		return false;
+		}
+    }
+    
+    public boolean renameFolder(int id, String newName) {
+        Transaction transaction = null;
+        
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            transaction = session.beginTransaction();
+
+            Folder folder = session.find(Folder.class, id);
+            
+            if (folder != null) {
+                // Update the file's name
+                folder.setFolderName(newName);
+                transaction.commit();
+                return true;
+            } else {
+                return false;
+            }
+        } catch (Exception e) {
+            if (transaction != null && transaction.isActive()) {
+                transaction.rollback();
+            }
+            e.printStackTrace(); // Handle the exception appropriately
+            return false;
+        }
+    }
+        
+    public boolean moveFolder(int id, int folder_id) {
+        Transaction transaction = null;
+        
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            transaction = session.beginTransaction();
+
+            Folder folder = session.find(Folder.class, id);
+            
+            if (folder != null) {
+                // Update the file's name
+                folder.setParentId(folder_id);
+                transaction.commit();
+                return true;
+            } else {
+                return false;
+            }
+        } catch (Exception e) {
+            if (transaction != null && transaction.isActive()) {
+                transaction.rollback();
+            }
+            e.printStackTrace(); // Handle the exception appropriately
+            return false;
+        }
+    }
 
     public void deleteFolderIfExist(String path) throws IOException {
         File folder = new File(path);
@@ -212,6 +286,8 @@ public class FolderService {
             return -1;
         }
     }
+    
+    
 
     public String getFolderName(int folderId) {
         try(Session session = HibernateUtil.getSessionFactory().openSession()) {
@@ -227,7 +303,24 @@ public class FolderService {
     public String getFolderPath(int folderId) {
         return ServerApp.SERVER_PATH + File.separator + getPath(folderId);
     }
+    
+    public String getFolderPathChange(int folderId, String folderName) {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            Folder folder = session.find(Folder.class, folderId);
+            if (folder == null) return null;
+            String path = folderName;
+            
+            while (folder.getParentId() != null) {
+                path = folder.getFolderName() + File.separator + path;
+                folder = session.find(Folder.class, folder.getParentId());
+            }
 
+            return path;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
 
     public int getFolderId(String folderName, int currentFolderId) {
         try(Session session = HibernateUtil.getSessionFactory().openSession()) {

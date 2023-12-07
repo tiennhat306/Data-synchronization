@@ -23,6 +23,7 @@ public class FileService {
             return null;
         }
     }
+
     public List<File> getAllFileByFolderId(int folderId) {
         try(Session session = HibernateUtil.getSessionFactory().openSession()) {
             //print session
@@ -124,6 +125,59 @@ public class FileService {
             return true;
         } catch (Exception e) {
             e.printStackTrace();
+            return false;
+        }
+    }
+   
+    public boolean copyFile(int id, int folderId) {
+    	Transaction transaction = null;
+    	try(Session session = HibernateUtil.getSessionFactory().openSession()){
+    		transaction = session.beginTransaction();
+    		File file = session.find(File.class, id);
+    		
+    		File newfile = new File();
+            // Set the properties of the File entity
+            newfile.setName(file.getName());
+            newfile.setTypeId(file.getTypeId());
+            newfile.setFolderId(folderId);
+            newfile.setOwnerId(file.getOwnerId());
+            newfile.setSize(file.getSize());
+            newfile.setCreatedAt(file.getCreatedAt());
+            newfile.setUpdatedAt(file.getUpdatedAt());
+            newfile.setUpdatedBy(file.getUpdatedBy());
+
+            // Persist the File entity
+            session.persist(newfile);
+            session.getTransaction().commit();
+            return true;
+    	} catch (Exception e) {
+			// TODO: handle exception
+    		e.printStackTrace();
+    		return false;
+		}
+    }
+    
+    public boolean moveFile(int id, int folder_id) {
+        Transaction transaction = null;
+        
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            transaction = session.beginTransaction();
+
+            File file = session.find(File.class, id);
+            
+            if (file != null) {
+                // Update the file's name
+                file.setFolderId(folder_id);
+                transaction.commit();
+                return true;
+            } else {
+                return false;
+            }
+        } catch (Exception e) {
+            if (transaction != null && transaction.isActive()) {
+                transaction.rollback();
+            }
+            e.printStackTrace(); // Handle the exception appropriately
             return false;
         }
     }
@@ -271,6 +325,31 @@ public class FileService {
             return "";
         }
     }
+    
+    public boolean renameFile(int id, String newName) {
+        Transaction transaction = null;
+        
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            transaction = session.beginTransaction();
+
+            File file = session.find(File.class, id);
+            
+            if (file != null) {
+                // Update the file's name
+                file.setName(newName);
+                transaction.commit();
+                return true;
+            } else {
+                return false;
+            }
+        } catch (Exception e) {
+            if (transaction != null && transaction.isActive()) {
+                transaction.rollback();
+            }
+            e.printStackTrace(); // Handle the exception appropriately
+            return false;
+        }
+    }
 
     public String convertFileListToString(List<File> fileList) {
         StringBuilder builder = new StringBuilder();
@@ -335,6 +414,26 @@ public class FileService {
                     .getSingleResult());
 
             return path + java.io.File.separator + fileName + "." + type;
+        } catch (Exception e){
+            e.printStackTrace();
+            return "";
+        }
+    }
+    public String getFilePathChanged(int fileId, String newName) {
+        try(Session session = HibernateUtil.getSessionFactory().openSession()){
+            int folderId = session.createQuery("select f.folderId from File f where f.id = :fileId", Integer.class)
+                    .setParameter("fileId", fileId)
+                    .getSingleResult();
+
+            FolderService folderService = new FolderService();
+            String path = ServerApp.SERVER_PATH + java.io.File.separator + folderService.getPath(folderId);
+
+            TypeService typeService = new TypeService();
+            String type = typeService.getTypeName(session.createQuery("select f.typeId from File f where f.id = :fileId", Integer.class)
+                    .setParameter("fileId", fileId)
+                    .getSingleResult());
+
+            return path + java.io.File.separator + newName + "." + type;
         } catch (Exception e){
             e.printStackTrace();
             return "";

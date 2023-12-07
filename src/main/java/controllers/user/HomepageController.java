@@ -3,6 +3,7 @@ package controllers.user;
 import DTO.LoginSession;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView;
+import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -38,7 +39,10 @@ import services.client.user.ItemService;
 import services.client.user.PermissionService;
 import services.login.LoginService;
 
+
+import services.server.user.FileService;
 import java.awt.*;
+
 import java.io.*;
 import java.net.URL;
 import java.text.SimpleDateFormat;
@@ -124,6 +128,17 @@ public class HomepageController implements Initializable {
         nameColumn.setCellValueFactory(column -> {
             return new SimpleStringProperty(((models.File)column.getValue()).getName() + (((models.File)column.getValue()).getTypeId() != 1 ? "." + ((models.File)column.getValue()).getTypesByTypeId().getName() : ""));
         });
+        
+        nameColumn.setComparator((file1, file2) -> {
+            if (!file1.contains(".") && file2.contains(".")) {
+                return -1; // file1 is a folder, prioritize over file2
+            } else if (file1.contains(".") && !file2.contains(".")) {
+                return 1;  // file2 is a folder, prioritize over file1
+            } else {
+                return file1.compareTo(file2);
+            }
+        });
+        
 		nameColumn.setCellFactory(column -> {
 			return new TableCell<Object, String>() {
 				@Override
@@ -137,6 +152,8 @@ public class HomepageController implements Initializable {
 						ImageView icon = new ImageView();
 						icon.setFitHeight(20);
 						icon.setFitWidth(20);
+// 						if(getTableRow().getItem().getTypeId() == 1){
+
 						if(((models.File)getTableRow().getItem()).getTypeId() == 1){
 							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/folder.png").toString()));
 						} else if (((models.File)getTableRow().getItem()).getTypesByTypeId().getName().equals("txt")){
@@ -157,7 +174,6 @@ public class HomepageController implements Initializable {
 						else {
 							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/unknown.png").toString()));
 						}
-
 
 						setGraphic(icon);
 						setText(item);
@@ -208,8 +224,6 @@ public class HomepageController implements Initializable {
             }
             return new SimpleStringProperty(sizeStr);
         });
-
-
 
 		breadcrumbList.clear();
 		HBox breadcrumb = createBreadcrumb(2, "Chung");
@@ -365,44 +379,47 @@ public class HomepageController implements Initializable {
 
 		downloadBtn.setOnAction(event -> {
 			// Download file
-			DirectoryChooser directoryChooser = new DirectoryChooser();
-			directoryChooser.setTitle("Choose a folder to save file");
+			//downloadFileClicked(selectedItem.getId(), selectedItem.getName(), selectedItem.getTypeId());
+			ItemService itemService = new ItemService();
+			downloadFolderClicked(selectedItem.getId(), selectedItem.getOwnerId());
 
-			File selectedFolder = directoryChooser.showDialog(null);
+// 			DirectoryChooser directoryChooser = new DirectoryChooser();
+// 			directoryChooser.setTitle("Choose a folder to save file");
 
-			Task<Boolean> downloadFileTask = new Task<Boolean>() {
-				@Override
-				protected Boolean call() throws Exception {
-					ItemService itemService = new ItemService();
-					boolean rs = false;
-					int itemTypeId = selectedItem.getTypeId();
-					int itemId = selectedItem.getId();
-					if(selectedFolder != null) {
-						String path = selectedFolder.getAbsolutePath();
-						if(itemTypeId == 1) {
-							rs = itemService.downloadFolder(path, userId, itemId);
-						}
-						else {
-							rs = itemService.downloadFile(path, itemId);
-						}
-					}
-					return rs;
-				}
-			};
+// 			File selectedFolder = directoryChooser.showDialog(null);
 
-			downloadFileTask.setOnSucceeded(e -> {
-				boolean response = downloadFileTask.getValue();
-				if(response) System.out.println("Download file thành công");
-				else System.out.println("Download file thất bại");
-			});
+// 			Task<Boolean> downloadFileTask = new Task<Boolean>() {
+// 				@Override
+// 				protected Boolean call() throws Exception {
+// 					ItemService itemService = new ItemService();
+// 					boolean rs = false;
+// 					int itemTypeId = selectedItem.getTypeId();
+// 					int itemId = selectedItem.getId();
+// 					if(selectedFolder != null) {
+// 						String path = selectedFolder.getAbsolutePath();
+// 						if(itemTypeId == 1) {
+// 							rs = itemService.downloadFolder(path, userId, itemId);
+// 						}
+// 						else {
+// 							rs = itemService.downloadFile(path, itemId);
+// 						}
+// 					}
+// 					return rs;
+// 				}
+// 			};
 
-			downloadFileTask.setOnFailed(e -> {
-				System.out.println("Download file thất bại");
-			});
+// 			downloadFileTask.setOnSucceeded(e -> {
+// 				boolean response = downloadFileTask.getValue();
+// 				if(response) System.out.println("Download file thành công");
+// 				else System.out.println("Download file thất bại");
+// 			});
 
-			Thread thread = new Thread(downloadFileTask);
-			thread.start();
+// 			downloadFileTask.setOnFailed(e -> {
+// 				System.out.println("Download file thất bại");
+// 			});
 
+// 			Thread thread = new Thread(downloadFileTask);
+// 			thread.start();
 			popup.hide();
 		});
 
@@ -418,19 +435,53 @@ public class HomepageController implements Initializable {
 
 		renameBtn.setOnAction(event -> {
 			// Rename file
-
 			popup.hide();
+
+		    // Get the new name from the user
+		    TextInputDialog dialog = new TextInputDialog();
+		    dialog.setTitle("Rename Item");
+		    dialog.setHeaderText("Rename");
+		    dialog.setContentText("Enter the new name:");
+
+		    // Show the dialog and wait for the user's input
+		    dialog.showAndWait().ifPresent(newName -> {
+		        // Ensure the new name is not empty
+		        if (!newName.trim().isEmpty()) {
+		            if (selectedItem.toString().contains("typeId=1")) {
+		                // Call the renameFile method with the selected item's ID and the new name
+		            	ItemService itemService = new ItemService();
+		                String result = itemService.getFolderPath(selectedItem.getId());
+		            	renameFolder(selectedItem.getId(), newName, selectedItem.getOwnerId(), result);
+		            } else {
+		            	ItemService itemService = new ItemService();
+		            	String result = itemService.getFilePath(selectedItem.getId());
+		            	renameFile(selectedItem.getId(), newName, selectedItem.getSize(), result);
+		            } 
+		        } else {
+		            // Handle the case where the user entered an empty name
+		            System.out.println("Invalid name");
+		        }
+		    });
 		});
 
 		moveBtn.setOnAction(event -> {
 			// Move file
 
+			int itemTypeId = selectedItem.getTypeId();
+			int itemId = selectedItem.getId();
+
+//			showCopyMovePopup(selectedItem.get);
 			popup.hide();
 		});
 
 		copyBtn.setOnAction(event -> {
 			// Copy file
 
+			int itemTypeId = selectedItem.getTypeId();
+			int itemId = selectedItem.getId();
+
+//			showSharePopup(itemTypeId, itemId);
+//			showCopyMovePopup();
 			popup.hide();
 		});
 
@@ -526,8 +577,8 @@ public class HomepageController implements Initializable {
 				}
 			}
 		}
+		options.getChildren().addAll(openBtn, downloadBtn, renameBtn, moveBtn, copyBtn, shareBtn, synchronizeBtn);
 
-		options.getChildren().addAll(openBtn, downloadBtn, shareBtn, synchronizeBtn);
 
 		Task<Integer> checkPermissionTask = new Task<Integer>() {
 			@Override
@@ -661,39 +712,67 @@ public class HomepageController implements Initializable {
 		thread.start();
 	}
 	private void fillData() {
-		ItemService itemService = new ItemService();
-		List<models.File> itemList = itemService.getAllItem(userId, currentFolderId, "");
+		  ItemService itemService = new ItemService();
+	    List<models.File> itemList = itemService.getAllItem(userId, currentFolderId, "");
 
-		if(itemList == null) {
-			dataTable.setPlaceholder(new Label("Không có dữ liệu"));
-		}
-		else {
-			items.clear();
-			items.addAll(itemList);
+	    if (itemList == null) {
+	        dataTable.setPlaceholder(new Label("Không có dữ liệu"));
+	    } else {
+	        items.clear();
+	        items.addAll(itemList);
 
-			// Tạo SortedList với Comparator để xác định thứ tự của folders và files
-			SortedList<Object> sortedData = new SortedList<>(items, (file1, file2) -> {
-				if (((models.File)file1).getTypeId() == 1 && ((models.File)file2).getTypeId() != 1) {
-					return -1;
-				} else if (((models.File)file1).getTypeId() != 1 && ((models.File)file2).getTypeId() == 1) {
-					return 1;
-				}
-				return 0;
+	        // Tạo SortedList với Comparator để xác định thứ tự của folders và files
+	        SortedList<models.File> sortedData = new SortedList<>(items, (file1, file2) -> {
+	            // Compare based on folder/file priority
+	            if (file1.getTypeId() == 1 && file2.getTypeId() != 1) {
+	                return -1; // Folder comes first
+	            } else if (file1.getTypeId() != 1 && file2.getTypeId() == 1) {
+	                return 1;  // File comes after folder
+	            }
 
-			});
+	            // If both are of the same type, apply a secondary sorting criterion
+	            return file1.getName().compareTo(file2.getName());
+	        });
 
-			dataTable.setItems(sortedData);
-			sortedData.comparatorProperty().bind(dataTable.comparatorProperty());
-		}
+	        dataTable.setItems(sortedData);
+	        sortedData.comparatorProperty().bind(dataTable.comparatorProperty());
+	        dataTable.setItems(items);
+	    }
+// 		ItemService itemService = new ItemService();
+// 		List<models.File> itemList = itemService.getAllItem(userId, currentFolderId, "");
+
+// 		if(itemList == null) {
+// 			dataTable.setPlaceholder(new Label("Không có dữ liệu"));
+// 		}
+// 		else {
+// 			items.clear();
+// 			items.addAll(itemList);
+
+// 			// Tạo SortedList với Comparator để xác định thứ tự của folders và files
+// 			SortedList<Object> sortedData = new SortedList<>(items, (file1, file2) -> {
+// 				if (((models.File)file1).getTypeId() == 1 && ((models.File)file2).getTypeId() != 1) {
+// 					return -1;
+// 				} else if (((models.File)file1).getTypeId() != 1 && ((models.File)file2).getTypeId() == 1) {
+// 					return 1;
+// 				}
+// 				return 0;
+
+// 			});
+
+// 			dataTable.setItems(sortedData);
+// 			sortedData.comparatorProperty().bind(dataTable.comparatorProperty());
+// 		}
 
 		PermissionService permissionService = new PermissionService();
 		int permissionType = permissionService.checkPermission(userId, 1, currentFolderId);
+
 		if(permissionType == 3) {
 			createFolderBtn.setDisable(false);
 			uploadFileBtn.setDisable(false);
 			uploadFolderBtn.setDisable(false);
 		}
 		else {
+
 			createFolderBtn.setDisable(true);
 			uploadFileBtn.setDisable(true);
 			uploadFolderBtn.setDisable(true);
@@ -709,6 +788,38 @@ public class HomepageController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+//		SortedList<models.File> sortedList = new SortedList<>(items, (file1, file2) -> {
+//			if (file1.getTypeId() == 1 && file2.getTypeId() != 1) {
+//				return -1;
+//			} else if (file1.getTypeId() != 1 && file2.getTypeId() == 1) {
+//				return 1;
+//			}
+//			return 0;
+//		});
+//		dataTable.comparatorProperty().addListener((observable, oldValue, newValue) -> {
+//			if (newValue != null) {
+//				sortedList.setComparator((file1, file2) -> {
+//					if (file1.getTypeId() == 1 && file2.getTypeId() != 1) {
+//						return -1;
+//					} else if (file1.getTypeId() != 1 && file2.getTypeId() == 1) {
+//						return 1;
+//					} else {
+//						return newValue.compare(file1, file2);
+//					}
+//				});
+//			} else {
+//				sortedList.setComparator((file1, file2) -> {
+//					if (file1.getTypeId() == 1 && file2.getTypeId() != 1) {
+//						return -1;
+//					} else if (file1.getTypeId() != 1 && file2.getTypeId() == 1) {
+//						return 1;
+//					}
+//					return 0;
+//				});
+//			}
+//		});
+//		dataTable.setItems(sortedList);
+//		sortedList.comparatorProperty().bind(dataTable.comparatorProperty());
 		populateData();
 
 		SortedList<Object> sortedList = new SortedList<>(items, (file1, file2) -> {
@@ -744,6 +855,70 @@ public class HomepageController implements Initializable {
 		dataTable.setItems(sortedList);
 		sortedList.comparatorProperty().bind(dataTable.comparatorProperty());
     }
+    
+    public void renameFile(int fileID, String fileName, int fileSize, String filePath) {
+	    Task<Boolean> renameFileTask = new Task<Boolean>() {
+	        @Override
+	        protected Boolean call() throws Exception {
+	            try {
+	                // Initialize your service outside the call method if it's not a short-lived service
+	                ItemService itemService = new ItemService();
+	                // Perform the background operation
+	                return itemService.renameFile(fileID, fileName, fileSize, filePath);
+	            } catch (Exception e) {
+	                // Handle exceptions gracefully, you might want to log them or show an error dialog
+	                e.printStackTrace();
+	                return false;
+	            }
+	        }
+	    };
+
+	    renameFileTask.setOnSucceeded(e -> {
+	        boolean response = renameFileTask.getValue();
+			if(response) fillData();
+			else System.out.println("Đổi tên file thành công");
+	    });
+
+	    renameFileTask.setOnFailed(e -> {
+	    	System.out.println("Đổi tên file thất bại");
+	    });
+
+	    // Start the task in a new thread
+	    Thread thread = new Thread(renameFileTask);
+	    thread.start();
+	}
+    
+    public void renameFolder(int folderID, String folderName, int ownerID, String folderPath) {
+	    Task<Boolean> renameFolderTask = new Task<Boolean>() {
+	        @Override
+	        protected Boolean call() throws Exception {
+	            try {
+	                // Initialize your service outside the call method if it's not a short-lived service
+	                ItemService itemService = new ItemService();
+	                // Perform the background operation
+	                return itemService.renameFolder(folderID, folderName, ownerID, folderPath);
+	            } catch (Exception e) {
+	                // Handle exceptions gracefully, you might want to log them or show an error dialog
+	                e.printStackTrace();
+	                return false;
+	            }
+	        }
+	    };
+
+	    renameFolderTask.setOnSucceeded(e -> {
+	        boolean response = renameFolderTask.getValue();
+			if(response) fillData();
+			else System.out.println("Đổi tên folder thành công");
+	    });
+
+	    renameFolderTask.setOnFailed(e -> {
+	    	System.out.println("Đổi tên folder thất bại");
+	    });
+
+	    // Start the task in a new thread
+	    Thread thread = new Thread(renameFolderTask);
+	    thread.start();
+	}
 
 	@FXML
 	public void handleUploadFileButtonAction() {
@@ -1163,12 +1338,174 @@ public class HomepageController implements Initializable {
 		shareStage.setScene(scene);
 		shareStage.show();
 	}
+	
+//	public void showCopyMoveForm(int itemTypeId, int itemId) {
+//        Stage copyMoveStage = new Stage();
+//        copyMoveStage.initModality(Modality.APPLICATION_MODAL);
+//        copyMoveStage.setTitle("Sao chép hoặc Di chuyển");
+//
+//        ArrayList<Integer> userIds = new ArrayList<>();
+//
+//        BorderPane copyMoveLayout = new BorderPane();
+//        copyMoveLayout.setPadding(new Insets(10));
+//
+//        HBox topContainer = new HBox();
+//        topContainer.setSpacing(10);
+//        topContainer.setPadding(new Insets(10));
+//
+//        Label title = new Label("Sao chép hoặc Di chuyển");
+//        title.setStyle("-fx-font-size: 18;");
+//
+//        ComboBox<String> destinationCbb = new ComboBox<>();
+//        // Assuming you have a method to get a list of destination folders
+//        destinationCbb.getItems().addAll(getDestinationFolders());
+//        destinationCbb.setValue("Chọn thư mục đích");
+//
+//        destinationCbb.setStyle("-fx-background-color: white; -fx-border-color: gray; -fx-border-width: 1px; -fx-background-radius: 15px;");
+//        destinationCbb.setPrefWidth(200);
+//        destinationCbb.setPrefHeight(30);
+//        destinationCbb.setPadding(new Insets(5));
+//
+//        topContainer.getChildren().addAll(title, destinationCbb);
+//        copyMoveLayout.setTop(topContainer);
+//
+//        VBox centerContainer = new VBox();
+//        centerContainer.setSpacing(10);
+//        centerContainer.setPadding(new Insets(10));
+//        centerContainer.setStyle("-fx-background-color: white; -fx-border-color: gray; -fx-border-width: 1px; -fx-background-radius: 15px;");
+//
+//        TextField shareTxt = new TextField();
+//        shareTxt.setPromptText("Nhập tên mới");
+//        shareTxt.setPrefWidth(200);
+//        shareTxt.setPrefHeight(30);
+//        shareTxt.setStyle("-fx-background-color: white");
+//        shareTxt.setStyle("-fx-border-color: gray");
+//        shareTxt.setStyle("-fx-border-width: 1px");
+//
+//        centerContainer.getChildren().add(shareTxt);
+//
+//        HBox btnContainer = new HBox();
+//        btnContainer.setSpacing(10);
+//        btnContainer.setAlignment(Pos.CENTER);
+//
+//        Button copyBtn = new Button("Sao chép");
+//        copyBtn.setPrefWidth(100);
+//        copyBtn.setPrefHeight(30);
+//        copyBtn.setStyle("-fx-background-color: white");
+//        copyBtn.setStyle("-fx-border-color: gray");
+//        copyBtn.setStyle("-fx-border-width: 1px");
+//
+//        Button moveBtn = new Button("Di chuyển");
+//        moveBtn.setPrefWidth(100);
+//        moveBtn.setPrefHeight(30);
+//        moveBtn.setStyle("-fx-background-color: white");
+//        moveBtn.setStyle("-fx-border-color: gray");
+//        moveBtn.setStyle("-fx-border-width: 1px");
+//
+//        copyBtn.setOnAction(e -> {
+//            String destinationFolder = destinationCbb.getValue();
+//            String newName = shareTxt.getText();
+//            copyMoveStage.close();
+//
+//            // Perform copy logic here
+//            boolean success = copyItem(itemTypeId, itemId, destinationFolder, newName);
+//            if (success) {
+//                System.out.println("Sao chép thành công");
+//            } else {
+//                System.out.println("Sao chép thất bại");
+//            }
+//        });
+//
+//        moveBtn.setOnAction(e -> {
+//            String destinationFolder = destinationCbb.getValue();
+//            String newName = shareTxt.getText();
+//            copyMoveStage.close();
+//
+//            // Perform move logic here
+//            boolean success = moveItem(itemTypeId, itemId, destinationFolder, newName);
+//            if (success) {
+//                System.out.println("Di chuyển thành công");
+//            } else {
+//                System.out.println("Di chuyển thất bại");
+//            }
+//        });
+//
+//        btnContainer.getChildren().addAll(copyBtn, moveBtn);
+//        copyMoveLayout.setCenter(centerContainer);
+//        copyMoveLayout.setBottom(btnContainer);
+//
+//        Scene scene = new Scene(copyMoveLayout, 450, 200);
+//        copyMoveStage.setScene(scene);
+//        copyMoveStage.show();
+//    }
+	
 	@FXML
 	public void shareClicked(ActionEvent event) {
 		showSharePopup(1, currentFolderId);
 	}
+	
+	public void downloadFileClicked(int fileID, String fileName, int TypeID) {
+		// Create a FileChooser to choose the path to save file
+		DirectoryChooser directoryChooser = new DirectoryChooser();
+		directoryChooser.setTitle("Choose a folder to save file");
+//		directoryChooser.setInitialDirectory(new File(System.getProperty("user.home")));
+		File selectedFolder = directoryChooser.showDialog(null);
 
-	@FXML
+		Task<Boolean> downloadFileTask = new Task<Boolean>() {
+			@Override
+			protected Boolean call() throws Exception {
+				ItemService itemService = new ItemService();
+				boolean rs = itemService.downloadFile(selectedFolder.getAbsolutePath(), fileID, fileName, TypeID);
+				return rs;
+			}
+		};
+
+		downloadFileTask.setOnSucceeded(e -> {
+			boolean response = downloadFileTask.getValue();
+			if(response) fillData();
+			else System.out.println("Download file thành công");
+		});
+
+		downloadFileTask.setOnFailed(e -> {
+			System.out.println("Download file thất bại");
+		});
+
+		Thread thread = new Thread(downloadFileTask);
+		thread.start();
+	}
+	
+	public void downloadFolderClicked(int folderID, int ownerID) {
+		// Create a FileChooser to choose the path to save file
+				DirectoryChooser directoryChooser = new DirectoryChooser();
+				directoryChooser.setTitle("Choose a folder to save file");
+//				directoryChooser.setInitialDirectory(new File(System.getProperty("user.home")));
+
+				File selectedFolder = directoryChooser.showDialog(null);
+
+				Task<Boolean> downloadFileTask = new Task<Boolean>() {
+					@Override
+					protected Boolean call() throws Exception {
+						ItemService itemService = new ItemService();
+						boolean rs = itemService.downloadFolder(selectedFolder.getAbsolutePath(), userId, folderID);
+						return rs;
+					}
+				};
+
+				downloadFileTask.setOnSucceeded(e -> {
+					boolean response = downloadFileTask.getValue();
+					if(response) System.out.println("Download file thành công");
+					else System.out.println("Download file thất bại");
+				});
+
+				downloadFileTask.setOnFailed(e -> {
+					System.out.println("Download file thất bại");
+				});
+
+				Thread thread = new Thread(downloadFileTask);
+				thread.start();
+	}
+  
+  @FXML
 	public void downloadCurrentFolderClicked(ActionEvent event) {
 		// Create a FileChooser to choose the path to save file
 		DirectoryChooser directoryChooser = new DirectoryChooser();
@@ -1198,34 +1535,9 @@ public class HomepageController implements Initializable {
 
 		Thread thread = new Thread(downloadFileTask);
 		thread.start();
-	}
+	}	
 
-	@FXML
-	public void synchronizeClicked(ActionEvent event) {
-		Task<Boolean> synchronizeTask = new Task<Boolean>() {
-			@Override
-			protected Boolean call() throws Exception {
-				ItemService itemService = new ItemService();
-				boolean rs = itemService.synchronizeFolder(userId , currentFolderId);
-				return rs;
-			}
-		};
-
-		synchronizeTask.setOnSucceeded(e -> {
-			boolean response = synchronizeTask.getValue();
-			if(response) System.out.println("Đồng bộ thành công");
-			else System.out.println("Đồng bộ thất bại");
-		});
-
-		synchronizeTask.setOnFailed(e -> {
-			System.out.println("Đồng bộ thất bại");
-		});
-
-		Thread thread = new Thread(synchronizeTask);
-		thread.start();
-	}
-
-	@FXML
+@FXML
 	public void createFolderButtonClicked(ActionEvent event) {
 		Stage popupStage = new Stage();
 		popupStage.initModality(Modality.APPLICATION_MODAL);
@@ -1305,6 +1617,118 @@ public class HomepageController implements Initializable {
 		popupStage.setScene(popupScene);
 		popupStage.showAndWait();
 	}
+  
+	@FXML
+	public void shareClicked(ActionEvent event) {
+		showSharePopup(1, currentFolderId);
+	}
+
+	@FXML
+	public void synchronizeClicked(ActionEvent event) {
+		Task<Boolean> synchronizeTask = new Task<Boolean>() {
+			@Override
+			protected Boolean call() throws Exception {
+				ItemService itemService = new ItemService();
+				boolean rs = itemService.synchronizeFolder(userId , currentFolderId);
+				return rs;
+			}
+		};
+
+		synchronizeTask.setOnSucceeded(e -> {
+			boolean response = synchronizeTask.getValue();
+			if(response) System.out.println("Đồng bộ thành công");
+			else System.out.println("Đồng bộ thất bại");
+		});
+
+		synchronizeTask.setOnFailed(e -> {
+			System.out.println("Đồng bộ thất bại");
+		});
+
+		Thread thread = new Thread(synchronizeTask);
+		thread.start();
+	}
+
+	@FXML
+	public void createFolderButtonClicked(ActionEvent event) {
+		Stage popupStage = new Stage();
+		popupStage.initModality(Modality.APPLICATION_MODAL);
+		popupStage.setTitle("Tạo thư mục");
+
+		popupStage.initStyle(StageStyle.UTILITY);
+
+		BorderPane popupLayout = new BorderPane();
+		popupLayout.setPadding(new Insets(10));
+
+		Label title = new Label("Tên thư mục");
+		title.setStyle("-fx-font-size: 18;");
+		popupLayout.setTop(title);
+
+		TextField folderNameTxt = new TextField();
+		folderNameTxt.setPromptText("Nhập tên thư mục");
+		folderNameTxt.setPrefWidth(200);
+		folderNameTxt.setPrefHeight(30);
+		folderNameTxt.setStyle("-fx-background-color: white");
+		folderNameTxt.setStyle("-fx-border-color: gray");
+		folderNameTxt.setStyle("-fx-border-width: 1px");
+
+		popupLayout.setCenter(folderNameTxt);
+
+		Button createBtn = new Button("Tạo");
+		createBtn.setPrefWidth(100);
+		createBtn.setPrefHeight(30);
+		createBtn.setStyle("-fx-background-color: white");
+		createBtn.setStyle("-fx-border-color: gray");
+		createBtn.setStyle("-fx-border-width: 1px");
+
+		createBtn.setOnAction(e -> {
+			String foldername = folderNameTxt.getText();
+			popupStage.close();
+
+
+			Task<Boolean> createFolderTask = new Task<Boolean>() {
+				@Override
+				protected Boolean call() throws Exception {
+					ItemService itemService = new ItemService();
+					boolean rs = itemService.createFolder(foldername, userId, currentFolderId);
+					return rs;
+				}
+			};
+
+			createFolderTask.setOnSucceeded(event1 -> {
+				boolean response = createFolderTask.getValue();
+				if(response) fillData();
+				else System.out.println("Tạo folder thành công");
+			});
+
+			createFolderTask.setOnFailed(event1 -> {
+				System.out.println("Tạo folder thất bại");
+			});
+
+			Thread thread = new Thread(createFolderTask);
+			thread.start();
+		});
+
+		Button cancelBtn = new Button("Hủy");
+		cancelBtn.setPrefWidth(100);
+		cancelBtn.setPrefHeight(30);
+		cancelBtn.setStyle("-fx-background-color: white");
+		cancelBtn.setStyle("-fx-border-color: gray");
+		cancelBtn.setStyle("-fx-border-width: 1px");
+
+		cancelBtn.setOnAction(e -> popupStage.close());
+
+		HBox footerLabel = new HBox();
+		footerLabel.setSpacing(10);
+		footerLabel.setPadding(new Insets(10));
+		footerLabel.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
+		footerLabel.getChildren().addAll(createBtn, cancelBtn);
+
+		popupLayout.setBottom(footerLabel);
+
+		Scene popupScene = new Scene(popupLayout, 300, 200);
+		popupStage.setScene(popupScene);
+		popupStage.showAndWait();
+	}
 
 	public void showAccessPopup(int itemTypeId, int itemId) {
 		Stage accessStage = new Stage();
@@ -1323,6 +1747,28 @@ public class HomepageController implements Initializable {
 
 		ComboBox<String> permissionCbb = new ComboBox<>();
 		permissionCbb.getItems().addAll("Riêng tư","Chỉ xem", "Chỉnh sửa");
+
+		Task<Integer> getPermissionTask = new Task<Integer>() {
+			@Override
+			protected Integer call() throws Exception {
+				PermissionService permissionService = new PermissionService();
+				return permissionService.getPermission(itemTypeId, itemId);
+			}
+		};
+
+		getPermissionTask.setOnSucceeded(e -> {
+			int permission = getPermissionTask.getValue();
+			if(permission == 1) permissionCbb.setValue("Riêng tư");
+			else if(permission == 2) permissionCbb.setValue("Chỉ xem");
+			else if(permission == 3) permissionCbb.setValue("Chỉnh sửa");
+		});
+
+		getPermissionTask.setOnFailed(e -> {
+			System.out.println("Lỗi khi lấy quyền truy cập");
+		});
+
+		Thread thread1 = new Thread(getPermissionTask);
+		thread1.start();
 
 //		Task<Integer> getPermissionTask = new Task<Integer>() {
 //			@Override
@@ -1418,6 +1864,7 @@ public class HomepageController implements Initializable {
 		accessStage.showAndWait();
 	}
 	public void setFontLabel(int number) {
+// 		for (int i = 0; i < 4; ++i) {
 		for (int i = 0; i <= 5; ++i) {
 			if (i == number) continue;
 			switch (i) {
@@ -1467,20 +1914,22 @@ public class HomepageController implements Initializable {
 			dataTable.setItems(items);
 			System.out.println("not null");
 		}
-
-		PermissionService permissionService = new PermissionService();
-		int permissionType = permissionService.checkPermission(userId, 1, currentFolderId);
-		if(permissionType == 3) {
-			createFolderBtn.setDisable(false);
-			uploadFileBtn.setDisable(false);
-			uploadFolderBtn.setDisable(false);
-		}
-		else {
-			createFolderBtn.setDisable(true);
-			uploadFileBtn.setDisable(true);
-			uploadFolderBtn.setDisable(true);
-		}
 	}
+// 	public void myFilePage(MouseEvent event) throws IOException {
+
+// 		PermissionService permissionService = new PermissionService();
+// 		int permissionType = permissionService.checkPermission(userId, 1, currentFolderId);
+// 		if(permissionType == 3) {
+// 			createFolderBtn.setDisable(false);
+// 			uploadFileBtn.setDisable(false);
+// 			uploadFolderBtn.setDisable(false);
+// 		}
+// 		else {
+// 			createFolderBtn.setDisable(true);
+// 			uploadFileBtn.setDisable(true);
+// 			uploadFolderBtn.setDisable(true);
+// 		}
+// 	}
 	public void myFilePage(MouseEvent event) throws IOException {
 		resetDatatable();
 		lbMyFile.setFont(Font.font("System", FontWeight.BOLD, FontPosture.REGULAR, lbMyFile.getFont().getSize()));
@@ -1509,11 +1958,12 @@ public class HomepageController implements Initializable {
 			dataTable.setItems(items);
 			System.out.println("not null");
 		}
-
-		createFolderBtn.setDisable(true);
-		uploadFileBtn.setDisable(true);
-		uploadFolderBtn.setDisable(true);
 	}
+// 	public void myShareFile(MouseEvent event) throws IOException {
+// 		createFolderBtn.setDisable(true);
+// 		uploadFileBtn.setDisable(true);
+// 		uploadFolderBtn.setDisable(true);
+// 	}
 	public void myShareFile(MouseEvent event) throws IOException {
 		resetDatatable();
 		lbMyFileShare.setFont(Font.font("System", FontWeight.BOLD, FontPosture.REGULAR, lbMyFileShare.getFont().getSize()));
@@ -1542,11 +1992,13 @@ public class HomepageController implements Initializable {
 			dataTable.setItems(items);
 			System.out.println("not null");
 		}
-
-		createFolderBtn.setDisable(true);
-		uploadFileBtn.setDisable(true);
-		uploadFolderBtn.setDisable(true);
 	}
+// 	public void otherFileShare(MouseEvent event) throws IOException {
+
+// 		createFolderBtn.setDisable(true);
+// 		uploadFileBtn.setDisable(true);
+// 		uploadFolderBtn.setDisable(true);
+// 	}
 	public void otherFileShare(MouseEvent event) throws IOException {
 		resetDatatable();
 		lbOtherFileShare.setFont(Font.font("System", FontWeight.BOLD, FontPosture.REGULAR, lbOtherFileShare.getFont().getSize()));
@@ -1575,13 +2027,16 @@ public class HomepageController implements Initializable {
 			dataTable.setItems(items);
 			System.out.println("not null");
 		}
-
-		createFolderBtn.setDisable(true);
-		uploadFileBtn.setDisable(true);
-		uploadFolderBtn.setDisable(true);
 	}
+// 	public void search(ActionEvent event) throws IOException {
+
+// 		createFolderBtn.setDisable(true);
+// 		uploadFileBtn.setDisable(true);
+// 		uploadFolderBtn.setDisable(true);
+// 	}
 	public void search(ActionEvent event) throws IOException {
 		resetDatatable();
+
 		String txt = searchTxt.getText();
 		System.out.println(txt);
 		ItemService itemService = new ItemService();
@@ -1633,10 +2088,6 @@ public class HomepageController implements Initializable {
 			System.out.println("not null");
 		}
 
-		createFolderBtn.setDisable(true);
-		uploadFileBtn.setDisable(true);
-		uploadFolderBtn.setDisable(true);
-	}
 	private void fillDataBreadCrumb(int index) {
 		resetDatatable();
 		ItemService itemService = new ItemService();
