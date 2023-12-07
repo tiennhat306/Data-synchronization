@@ -19,8 +19,6 @@ public class ZipFolder {
 		String downloadFolder = System.getProperty("user.home") + File.separator + "Downloads";
 		OUTPUT_ZIP_FILE = downloadFolder + File.separator + folderName + ".zip";
 		SOURCE_FOLDER = sourceFolder;
-		System.out.println("OUTPUT_ZIP_FILE: " + OUTPUT_ZIP_FILE);
-		System.out.println("SOURCE_FOLDER: " + SOURCE_FOLDER);
 		fileList = new ArrayList<>();
 	}
 
@@ -45,9 +43,7 @@ public class ZipFolder {
 		try{
 			FileOutputStream fos = new FileOutputStream(zipFile);
 			ZipOutputStream zos = new ZipOutputStream(fos);
-			System.out.println("Output to Zip : " + zipFile);
 			for(String file : this.fileList){
-				System.out.println("File Added : " + file);
 				ZipEntry ze= new ZipEntry(file);
 				zos.putNextEntry(ze);
 				FileInputStream in =
@@ -61,7 +57,6 @@ public class ZipFolder {
 			zos.closeEntry();
 			//remember close it
 			zos.close();
-			System.out.println("Done");
 		}catch(IOException ex){
 			ex.printStackTrace();
 		}

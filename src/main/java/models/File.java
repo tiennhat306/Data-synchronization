@@ -21,13 +21,13 @@ public class File implements Serializable {
     @Column(name = "name", nullable = false)
     private String name;
     @Basic
-    @Column(name = "type_id" ,nullable = false)
+    @Column(name = "type_id",nullable = false)
     private int typeId;
     @Basic
-    @Column(name = "folder_id" ,nullable = false)
+    @Column(name = "folder_id",nullable = false)
     private int folderId;
     @Basic
-    @Column(name = "owner_id" ,nullable = false)
+    @Column(name = "owner_id",nullable = false)
     private int ownerId;
     @Basic
     @Column(name = "size")
@@ -55,6 +55,23 @@ public class File implements Serializable {
     private User usersByUpdatedBy;
     @OneToMany(mappedBy = "filesByFileId")
     private Collection<Permission> permissionsById;
+    @Basic
+    @Column(name = "is_deleted")
+    private boolean isDeleted;
+    @OneToMany(mappedBy = "filesByFileId")
+    private Collection<RecentFile> recentfilesById;
+    @Basic
+    @Column(name = "finalpath")
+    private String finalpath;
+    @Basic
+    @Column(name = "date_deleted")
+    private Timestamp dateDeleted;
+    @Basic
+    @Column(name = "deleted_by")
+    private Integer deletedBy;
+    @ManyToOne(optional=true)
+    @JoinColumn(name = "deleted_by", referencedColumnName = "id", insertable=false, updatable=false)
+    private User usersByDeletedBy;
 
     public int getId() {
         return id;
@@ -128,14 +145,6 @@ public class File implements Serializable {
         this.updatedBy = updatedBy;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        File file = (File) o;
-        return id == file.id && typeId == file.typeId && folderId == file.folderId && ownerId == file.ownerId && Objects.equals(name, file.name) && Objects.equals(size, file.size) && Objects.equals(createdAt, file.createdAt) && Objects.equals(updatedAt, file.updatedAt) && Objects.equals(updatedBy, file.updatedBy);
-    }
-
     public Type getTypesByTypeId() {
         return typesByTypeId;
     }
@@ -174,5 +183,66 @@ public class File implements Serializable {
 
     public void setPermissionsById(Collection<Permission> permissionsById) {
         this.permissionsById = permissionsById;
+    }
+
+    public boolean isDeleted() {
+        return isDeleted;
+    }
+
+    public void setDeleted(boolean deleted) {
+        isDeleted = deleted;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        File file = (File) o;
+        return id == file.id && typeId == file.typeId && folderId == file.folderId && ownerId == file.ownerId && isDeleted == file.isDeleted && Objects.equals(name, file.name) && Objects.equals(size, file.size) && Objects.equals(createdAt, file.createdAt) && Objects.equals(updatedAt, file.updatedAt) && Objects.equals(updatedBy, file.updatedBy);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, name, typeId, folderId, ownerId, size, createdAt, updatedAt, updatedBy, isDeleted);
+    }
+
+    public Collection<RecentFile> getRecentfilesById() {
+        return recentfilesById;
+    }
+
+    public void setRecentfilesById(Collection<RecentFile> recentfilesById) {
+        this.recentfilesById = recentfilesById;
+    }
+
+    public String getFinalpath() {
+        return finalpath;
+    }
+
+    public void setFinalpath(String finalpath) {
+        this.finalpath = finalpath;
+    }
+
+    public Timestamp getDateDeleted() {
+        return dateDeleted;
+    }
+
+    public void setDateDeleted(Timestamp dateDeleted) {
+        this.dateDeleted = dateDeleted;
+    }
+
+    public Integer getDeletedBy() {
+        return deletedBy;
+    }
+
+    public void setDeletedBy(Integer deletedBy) {
+        this.deletedBy = deletedBy;
+    }
+
+    public User getUsersByDeletedBy() {
+        return usersByDeletedBy;
+    }
+
+    public void setUsersByDeletedBy(User usersByDeletedBy) {
+        this.usersByDeletedBy = usersByDeletedBy;
     }
 }
