@@ -123,8 +123,12 @@ public class PermissionService {
                     permission = session.createQuery(query, Permission.class)
                             .setParameter("itemId", itemId)
                             .getSingleResult();
-                    permission.setPermissionType((short) finalPermissionId);
-                    session.merge(permission);
+                    if(permission == null){
+                        throw new NoResultException();
+                    } else {
+                        permission.setPermissionType((short) finalPermissionId);
+                        session.merge(permission);
+                    }
                 } else {
                     String nativeQuery = "WITH RECURSIVE folder_cte AS (\n" +
                             "  SELECT id FROM folders" +
@@ -147,6 +151,7 @@ public class PermissionService {
                 } else {
                     permission.setFileId(itemId);
                 }
+                permission.setPermissionType((short) finalPermissionId);
                 session.persist(permission);
             }
             transaction.commit();
@@ -206,6 +211,8 @@ public class PermissionService {
                         .uniqueResult();
                 if(permission == null){
                     throw new NoResultException();
+                } else {
+                    return permission.getPermissionType();
                 }
             } catch (NoResultException e) {
                 int parentId = session.createQuery("select " + (itemTypeId == 1 ? "fd.parentId" : "f.folderId") + " from " + (itemTypeId == 1 ? "Folder fd" : "File f") + " where " + (itemTypeId == 1 ? "fd.id" : "f.id") + " = :id", Integer.class)
@@ -213,7 +220,6 @@ public class PermissionService {
                         .uniqueResult();
                 return getPermission(PermissionService.FOLDER_TYPE, parentId);
             }
-            return permission.getPermissionType();
         } catch (Exception e) {
             e.printStackTrace();
             return -1;

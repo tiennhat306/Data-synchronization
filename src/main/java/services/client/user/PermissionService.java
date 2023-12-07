@@ -45,6 +45,7 @@ public class PermissionService {
             socketClientHelper.sendRequest(String.valueOf(itemId));
 
             int response = (int) socketClientHelper.receiveResponse();
+            System.out.println("Client get permission: " + response);
             socketClientHelper.close();
             return response;
         } catch (Exception e) {

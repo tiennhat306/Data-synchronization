@@ -3,6 +3,7 @@ package services.server;
 import DTO.Connection;
 import models.File;
 import models.Folder;
+import models.RecentFile;
 import models.User;
 
 import java.io.*;
@@ -110,6 +111,12 @@ this.out = new ObjectOutputStream(clientSocket.getOutputStream());
 				List<File> response = getItemList(userId, folderId, searchText);
 				sendResponse(response);
 			}
+      case "GET_ALL_RECENT_OPENED_ITEM" -> {
+                    int userId = Integer.parseInt((String) receiveRequest());
+                    String searchText = (String) receiveRequest();
+                    List<RecentFile> response = new RecentFileService().getAllRecentOpenedItem(userId, searchText);
+                    sendResponse(response);
+                }
       case "GET_ALL_DELETED_ITEM" -> {
                     int userId = Integer.parseInt((String) receiveRequest());
                     String searchText = (String) receiveRequest();
@@ -228,22 +235,35 @@ this.out = new ObjectOutputStream(clientSocket.getOutputStream());
                     syncFile(filePath, size);
                     sendResponse(true);
                 }
-			
-			case "SYNCHRONIZE" -> {
-				int userId = Integer.parseInt((String) receiveRequest());
-				int folderId = Integer.parseInt((String) receiveRequest());
+	
+			case "OPEN_FOLDER" -> {
+                    int userId = Integer.parseInt((String) receiveRequest());
+                    int folderId = Integer.parseInt((String) receiveRequest());
 
-				services.server.user.UserService userService = new services.server.user.UserService();
-				String userPath = userService.getUserPath(userId);
+                    String userPath = new services.server.user.UserService().getUserPath(userId);
+                    String folderPath = new services.server.user.FolderService().getFolderPath(folderId);
+                    sendResponse(userPath + java.io.File.separator + folderPath);
 
-				services.server.user.FolderService folderService = new services.server.user.FolderService();
-				String path = folderService.getPath(folderId);
-				sendResponse(userPath + java.io.File.separator + path);
+                    boolean response = syncFolder(userId, folderId, new services.server.user.FolderService().getFolderPath(folderId));
 
-				boolean response = syncFolder(userId, folderId, folderService.getFolderPath(folderId));
+                    sendResponse(response);
+                }
+                case "OPEN_FILE" -> {
+                    int userId = Integer.parseInt((String) receiveRequest());
+                    int fileId = Integer.parseInt((String) receiveRequest());
 
-				sendResponse(response);
-			}
+                    String userPath = new services.server.user.UserService().getUserPath(userId);
+                    String filePath = new services.server.user.FileService().getPath(fileId);
+                    sendResponse(userPath + java.io.File.separator + filePath);
+
+                    int size = new services.server.user.FileService().getSize(fileId);
+                    sendResponse(String.valueOf(size));
+
+                    syncFile(new FileService().getFilePath(fileId), size);
+
+                    boolean response = new RecentFileService().addRecentFile(userId, fileId);
+                    sendResponse(response);
+                }
 			case "SEARCH_UNSHARED_USER" -> {
 				int itemTypeId = Integer.parseInt((String) receiveRequest());
 				int itemId = Integer.parseInt((String) receiveRequest());
@@ -749,4 +769,5 @@ this.out = new ObjectOutputStream(clientSocket.getOutputStream());
 		System.out.println("Connection added: " + connection);
 		System.out.println("Connection list: " + connections);
 	}
+
 }
