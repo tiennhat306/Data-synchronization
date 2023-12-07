@@ -68,6 +68,16 @@ public class User implements Serializable {
     private Collection<Permission> permissionsById;
     @OneToMany(mappedBy = "usersBySharedBy")
     private Collection<Permission> permissionsById_0;
+    @OneToMany(mappedBy = "usersByUserId")
+    private Collection<RecentFile> recentfilesById;
+
+    public boolean isGender() {
+        return gender;
+    }
+
+    public boolean isStatus() {
+        return status;
+    }
 
     public int getId() {
         return id;
@@ -189,21 +199,13 @@ public class User implements Serializable {
         this.updatedAt = updatedAt;
     }
 
-//    @Override
-//    public boolean equals(Object o) {
-//        if (this == o) return true;
-//        if (o == null || getClass() != o.getClass()) return false;
-//        UserData user = (UserData) o;
-//        return id == user.id && gender == user.gender && role == user.role && status == user.status && Objects.equals(name, user.name) && Objects.equals(birthday, user.birthday) && Arrays.equals(avatar, user.avatar) && Objects.equals(username, user.username) && Objects.equals(password, user.password) && Objects.equals(phoneNumber, user.phoneNumber) && Objects.equals(email, user.email) && Objects.equals(userPath, user.userPath) && Objects.equals(refreshToken, user.refreshToken) && Objects.equals(createdAt, user.createdAt) && Objects.equals(updatedAt, user.updatedAt);
-//    }
+    public Timestamp getUpdatedAt() {
+        return updatedAt;
+    }
 
-//    @Override
-//    public int hashCode() {
-//        int result = Objects.hash(id, name, birthday, gender, username, password, phoneNumber, email, role, status, userPath, refreshToken, createdAt, updatedAt);
-//        result = 31 * result + Arrays.hashCode(avatar);
-//        return result;
-//    }
-
+    public void setUpdatedAt(Timestamp updatedAt) {
+        this.updatedAt = updatedAt;
+    }
 
     @Override
     public int hashCode() {
@@ -256,5 +258,13 @@ public class User implements Serializable {
 
     public void setPermissionsById_0(Collection<Permission> permissionsById_0) {
         this.permissionsById_0 = permissionsById_0;
+    }
+
+    public Collection<RecentFile> getRecentfilesById() {
+        return recentfilesById;
+    }
+
+    public void setRecentfilesById(Collection<RecentFile> recentfilesById) {
+        this.recentfilesById = recentfilesById;
     }
 }
