@@ -3,6 +3,7 @@ package services.server.user;
 import applications.ServerApp;
 import javafx.util.Pair;
 import models.Folder;
+import models.Permission;
 import org.hibernate.Session;
 import org.hibernate.query.Query;
 import utils.HibernateUtil;
@@ -11,6 +12,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
@@ -152,6 +154,8 @@ public class FolderService {
     }
 
     public boolean createFolder(String folderName, int ownerId, int parentId){
+        PermissionService permissionService = new PermissionService();
+        int permissionType = permissionService.getPermission(1, parentId);
         try(Session session = HibernateUtil.getSessionFactory().openSession()){
             session.beginTransaction();
             Folder folder = new Folder();
@@ -161,6 +165,12 @@ public class FolderService {
             folder.setParentId(parentId);
 
             session.persist(folder);
+
+            Permission permission = new Permission();
+            permission.setFolderId(folder.getId());
+            permission.setPermissionType((short) permissionType);
+            session.persist(permission);
+
             session.getTransaction().commit();
 
             String path = ServerApp.SERVER_PATH + File.separator + getPath(folder.getId());
@@ -173,7 +183,7 @@ public class FolderService {
         }
     }
 
-    public int uploadFolder(String folderName, int ownerId, int parentId) {
+    public int uploadFolder(String folderName, int ownerId, int parentId, int permissionType){
         try(Session session = HibernateUtil.getSessionFactory().openSession()){
             session.beginTransaction();
             Folder folder = new Folder();
@@ -181,8 +191,15 @@ public class FolderService {
             folder.setFolderName(folderName);
             folder.setOwnerId(ownerId);
             folder.setParentId(parentId);
+            folder.setDeleted(false);
 
             session.persist(folder);
+
+            Permission permission = new Permission();
+            permission.setFolderId(folder.getId());
+            permission.setPermissionType((short) permissionType);
+            session.persist(permission);
+
             session.getTransaction().commit();
 
             String path = ServerApp.SERVER_PATH + File.separator + getPath(folder.getId());
@@ -209,5 +226,115 @@ public class FolderService {
 
     public String getFolderPath(int folderId) {
         return ServerApp.SERVER_PATH + File.separator + getPath(folderId);
+    }
+
+
+    public int getFolderId(String folderName, int currentFolderId) {
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
+            return session.createQuery("select fd.id from Folder fd where fd.folderName = :folderName AND fd.parentId = :currentFolderId", Integer.class)
+                    .setParameter("folderName", folderName)
+                    .setParameter("currentFolderId", currentFolderId)
+                    .getSingleResult();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return -1;
+        }
+    }
+
+    public boolean deleteFolder(int itemId, int userId) {
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
+            session.beginTransaction();
+            Folder folder = session.find(Folder.class, itemId);
+            if (folder == null) return false;
+            folder.setDeleted(true);
+            folder.setDeletedBy(userId);
+            folder.setDateDeleted(new Timestamp(System.currentTimeMillis()));
+            folder.setFinalpath(getPath(folder.getParentId()));
+            session.merge(folder);
+
+            // recursively delete all subfolders and files
+            List<Folder> folderList = session.createQuery("select fd from Folder fd where fd.parentId = :id", Folder.class)
+                    .setParameter("id", itemId)
+                    .list();
+            for (Folder subFolder : folderList) {
+                deleteFolder(subFolder.getId(), userId);
+            }
+            List<models.File> fileList = session.createQuery("select f from File f where f.folderId = :id", models.File.class).setParameter("id", itemId).list();
+            for (models.File file : fileList) {
+                FileService fileService = new FileService();
+                fileService.deleteFile(file.getId(), userId);
+            }
+
+            session.getTransaction().commit();
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean restoreFolder(int folderId){
+        try(Session session = HibernateUtil.getSessionFactory().openSession()){
+            session.beginTransaction();
+            Folder folder = session.find(Folder.class, folderId);
+            if (folder == null) return false;
+            folder.setDeleted(false);
+            folder.setDeletedBy(null);
+            folder.setDateDeleted(null);
+            folder.setFinalpath(null);
+            session.merge(folder);
+
+            // recursively restore all subfolders and files
+            List<Folder> folderList = session.createQuery("select fd from Folder fd where fd.parentId = :id", Folder.class)
+                    .setParameter("id", folderId)
+                    .list();
+            for (Folder subFolder : folderList) {
+                restoreFolder(subFolder.getId());
+            }
+            List<models.File> fileList = session.createQuery("select f from File f where f.folderId = :id", models.File.class)
+                    .setParameter("id", folderId)
+                    .list();
+            for (models.File file : fileList) {
+                FileService fileService = new FileService();
+                fileService.restoreFile(file.getId());
+            }
+
+            session.getTransaction().commit();
+            return true;
+        } catch (Exception e){
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean deleteFolderPermanently(int id){
+        try(Session session = HibernateUtil.getSessionFactory().openSession()){
+            session.beginTransaction();
+            Folder folder = session.find(Folder.class, id);
+            if (folder == null) return false;
+
+            // recursively delete all subfolders and files
+            List<Folder> folderList = session.createQuery("select fd from Folder fd where fd.parentId = :id", Folder.class).setParameter("id", id).list();
+            for (Folder subFolder : folderList) {
+                deleteFolderPermanently(subFolder.getId());
+            }
+            List<models.File> fileList = session.createQuery("select f from File f where f.folderId = :id", models.File.class).setParameter("id", id).list();
+            for (models.File file : fileList) {
+                FileService fileService = new FileService();
+                fileService.deleteFilePermanently(file.getId());
+            }
+
+            deleteFolderIfExist(getFolderPath(id));
+            PermissionService permissionService = new PermissionService();
+            permissionService.deletePermissionByFolderId(id);
+
+            session.remove(folder);
+
+            session.getTransaction().commit();
+            return true;
+        } catch (Exception e){
+            e.printStackTrace();
+            return false;
+        }
     }
 }

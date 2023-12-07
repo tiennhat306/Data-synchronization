@@ -3,6 +3,7 @@ package models;
 import jakarta.persistence.*;
 
 import java.io.Serializable;
+import java.sql.Timestamp;
 import java.util.Objects;
 
 @Entity
@@ -35,6 +36,20 @@ public class Permission implements Serializable {
     @ManyToOne(optional=false)
     @JoinColumn(name = "folder_id", referencedColumnName = "id", insertable=false, updatable=false)
     private Folder foldersByFolderId;
+    @Basic
+    @Column(name = "shared_by")
+    private Integer sharedBy;
+
+    public void setSharedBy(Integer sharedBy) {
+        this.sharedBy = sharedBy;
+    }
+
+    @Basic
+    @Column(name = "shared_at")
+    private Timestamp sharedAt;
+    @ManyToOne(optional=true)
+    @JoinColumn(name = "shared_by", referencedColumnName = "id", insertable=false, updatable=false)
+    private User usersBySharedBy;
 
     public int getId() {
         return id;
@@ -111,5 +126,29 @@ public class Permission implements Serializable {
 
     public void setFoldersByFolderId(Folder foldersByFolderId) {
         this.foldersByFolderId = foldersByFolderId;
+    }
+
+    public int getSharedBy() {
+        return sharedBy;
+    }
+
+    public void setSharedBy(int sharedBy) {
+        this.sharedBy = sharedBy;
+    }
+
+    public Timestamp getSharedAt() {
+        return sharedAt;
+    }
+
+    public void setSharedAt(Timestamp sharedAt) {
+        this.sharedAt = sharedAt;
+    }
+
+    public User getUsersBySharedBy() {
+        return usersBySharedBy;
+    }
+
+    public void setUsersBySharedBy(User usersBySharedBy) {
+        this.usersBySharedBy = usersBySharedBy;
     }
 }

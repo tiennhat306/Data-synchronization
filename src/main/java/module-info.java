@@ -21,6 +21,8 @@ module com.datasynchronization.datasynchronization {
     opens DTO to javafx.base, org.hibernate.orm.core;
     opens controllers.server to javafx.fxml;
     exports controllers.server;
+    opens controllers.login to javafx.fxml;
+    exports  controllers.login;
     exports DTO;
 
 }

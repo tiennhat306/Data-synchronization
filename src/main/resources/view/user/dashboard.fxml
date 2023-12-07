@@ -12,9 +12,9 @@
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
-<?import javafx.scene.text.Text?>
 
 <BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="600.0" prefWidth="900.0" xmlns="http://javafx.com/javafx/20.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="controllers.user.HomepageController">
     <top>
@@ -32,11 +32,19 @@
                 </HBox>
                 <HBox alignment="CENTER" prefHeight="52.0" prefWidth="344.0">
                     <children>
-                        <TextField fx:id="searchTxt" minWidth="300.0" prefHeight="35.0" prefWidth="223.0">
+                        <TextField fx:id="searchTxt" minWidth="300.0" onAction="#search" prefHeight="35.0" prefWidth="223.0">
                      <padding>
                         <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
                      </padding></TextField>
-                        <FontAwesomeIconView fx:id="searchBtn" glyphName="SEARCH" size="35" wrappingWidth="39.94284534454346" />
+                  <Button fx:id="searchBtn" mnemonicParsing="false" onAction="#search" text="Button">
+                     <graphic>
+                        <StackPane prefHeight="59.0" prefWidth="54.0">
+                           <children>
+                                    <FontAwesomeIconView glyphName="SEARCH" size="35" wrappingWidth="39.94284534454346" />
+                           </children>
+                        </StackPane>
+                     </graphic>
+                  </Button>
                     </children>
                 </HBox>
                 <HBox alignment="CENTER_RIGHT" prefHeight="100.0" prefWidth="200.0">
@@ -87,37 +95,40 @@
             <HBox fx:id="generalBtn" alignment="CENTER_LEFT" prefHeight="26.0" prefWidth="159.0">
                <children>
                   <FontAwesomeIconView glyphName="USERS" />
-                  <Label text="Chung" />
+                  <Label fx:id="lbGeneral" onMouseClicked="#generalPage" text="Chung">
+                     <font>
+                        <Font name="System Bold" size="12.0" />
+                     </font></Label>
                </children>
             </HBox>
             <HBox fx:id="personalBtn" alignment="CENTER_LEFT" layoutX="10.0" layoutY="53.0" prefHeight="28.0" prefWidth="159.0">
                <children>
                   <FontAwesomeIconView glyphName="FOLDER" />
-                  <Label text="Tập tin của tôi" />
+                  <Label fx:id="lbMyFile" onMouseClicked="#myFilePage" text="Tập tin của tôi" />
                </children>
             </HBox>
             <HBox fx:id="SharedBtn" alignment="CENTER_LEFT" layoutX="10.0" layoutY="53.0" prefHeight="28.0" prefWidth="159.0">
                <children>
                   <FontAwesomeIconView glyphName="SHARE" />
-                  <Label text="Đã chia sẻ" />
+                  <Label fx:id="lbMyFileShare" onMouseClicked="#myShareFile" text="Đã chia sẻ" />
                </children>
             </HBox>
             <HBox fx:id="SharedByOtherBtn" alignment="CENTER_LEFT" layoutX="10.0" layoutY="88.0" prefHeight="26.0" prefWidth="159.0">
                <children>
                   <FontAwesomeIconView glyphName="SHARE_ALT" />
-                  <Label text="Được chia sẻ" />
+                  <Label fx:id="lbOtherFileShare" onMouseClicked="#otherFileShare" text="Được chia sẻ" />
                </children>
             </HBox>
             <HBox fx:id="HistoryBtn" alignment="CENTER_LEFT" layoutX="10.0" layoutY="124.0" prefHeight="26.0" prefWidth="159.0">
                <children>
                   <FontAwesomeIconView glyphName="HISTORY" />
-                  <Label text="Gần đây" />
+                  <Label fx:id="lbRecentOpenBtn"  onMouseClicked="#showRecentOpenPage" text="Gần đây" />
                </children>
             </HBox>
             <HBox alignment="CENTER_LEFT" layoutX="10.0" layoutY="245.0" prefHeight="26.0" prefWidth="159.0">
                <children>
                   <FontAwesomeIconView glyphName="TRASH" />
-                  <Label fx:id="TrashBtn" text="Thùng rác" />
+                  <Label fx:id="lbTrashBtn" onMouseClicked="#showTrashPage" text="Thùng rác" />
                </children>
             </HBox>
          </children>
@@ -133,8 +144,13 @@
          <content>
             <VBox maxHeight="1080.0" maxWidth="1920.0">
                <children>
-                  <HBox alignment="CENTER_LEFT" prefHeight="33.0" prefWidth="710.0" spacing="10.0">
+                  <HBox alignment="CENTER_LEFT" prefHeight="29.0" prefWidth="710.0" spacing="10.0">
                      <children>
+                        <Button fx:id="shareBtn" layoutX="10.0" layoutY="14.0" mnemonicParsing="false" onAction="#shareClicked" text="Chia sẻ">
+                           <graphic>
+                              <FontAwesomeIconView glyphName="SHARE" />
+                           </graphic>
+                        </Button>
                         <Button fx:id="synchronizeBtn" layoutX="10.0" layoutY="10.0" mnemonicParsing="false" onAction="#synchronizeClicked" text="Đồng bộ">
                            <graphic>
                               <FontAwesomeIconView glyphName="REFRESH" />
@@ -145,35 +161,24 @@
                               <FontAwesomeIconView glyphName="DOWNLOAD" />
                            </graphic>
                         </Button>
-                        <Button fx:id="accessBtn" layoutX="92.0" layoutY="10.0" mnemonicParsing="false" onAction="#accessClicked" text="Quyền truy cập">
-                           <graphic>
-                              <FontAwesomeIconView glyphName="SHARE_SQUARE" />
-                           </graphic>
-                        </Button>
                      </children>
+                     <padding>
+                        <Insets bottom="10.0" />
+                     </padding>
                   </HBox>
-                  <HBox fx:id="path" prefHeight="36.0" prefWidth="762.0">
-                     <children>
-                        <HBox alignment="CENTER_LEFT" prefHeight="36.0" prefWidth="58.0" spacing="5.0">
-                           <children>
-                              <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Chung" />
-                              <FontAwesomeIconView glyphName="ANGLE_RIGHT" />
-                           </children>
-                        </HBox>
-                        <HBox alignment="CENTER_LEFT" layoutX="10.0" layoutY="10.0" prefHeight="36.0" prefWidth="58.0" spacing="5.0">
-                           <children>
-                              <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Chung" />
-                              <FontAwesomeIconView glyphName="ANGLE_RIGHT" />
-                           </children>
-                        </HBox>
-                     </children>
-                  </HBox>
-                  <HBox prefHeight="40.0" prefWidth="665.0" spacing="10.0">
+                  <HBox fx:id="path" prefHeight="32.0" prefWidth="710.0" spacing="10.0">
+                     <padding>
+                        <Insets bottom="10.0" />
+                     </padding></HBox>
+                  <HBox prefHeight="26.0" prefWidth="710.0" spacing="10.0">
                      <children>
                         <ComboBox fx:id="typeCbb" prefHeight="26.0" prefWidth="106.0" promptText="Loại" />
                         <ComboBox fx:id="ownerCbb" layoutX="10.0" layoutY="10.0" prefHeight="26.0" prefWidth="98.0" promptText="Người" />
                         <ComboBox fx:id="lastUpdatedCbb" layoutX="108.0" layoutY="10.0" prefHeight="26.0" prefWidth="158.0" promptText="Lần sửa đổi gần nhất" />
                      </children>
+                     <padding>
+                        <Insets bottom="10.0" />
+                     </padding>
                   </HBox>
                   <TableView fx:id="dataTable" maxHeight="1080.0" maxWidth="1920.0" VBox.vgrow="ALWAYS">
                      <columnResizePolicy>
