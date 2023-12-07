@@ -31,7 +31,8 @@ public class ClientHandler implements Runnable {
 			System.out.println("Client handler connected: " + clientSocket);
 			System.out.println("Server thread number " + clientNumber + " Started");
 
-			this.out = new ObjectOutputStream(clientSocket.getOutputStream());
+
+this.out = new ObjectOutputStream(clientSocket.getOutputStream());
 			this.in = new ObjectInputStream(clientSocket.getInputStream());
 			addConnection("CONNECTED");
 		} catch (IOException e) {
@@ -109,6 +110,12 @@ public class ClientHandler implements Runnable {
 				List<File> response = getItemList(userId, folderId, searchText);
 				sendResponse(response);
 			}
+      case "GET_ALL_DELETED_ITEM" -> {
+                    int userId = Integer.parseInt((String) receiveRequest());
+                    String searchText = (String) receiveRequest();
+                    List<File> response = getDeletedItemList(userId, searchText);
+                    sendResponse(response);
+      }
 			case "CREATE_FOLDER" -> {
 				String folderName = (String) receiveRequest();
 				int ownerId = Integer.parseInt((String) receiveRequest());
@@ -187,6 +194,40 @@ public class ClientHandler implements Runnable {
 				boolean response = renameFolder(Integer.parseInt(folderId), folderName);
 				sendResponse(response);
 			}
+      
+      case "SYNCHRONIZE_FOLDER" -> {
+                    int userId = Integer.parseInt((String) receiveRequest());
+                    int folderId = Integer.parseInt((String) receiveRequest());
+
+                    services.server.user.UserService userService = new services.server.user.UserService();
+                    String userPath = userService.getUserPath(userId);
+
+                    services.server.user.FolderService folderService = new services.server.user.FolderService();
+                    String path = folderService.getPath(folderId);
+                    sendResponse(userPath + java.io.File.separator + path);
+
+                    boolean response = syncFolder(userId, folderId, folderService.getFolderPath(folderId));
+
+                    sendResponse(response);
+                }
+                case "SYNCHRONIZE_FILE" -> {
+                    int userId = Integer.parseInt((String) receiveRequest());
+                    int fileId = Integer.parseInt((String) receiveRequest());
+
+                    services.server.user.UserService userService = new services.server.user.UserService();
+                    String userPath = userService.getUserPath(userId);
+
+                    services.server.user.FileService fileService = new services.server.user.FileService();
+                    String path = fileService.getPath(fileId);
+                    sendResponse(userPath + java.io.File.separator + path);
+
+                    String filePath = fileService.getFilePath(fileId);
+                    int size = fileService.getSize(fileId);
+                    sendResponse(String.valueOf(size));
+
+                    syncFile(filePath, size);
+                    sendResponse(true);
+                }
 			
 			case "SYNCHRONIZE" -> {
 				int userId = Integer.parseInt((String) receiveRequest());
@@ -211,6 +252,7 @@ public class ClientHandler implements Runnable {
 				List<User> response = permissionService.searchUnsharedUser(itemTypeId, itemId, searchText);
 				sendResponse(response);
 			}
+      
 			case "SHARE" -> {
 				int itemTypeId = Integer.parseInt((String) receiveRequest());
 				int itemId = Integer.parseInt((String) receiveRequest());
@@ -247,6 +289,13 @@ public class ClientHandler implements Runnable {
 				int response = permissionService.getPermission(itemTypeId, itemId);
 				sendResponse(response);
 			}
+      case "GET_OWNER_ID" -> {
+                    int itemTypeId = Integer.parseInt((String) receiveRequest());
+                    int itemId = Integer.parseInt((String) receiveRequest());
+                    int response = new PermissionService().getOwnerId(itemTypeId, itemId);
+                    System.out.println("Owner id: " + response);
+                    sendResponse(response);
+                }
 			case "UPDATE_PERMISSION" -> {
 				int itemTypeId = Integer.parseInt((String) receiveRequest());
 				int itemId = Integer.parseInt((String) receiveRequest());
@@ -255,6 +304,46 @@ public class ClientHandler implements Runnable {
 				boolean response = permissionService.updatePermission(itemTypeId, itemId, finalPermissionId);
 				sendResponse(response);
 			}
+      case "DELETE" -> {
+                    int itemTypeId = Integer.parseInt((String) receiveRequest());
+                    int itemId = Integer.parseInt((String) receiveRequest());
+                    int userId = Integer.parseInt((String) receiveRequest());
+                    boolean response = false;
+                    if(itemTypeId == 1){
+                        FolderService folderService = new FolderService();
+                        response = folderService.deleteFolder(itemId, userId);
+                    } else {
+                        FileService fileService = new FileService();
+                        response = fileService.deleteFile(itemId, userId);
+                    }
+                    sendResponse(response);
+                }
+                case "DELETE_PERMANENTLY" -> {
+                    int itemTypeId = Integer.parseInt((String) receiveRequest());
+                    int itemId = Integer.parseInt((String) receiveRequest());
+                    boolean response = false;
+                    if(itemTypeId == 1){
+                        FolderService folderService = new FolderService();
+                        response = folderService.deleteFolderPermanently(itemId);
+                    } else {
+                        FileService fileService = new FileService();
+                        response = fileService.deleteFilePermanently(itemId);
+                    }
+                    sendResponse(response);
+                }
+                case "RESTORE" -> {
+                    int itemTypeId = Integer.parseInt((String) receiveRequest());
+                    int itemId = Integer.parseInt((String) receiveRequest());
+                    boolean response = false;
+                    if(itemTypeId == 1){
+                        FolderService folderService = new FolderService();
+                        response = folderService.restoreFolder(itemId);
+                    } else {
+                        FileService fileService = new FileService();
+                        response = fileService.restoreFile(itemId);
+                    }
+                    sendResponse(response);
+                }
 			default -> {
 				System.out.println("Unknown request: " + request);
 			}
@@ -276,8 +365,31 @@ public class ClientHandler implements Runnable {
 			}
 		}
 	}
+    
+    private List<File> getDeletedItemList(int userId, String searchText) {
+        ItemService itemService = new ItemService();
+        return itemService.getAllDeletedItem(userId, searchText);
+    }
 
-	private boolean downloadFolder(int userId, int folderId) {
+
+    private boolean downloadFile(int fileId){
+        try {
+            FileService fileService = new FileService();
+            String fileName = fileService.getFullFileName(fileId);
+            sendResponse(fileName);
+
+            int size = fileService.getSize(fileId);
+            sendResponse(String.valueOf(size));
+
+            syncFile(fileService.getFilePath(fileId), size);
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    private boolean downloadFolder(int userId, int folderId) {
         try {
             FolderService folderService = new FolderService();
             String folderName = folderService.getFolderName(folderId);
@@ -303,7 +415,7 @@ public class ClientHandler implements Runnable {
         }
     }
 
-	private void sendZipFolder(String zipFilePath, int size) {
+    private void sendZipFolder(String zipFilePath, int size) {
 //        byte[] buffer = new byte[1024];
 //
 //        try(FileInputStream fileInputStream = new FileInputStream(zipFilePath)) {
@@ -364,6 +476,7 @@ public class ClientHandler implements Runnable {
 			return false;
 		}
 	}
+   
 
 	private void receiveFile(String filePath, int size) {
 		byte[] buffer = new byte[1024];
@@ -422,11 +535,6 @@ public class ClientHandler implements Runnable {
 		FileService fileService = new FileService(); // Ensure FileService is initialized correctly
 		return fileService.getFilePath(fileId);
 	}
-
-//    private String getNewFilePath(int fileId, String name) {
-//		FileService fileService = new FileService(); // Ensure FileService is initialized correctly
-//		return fileService.getFilePathChanged(fileId, name);
-//	}
 
 	public void syncFile(String filePath, int size) {
 		byte[] buffer = new byte[1024];

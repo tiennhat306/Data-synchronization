@@ -52,4 +52,19 @@ public class PermissionService {
             return -1;
         }
     }
+    public int getOwnerId(int itemTypeId, int itemId) {
+        try{
+            SocketClientHelper socketClientHelper = new SocketClientHelper();
+            socketClientHelper.sendRequest("GET_OWNER_ID");
+            socketClientHelper.sendRequest(String.valueOf(itemTypeId));
+            socketClientHelper.sendRequest(String.valueOf(itemId));
+
+            int response = (int) socketClientHelper.receiveResponse();
+            socketClientHelper.close();
+            return response;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return -1;
+        }
+    }
 }

@@ -3,6 +3,7 @@ package models;
 import jakarta.persistence.*;
 
 import java.io.Serializable;
+import java.sql.Timestamp;
 import java.util.Collection;
 import java.util.Objects;
 
@@ -19,7 +20,7 @@ public class Folder implements Serializable {
     @Column(name = "folder_name", nullable = false)
     private String folderName;
     @Basic
-    @Column(name = "owner_id" ,nullable = false)
+    @Column(name = "owner_id",nullable = false)
     private int ownerId;
     @Basic
     @Column(name = "parent_id")
@@ -39,6 +40,18 @@ public class Folder implements Serializable {
     @Basic
     @Column(name = "is_deleted")
     private boolean isDeleted;
+    @Basic
+    @Column(name = "finalpath")
+    private String finalpath;
+    @Basic
+    @Column(name = "date_deleted")
+    private Timestamp dateDeleted;
+    @Basic
+    @Column(name = "deleted_by")
+    private Integer deletedBy;
+    @ManyToOne(optional=true)
+    @JoinColumn(name = "deleted_by", referencedColumnName = "id", insertable=false, updatable=false)
+    private User usersByDeletedBy;
 
     public int getId() {
         return id;
@@ -115,7 +128,53 @@ public class Folder implements Serializable {
     public boolean isDeleted() {
         return isDeleted;
     }
+
     public void setDeleted(boolean deleted) {
         isDeleted = deleted;
+    }
+
+    public String getFinalpath() {
+        return finalpath;
+    }
+
+    public void setFinalpath(String finalpath) {
+        this.finalpath = finalpath;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Folder folder = (Folder) o;
+        return id == folder.id && ownerId == folder.ownerId && isDeleted == folder.isDeleted && Objects.equals(folderName, folder.folderName) && Objects.equals(parentId, folder.parentId) && Objects.equals(finalpath, folder.finalpath);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, folderName, ownerId, parentId, isDeleted, finalpath);
+    }
+
+    public Timestamp getDateDeleted() {
+        return dateDeleted;
+    }
+
+    public void setDateDeleted(Timestamp dateDeleted) {
+        this.dateDeleted = dateDeleted;
+    }
+
+    public Integer getDeletedBy() {
+        return deletedBy;
+    }
+
+    public void setDeletedBy(Integer deletedBy) {
+        this.deletedBy = deletedBy;
+    }
+
+    public User getUsersByDeletedBy() {
+        return usersByDeletedBy;
+    }
+
+    public void setUsersByDeletedBy(User usersByDeletedBy) {
+        this.usersByDeletedBy = usersByDeletedBy;
     }
 }

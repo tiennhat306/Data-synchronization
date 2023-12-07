@@ -23,7 +23,7 @@ public class FileService {
             return null;
         }
     }
-    
+
     public List<File> getAllFileByFolderId(int folderId) {
         try(Session session = HibernateUtil.getSessionFactory().openSession()) {
             //print session
@@ -70,11 +70,56 @@ public class FileService {
             return false;
         }
     }
-    public boolean deleteFile(int id) {
+    public boolean deleteFile(int id, int userId) {
         Transaction transaction = null;
         try (Session session = HibernateUtil.getSessionFactory().openSession()){
             transaction = session.beginTransaction();
             File file = session.find(File.class, id);
+            if(file == null) return false;
+            file.setDeleted(true);
+            file.setDeletedBy(userId);
+            file.setDateDeleted(new Timestamp(System.currentTimeMillis()));
+            FolderService folderService = new FolderService();
+            file.setFinalpath(folderService.getPath(file.getFolderId()));
+            session.merge(file);
+            transaction.commit();
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean restoreFile(int id){
+        Transaction transaction = null;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()){
+            transaction = session.beginTransaction();
+            File file = session.find(File.class, id);
+            if(file == null) return false;
+            file.setDeleted(false);
+            file.setDeletedBy(null);
+            file.setDateDeleted(null);
+            file.setFinalpath(null);
+            session.merge(file);
+            transaction.commit();
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean deleteFilePermanently(int id) {
+        Transaction transaction = null;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()){
+            transaction = session.beginTransaction();
+            File file = session.find(File.class, id);
+            if(file == null) return false;
+
+            deleteFileIfExist(getFilePath(id));
+            PermissionService permissionService = new PermissionService();
+            permissionService.deletePermissionByFileId(id);
+
             session.remove(file);
             transaction.commit();
             return true;
@@ -136,6 +181,7 @@ public class FileService {
             return false;
         }
     }
+
     public List<File> getFilesByOwnerId(int userId) {
         try (Session session = HibernateUtil.getSessionFactory().openSession()){
             return session.createQuery("select f from File f where f.ownerId = :userId", File.class)
@@ -324,6 +370,31 @@ public class FileService {
         }
     }
 
+    public String getPath(int fileId){
+        try(Session session = HibernateUtil.getSessionFactory().openSession()){
+            int folderId = session.createQuery("select f.folderId from File f where f.id = :fileId", Integer.class)
+                    .setParameter("fileId", fileId)
+                    .getSingleResult();
+
+            FolderService folderService = new FolderService();
+            String path = folderService.getPath(folderId);
+
+            String fileName = session.createQuery("select f.name from File f where f.id = :fileId", String.class)
+                    .setParameter("fileId", fileId)
+                    .getSingleResult();
+
+            TypeService typeService = new TypeService();
+            String type = typeService.getTypeName(session.createQuery("select f.typeId from File f where f.id = :fileId", Integer.class)
+                    .setParameter("fileId", fileId)
+                    .getSingleResult());
+
+            return path + java.io.File.separator + fileName + "." + type;
+        } catch (Exception e){
+            e.printStackTrace();
+            return "";
+        }
+    }
+
     public String getFilePath(int fileId) {
         try(Session session = HibernateUtil.getSessionFactory().openSession()){
             int folderId = session.createQuery("select f.folderId from File f where f.id = :fileId", Integer.class)
@@ -386,6 +457,28 @@ public class FileService {
                     .setParameter("fileTypeId", fileTypeId)
                     .setParameter("currentFolderId", currentFolderId)
                     .getSingleResult();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return -1;
+        }
+    }
+
+    public String getFullFileName(int fileId) {
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
+            File file = session.find(File.class, fileId);
+            if (file == null) return null;
+            return file.getName() + "." + new TypeService().getTypeName(file.getTypeId());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public int getSize(int fileId) {
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
+            File file = session.find(File.class, fileId);
+            if (file == null) return -1;
+            return file.getSize();
         } catch (Exception e) {
             e.printStackTrace();
             return -1;

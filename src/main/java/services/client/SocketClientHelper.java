@@ -160,23 +160,35 @@ public class SocketClientHelper {
             type = (String) receiveResponse();
         }
     }
-    
-    public boolean downloadFile(String folderPath, int size, String endFile) {
-        String FilePath = folderPath + "." + endFile;
-        byte[] buffer = new byte[1024];
 
-        try(FileOutputStream fileOutputStream = new FileOutputStream(FilePath)) {
-            InputStream fileInputStream = socket.getInputStream();
-            int bytesRead;
-            while(size > 0 && (bytesRead = fileInputStream.read(buffer, 0, Math.min(buffer.length, size))) != -1) {
-                fileOutputStream.write(buffer, 0, bytesRead);
-                size -= bytesRead;
-            }
-            System.out.println("File downloaded: " + FilePath);
-            return true;
-        } catch (IOException e) {
+    public void downloadFolder(String folderPath, int size) {
+        String FolderZipPath = folderPath + ".zip";
+        try{
+            syncFile(FolderZipPath, size);
+        } catch (Exception e) {
             e.printStackTrace();
-            return false;
+        }
+//        byte[] buffer = new byte[1024];
+//
+//        try(FileOutputStream fileOutputStream = new FileOutputStream(FolderZipPath)) {
+//            InputStream fileInputStream = socket.getInputStream();
+//            int bytesRead;
+//            while(size > 0 && (bytesRead = fileInputStream.read(buffer, 0, Math.min(buffer.length, size))) != -1) {
+//                fileOutputStream.write(buffer, 0, bytesRead);
+//                size -= bytesRead;
+//            }
+//            return true;
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//            return false;
+//        }
+    }
+
+    public void downloadFile(String filePath, int size) {
+        try{
+            syncFile(filePath, size);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
