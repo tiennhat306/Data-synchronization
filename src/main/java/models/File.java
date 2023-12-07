@@ -1,24 +1,12 @@
 package models;
 
+import jakarta.persistence.*;
+
 import java.io.Serializable;
 import java.sql.Timestamp;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Objects;
-
-import org.hibernate.Hibernate;
-
-import jakarta.persistence.Basic;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 
 @Entity
 @Table(name = "files", schema = "pbl4", uniqueConstraints = {
@@ -226,10 +214,6 @@ public class File implements Serializable {
         this.recentfilesById = recentfilesById;
     }
 
-    @Override
-    public String toString() {
-        return "typeId=" + typeId + "]";
-    }
     public String getFinalpath() {
         return finalpath;
     }

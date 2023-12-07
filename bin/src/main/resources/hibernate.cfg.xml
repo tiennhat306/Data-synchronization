@@ -20,7 +20,6 @@
         <mapping class="models.File"/>
         <mapping class="models.Folder"/>
         <mapping class="models.Permission"/>
-        <mapping class="models.RecentFile"/>
         <mapping class="models.Type"/>
         <mapping class="models.User"/>
     </session-factory>

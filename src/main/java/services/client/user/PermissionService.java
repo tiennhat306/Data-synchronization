@@ -53,6 +53,7 @@ public class PermissionService {
             return -1;
         }
     }
+
     public int getOwnerId(int itemTypeId, int itemId) {
         try{
             SocketClientHelper socketClientHelper = new SocketClientHelper();

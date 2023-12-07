@@ -207,7 +207,6 @@ public class PermissionService {
             try {
                 permission = session.createQuery("select per from Permission per where per." + (itemTypeId == 1 ? "folderId" : "fileId") + " = :itemId AND per.userId = null", Permission.class)
                         .setParameter("itemId", itemId)
-//                         .getSingleResult();
                         .uniqueResult();
                 if(permission == null){
                     throw new NoResultException();

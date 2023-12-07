@@ -187,20 +187,27 @@ public class User implements Serializable {
         this.refreshToken = refreshToken;
     }
 
+//    @Override
+//    public boolean equals(Object o) {
+//        if (this == o) return true;
+//        if (o == null || getClass() != o.getClass()) return false;
+//        UserData user = (UserData) o;
+//        return id == user.id && gender == user.gender && role == user.role && status == user.status && Objects.equals(name, user.name) && Objects.equals(birthday, user.birthday) && Arrays.equals(avatar, user.avatar) && Objects.equals(username, user.username) && Objects.equals(password, user.password) && Objects.equals(phoneNumber, user.phoneNumber) && Objects.equals(email, user.email) && Objects.equals(userPath, user.userPath) && Objects.equals(refreshToken, user.refreshToken) && Objects.equals(createdAt, user.createdAt) && Objects.equals(updatedAt, user.updatedAt);
+//    }
+
+//    @Override
+//    public int hashCode() {
+//        int result = Objects.hash(id, name, birthday, gender, username, password, phoneNumber, email, role, status, userPath, refreshToken, createdAt, updatedAt);
+//        result = 31 * result + Arrays.hashCode(avatar);
+//        return result;
+//    }
+
     public Timestamp getCreatedAt() {
         return createdAt;
     }
 
     public void setCreatedAt(Timestamp createdAt) {
         this.createdAt = createdAt;
-    }
-
-    public Timestamp getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(Timestamp updatedAt) {
-        this.updatedAt = updatedAt;
     }
 
     public Timestamp getUpdatedAt() {
@@ -287,5 +294,4 @@ public class User implements Serializable {
     public void setFoldersById_0(Collection<Folder> foldersById_0) {
         this.foldersById_0 = foldersById_0;
     }
-
 }
