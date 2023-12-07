@@ -243,6 +243,7 @@ public class ClientHandler implements Runnable{
                     int itemId = Integer.parseInt((String) receiveRequest());
                     PermissionService permissionService = new PermissionService();
                     int response = permissionService.getPermission(itemTypeId, itemId);
+                    System.out.println("Server get permission: " + response);
                     sendResponse(response);
                 }
                 case "GET_OWNER_ID" -> {
@@ -607,7 +608,7 @@ public class ClientHandler implements Runnable{
     public void addConnection(String request) {
         Connection connection = new Connection(clientAddress.getHostAddress(), request);
         connections.add(connection);
-        System.out.println("Connection added: " + connection);
-        System.out.println("Connection list: " + connections);
+//        System.out.println("Connection added: " + connection);
+//        System.out.println("Connection list: " + connections);
     }
 }

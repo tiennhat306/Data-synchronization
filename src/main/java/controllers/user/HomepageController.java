@@ -868,6 +868,10 @@ public class HomepageController implements Initializable {
 				permissionCbb.setValue("Chỉnh sửa");
 				permissionCbb.setDisable(false);
 			}
+			else if(userId == ownerId[0]) {
+				permissionCbb.setValue("Chỉ xem");
+				permissionCbb.setDisable(false);
+			}
 			else {
 				shareStage.close();
 			}
@@ -907,13 +911,14 @@ public class HomepageController implements Initializable {
 		shareTxt.setStyle("-fx-background-color: white");
 		shareTxt.setStyle("-fx-border-color: gray");
 		shareTxt.setStyle("-fx-border-width: 1px");
+		shareTxt.setDisable(true);
 
 		centerContainer.getChildren().add(shareTxt);
 
 		VBox sharedContainer = new VBox();
-		sharedContainer.setSpacing(10);
+		sharedContainer.setSpacing(5);
 		sharedContainer.setPadding(new Insets(10));
-		sharedContainer.setStyle("-fx-background-color: white; -fx-border-color: gray; -fx-border-width: 0px; -fx-background-radius: 15px;");
+		sharedContainer.setStyle("-fx-background-color: white;");
 
 		Label sharedTitle = new Label("Đã chia sẻ");
 		sharedTitle.setStyle("-fx-font-size: 16; -fx-font-weight: bold;");
@@ -922,13 +927,18 @@ public class HomepageController implements Initializable {
 		VBox userSelectedContainer = new VBox();
 		userSelectedContainer.setSpacing(10);
 		userSelectedContainer.setPadding(new Insets(10));
-		userSelectedContainer.setStyle("-fx-background-color: white; -fx-border-color: gray; -fx-border-width: 1px; -fx-background-radius: 15px;");
+		userSelectedContainer.setStyle("-fx-background-color: white;");
+		Label userSelectedTitle = new Label("Người dùng được chọn");
+		userSelectedTitle.setStyle("-fx-font-size: 16; -fx-font-weight: bold;");
+		userSelectedContainer.getChildren().add(userSelectedTitle);
 
 		VBox userContainer = new VBox();
 		userContainer.setSpacing(10);
 		userContainer.setPadding(new Insets(10));
-		userContainer.setStyle("-fx-background-color: white; -fx-border-color: gray; -fx-border-width: 1px; -fx-background-radius: 15px;");
-
+		userContainer.setStyle("-fx-background-color: white; -fx-border-color: gray; -fx-border-width: 1px; -fx-background-radius: 15px; -fx-border-radius: 15px;");
+		Label userTitle = new Label("Danh sách tìm kiếm");
+		userTitle.setStyle("-fx-font-size: 16; -fx-font-weight: bold;");
+		userContainer.getChildren().add(userTitle);
 
 		Task<List<User>> getSharedUserTask = new Task<List<User>>() {
 			@Override
@@ -941,7 +951,7 @@ public class HomepageController implements Initializable {
 
 		getSharedUserTask.setOnSucceeded(event -> {
 			List<User> userList = getSharedUserTask.getValue();
-			if(userList != null) {
+			if(userList != null && userList.size() > 0) {
 				for (User user : userList) {
 					HBox userBox = new HBox();
 					userBox.setSpacing(10);
@@ -963,13 +973,17 @@ public class HomepageController implements Initializable {
 
 					sharedContainer.getChildren().add(userBox);
 				}
-
-				centerContainer.getChildren().add(sharedContainer);
+			} else {
+				Label noSharedUser = new Label("Không có người dùng nào đã chia sẻ");
+				sharedContainer.getChildren().add(noSharedUser);
 			}
+			centerContainer.getChildren().add(0, sharedContainer);
+			shareTxt.setDisable(false);
 		});
 
 		getSharedUserTask.setOnFailed(event -> {
 			System.out.println("Lỗi khi lấy danh sách người dùng đã chia sẻ");
+			shareTxt.setDisable(false);
 		});
 
 		Thread thread2 = new Thread(getSharedUserTask);
@@ -977,6 +991,10 @@ public class HomepageController implements Initializable {
 
 		shareTxt.setOnKeyReleased(e -> {
 			userContainer.getChildren().clear();
+			Label userTitle1 = new Label("Danh sách tìm kiếm");
+			userTitle1.setStyle("-fx-font-size: 16; -fx-font-weight: bold;");
+			userContainer.getChildren().add(userTitle1);
+
 			centerContainer.getChildren().remove(userContainer);
 
 			String keyword = shareTxt.getText();
@@ -1041,9 +1059,11 @@ public class HomepageController implements Initializable {
 
 							userContainer.getChildren().add(userBox);
 						}
-
-						centerContainer.getChildren().add(userContainer);
+					} else {
+						Label noUser = new Label("Không có người dùng nào");
+						userContainer.getChildren().add(noUser);
 					}
+					centerContainer.getChildren().add(1, userContainer);
 				});
 
 				searchUserTask.setOnFailed(event1 -> {
@@ -1067,7 +1087,13 @@ public class HomepageController implements Initializable {
 				}
 			}
 		});
+
 		centerContainer.getChildren().add(userSelectedContainer);
+//		if(userIds.size() > 0) {
+//			centerContainer.getChildren().add(userSelectedContainer);
+//		} else {
+//			centerContainer.getChildren().remove(userSelectedContainer);
+//		}
 		shareLayout.setCenter(scrollPane);
 
 		Button shareBtn = new Button("Chia sẻ");
