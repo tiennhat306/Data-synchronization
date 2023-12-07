@@ -2,6 +2,7 @@ package services.server;
 
 import DTO.Connection;
 import models.File;
+import models.RecentFile;
 import models.User;
 
 import java.io.*;
@@ -82,6 +83,12 @@ public class ClientHandler implements Runnable{
                     int folderId = Integer.parseInt((String) receiveRequest());
                     String searchText = (String) receiveRequest();
                     List<File> response = getItemList(userId, folderId, searchText);
+                    sendResponse(response);
+                }
+                case "GET_ALL_RECENT_OPENED_ITEM" -> {
+                    int userId = Integer.parseInt((String) receiveRequest());
+                    String searchText = (String) receiveRequest();
+                    List<RecentFile> response = new RecentFileService().getAllRecentOpenedItem(userId, searchText);
                     sendResponse(response);
                 }
                 case "GET_ALL_DELETED_ITEM" -> {
@@ -173,6 +180,34 @@ public class ClientHandler implements Runnable{
                     syncFile(filePath, size);
                     sendResponse(true);
                 }
+                case "OPEN_FOLDER" -> {
+                    int userId = Integer.parseInt((String) receiveRequest());
+                    int folderId = Integer.parseInt((String) receiveRequest());
+
+                    String userPath = new services.server.user.UserService().getUserPath(userId);
+                    String folderPath = new services.server.user.FolderService().getFolderPath(folderId);
+                    sendResponse(userPath + java.io.File.separator + folderPath);
+
+                    boolean response = syncFolder(userId, folderId, new services.server.user.FolderService().getFolderPath(folderId));
+
+                    sendResponse(response);
+                }
+                case "OPEN_FILE" -> {
+                    int userId = Integer.parseInt((String) receiveRequest());
+                    int fileId = Integer.parseInt((String) receiveRequest());
+
+                    String userPath = new services.server.user.UserService().getUserPath(userId);
+                    String filePath = new services.server.user.FileService().getPath(fileId);
+                    sendResponse(userPath + java.io.File.separator + filePath);
+
+                    int size = new services.server.user.FileService().getSize(fileId);
+                    sendResponse(String.valueOf(size));
+
+                    syncFile(new FileService().getFilePath(fileId), size);
+
+                    boolean response = new RecentFileService().addRecentFile(userId, fileId);
+                    sendResponse(response);
+                }
                 case "SEARCH_UNSHARED_USER" -> {
                     int itemTypeId = Integer.parseInt((String) receiveRequest());
                     int itemId = Integer.parseInt((String) receiveRequest());
@@ -215,6 +250,7 @@ public class ClientHandler implements Runnable{
                     int itemId = Integer.parseInt((String) receiveRequest());
                     PermissionService permissionService = new PermissionService();
                     int response = permissionService.getPermission(itemTypeId, itemId);
+                    System.out.println("Server get permission: " + response);
                     sendResponse(response);
                 }
                 case "GET_OWNER_ID" -> {
@@ -579,7 +615,7 @@ public class ClientHandler implements Runnable{
     public void addConnection(String request) {
         Connection connection = new Connection(clientAddress.getHostAddress(), request);
         connections.add(connection);
-        System.out.println("Connection added: " + connection);
-        System.out.println("Connection list: " + connections);
+//        System.out.println("Connection added: " + connection);
+//        System.out.println("Connection list: " + connections);
     }
 }

@@ -16,6 +16,10 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseButton;
@@ -26,16 +30,20 @@ import javafx.scene.text.FontPosture;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 import javafx.stage.*;
+import models.Folder;
+import models.RecentFile;
 import models.Type;
 import models.User;
 import services.client.user.ItemService;
 import services.client.user.PermissionService;
 import services.login.LoginService;
 
+import java.awt.*;
 import java.io.*;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.List;
 
 public class HomepageController implements Initializable {
 	@FXML
@@ -53,7 +61,7 @@ public class HomepageController implements Initializable {
 	@FXML
 	private Button downloadBtn;
 	@FXML
-	private TableView<models.File> dataTable;
+	private TableView<Object> dataTable;
 	@FXML
 	private Label documentOwnerName;
 	@FXML
@@ -105,23 +113,23 @@ public class HomepageController implements Initializable {
 		String name = loginSession.getCurrentUserName();
 		userName.setText(name);
 
-		TableColumn<models.File, String> nameColumn = new TableColumn<>("Tên");
-        TableColumn<models.File, String> ownerNameColumn = new TableColumn<>("Chủ sở hữu");
-        TableColumn<models.File, Date> dateModifiedColumn = new TableColumn<>("Đã sửa đổi");
-        TableColumn<models.File, String> lastModifiedByColumn = new TableColumn<>("Người sửa đổi");
-        TableColumn<models.File, String> sizeColumn = new TableColumn<>("Kích thước");
+		TableColumn<Object, String> nameColumn = new TableColumn<>("Tên");
+        TableColumn<Object, String> ownerNameColumn = new TableColumn<>("Chủ sở hữu");
+        TableColumn<Object, Date> dateModifiedColumn = new TableColumn<>("Đã sửa đổi");
+        TableColumn<Object, String> lastModifiedByColumn = new TableColumn<>("Người sửa đổi");
+        TableColumn<Object, String> sizeColumn = new TableColumn<>("Kích thước");
 
         dataTable.getColumns().addAll(nameColumn, ownerNameColumn, dateModifiedColumn, lastModifiedByColumn, sizeColumn);
 
         nameColumn.setCellValueFactory(column -> {
-            return new SimpleStringProperty(column.getValue().getName() + (column.getValue().getTypeId() != 1 ? "." + column.getValue().getTypesByTypeId().getName() : ""));
+            return new SimpleStringProperty(((models.File)column.getValue()).getName() + (((models.File)column.getValue()).getTypeId() != 1 ? "." + ((models.File)column.getValue()).getTypesByTypeId().getName() : ""));
         });
 		nameColumn.setCellFactory(column -> {
-			return new TableCell<models.File, String>() {
+			return new TableCell<Object, String>() {
 				@Override
 				protected void updateItem(String item, boolean empty) {
 					super.updateItem(item, empty);
-					if(empty || item == null || getTableRow() == null ||getTableRow().getItem() == null) {
+					if(empty || item == null || getTableRow() == null ||((models.File)getTableRow().getItem()) == null) {
 						setText(null);
 						setGraphic(null);
 					}
@@ -129,21 +137,21 @@ public class HomepageController implements Initializable {
 						ImageView icon = new ImageView();
 						icon.setFitHeight(20);
 						icon.setFitWidth(20);
-						if(getTableRow().getItem().getTypeId() == 1){
+						if(((models.File)getTableRow().getItem()).getTypeId() == 1){
 							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/folder.png").toString()));
-						} else if (getTableRow().getItem().getTypesByTypeId().getName().equals("txt")){
+						} else if (((models.File)getTableRow().getItem()).getTypesByTypeId().getName().equals("txt")){
 							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/txt.png").toString()));
 						}
-						else if (getTableRow().getItem().getTypesByTypeId().getName().matches("docx?|docm|dotx?|dotm")){
+						else if (((models.File)getTableRow().getItem()).getTypesByTypeId().getName().matches("docx?|docm|dotx?|dotm")){
 							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/doc.png").toString()));
 						}
-						else if (getTableRow().getItem().getTypesByTypeId().getName().equals("pdf")){
+						else if (((models.File)getTableRow().getItem()).getTypesByTypeId().getName().equals("pdf")){
 							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/pdf.png").toString()));
 						}
-						else if (getTableRow().getItem().getTypesByTypeId().getName().matches("mp4|mp3|avi|flv|wmv|mov|wav|wma|ogg|mkv")){
+						else if (((models.File)getTableRow().getItem()).getTypesByTypeId().getName().matches("mp4|mp3|avi|flv|wmv|mov|wav|wma|ogg|mkv")){
 							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/mp4.png").toString()));
 						}
-						else if (getTableRow().getItem().getTypesByTypeId().getName().matches("png|svg|jpg|jpeg|gif|bmp")){
+						else if (((models.File)getTableRow().getItem()).getTypesByTypeId().getName().matches("png|svg|jpg|jpeg|gif|bmp")){
 							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/picture.png").toString()));
 						}
 						else {
@@ -159,10 +167,10 @@ public class HomepageController implements Initializable {
 		});
 
         ownerNameColumn.setCellValueFactory(column -> {
-            return new SimpleStringProperty(column.getValue().getUsersByOwnerId().getName() == null ? "" : column.getValue().getUsersByOwnerId().getName());
+            return new SimpleStringProperty(((models.File)column.getValue()).getUsersByOwnerId().getName() == null ? "" : ((models.File)column.getValue()).getUsersByOwnerId().getName());
         });
         dateModifiedColumn.setCellFactory(column -> {
-            return new TableCell<models.File, Date>() {
+            return new TableCell<Object, Date>() {
                 private final SimpleDateFormat format = new SimpleDateFormat("dd/MM/yyyy HH:mm");
                 @Override
                 protected void updateItem(Date item, boolean empty) {
@@ -176,12 +184,12 @@ public class HomepageController implements Initializable {
                 }
             };
         });
-        dateModifiedColumn.setCellValueFactory(new PropertyValueFactory<models.File, Date>("updatedAt"));
+        dateModifiedColumn.setCellValueFactory(new PropertyValueFactory<Object, Date>("updatedAt"));
         lastModifiedByColumn.setCellValueFactory(column -> {
-            return new SimpleStringProperty(column.getValue().getUsersByUpdatedBy() == null ? "" : column.getValue().getUsersByUpdatedBy().getName());
+            return new SimpleStringProperty(((models.File)column.getValue()).getUsersByUpdatedBy() == null ? "" : ((models.File)column.getValue()).getUsersByUpdatedBy().getName());
         });
         sizeColumn.setCellValueFactory(column -> {
-            int size = column.getValue().getSize();
+            int size = ((models.File)column.getValue()).getSize();
             String sizeStr = "";
             if(size < 0){
                 sizeStr = (size - Short.MIN_VALUE) + " mục";
@@ -210,11 +218,11 @@ public class HomepageController implements Initializable {
 		path.getChildren().setAll(breadcrumbList);
 
 		dataTable.setRowFactory(dataTable -> {
-			TableRow<models.File> row = new TableRow<>();
+			TableRow<Object> row = new TableRow<>();
 			row.setOnMouseClicked(event -> {
 				if(event.getButton() == MouseButton.PRIMARY && !row.isEmpty()){
 					dataTable.getSelectionModel().select(row.getIndex());
-					models.File file = row.getItem();
+					models.File file = ((models.File)row.getItem());
 					if(file.getTypeId() == 1){
 						currentFolderId = file.getId();
 						fillData();
@@ -229,7 +237,7 @@ public class HomepageController implements Initializable {
 					}
 				} else if(event.getButton() == MouseButton.SECONDARY && !row.isEmpty()){
 					dataTable.getSelectionModel().select(row.getIndex());
-					showOptionsPopup(event, row.getItem());
+					showOptionsPopup(event, ((models.File)row.getItem()));
 				}
 			});
 
@@ -315,6 +323,42 @@ public class HomepageController implements Initializable {
 
 		openBtn.setOnAction(event -> {
 			// Open file
+			int itemTypeId = selectedItem.getTypeId();
+			int itemId = selectedItem.getId();
+
+			Task<String> openTask = new Task<String>() {
+				@Override
+				protected String call() throws Exception {
+					ItemService itemService = new ItemService();
+					if(itemTypeId == 1) {
+						return itemService.openFolder(userId, itemId);
+					} else {
+						return itemService.openFile(userId, itemId);
+					}
+				}
+			};
+
+			openTask.setOnSucceeded(e -> {
+				String path = openTask.getValue();
+				if(path != null && !path.isEmpty()) {
+					// Open file
+					Desktop desktop = Desktop.getDesktop();
+					try {
+						desktop.open(new File(path));
+					} catch (IOException ioException) {
+						ioException.printStackTrace();
+					}
+					System.out.println("Mở thành công");
+				}
+				else System.out.println("Mở thất bại");
+			});
+
+			openTask.setOnFailed(e -> {
+				System.out.println("Mở thất bại");
+			});
+
+			Thread thread = new Thread(openTask);
+			thread.start();
 
 			popup.hide();
 		});
@@ -535,8 +579,6 @@ public class HomepageController implements Initializable {
 				popup.hide();
 			}
 		});
-
-
 	}
 
 	private void sendDeleteRequest(int itemTypeId, int itemId) {
@@ -630,10 +672,10 @@ public class HomepageController implements Initializable {
 			items.addAll(itemList);
 
 			// Tạo SortedList với Comparator để xác định thứ tự của folders và files
-			SortedList<models.File> sortedData = new SortedList<>(items, (file1, file2) -> {
-				if (file1.getTypeId() == 1 && file2.getTypeId() != 1) {
+			SortedList<Object> sortedData = new SortedList<>(items, (file1, file2) -> {
+				if (((models.File)file1).getTypeId() == 1 && ((models.File)file2).getTypeId() != 1) {
 					return -1;
-				} else if (file1.getTypeId() != 1 && file2.getTypeId() == 1) {
+				} else if (((models.File)file1).getTypeId() != 1 && ((models.File)file2).getTypeId() == 1) {
 					return 1;
 				}
 				return 0;
@@ -669,10 +711,10 @@ public class HomepageController implements Initializable {
     public void initialize(URL location, ResourceBundle resources) {
 		populateData();
 
-		SortedList<models.File> sortedList = new SortedList<>(items, (file1, file2) -> {
-			if (file1.getTypeId() == 1 && file2.getTypeId() != 1) {
+		SortedList<Object> sortedList = new SortedList<>(items, (file1, file2) -> {
+			if (((models.File)file1).getTypeId() == 1 && ((models.File)file2).getTypeId() != 1) {
 				return -1;
-			} else if (file1.getTypeId() != 1 && file2.getTypeId() == 1) {
+			} else if (((models.File)file1).getTypeId() != 1 && ((models.File)file2).getTypeId() == 1) {
 				return 1;
 			}
 			return 0;
@@ -680,9 +722,9 @@ public class HomepageController implements Initializable {
 		dataTable.comparatorProperty().addListener((observable, oldValue, newValue) -> {
 			if (newValue != null) {
 				sortedList.setComparator((file1, file2) -> {
-					if (file1.getTypeId() == 1 && file2.getTypeId() != 1) {
+					if (((models.File)file1).getTypeId() == 1 && ((models.File)file2).getTypeId() != 1) {
 						return -1;
-					} else if (file1.getTypeId() != 1 && file2.getTypeId() == 1) {
+					} else if (((models.File)file1).getTypeId() != 1 && ((models.File)file2).getTypeId() == 1) {
 						return 1;
 					} else {
 						return newValue.compare(file1, file2);
@@ -690,9 +732,9 @@ public class HomepageController implements Initializable {
 				});
 			} else {
 				sortedList.setComparator((file1, file2) -> {
-					if (file1.getTypeId() == 1 && file2.getTypeId() != 1) {
+					if (((models.File)file1).getTypeId() == 1 && ((models.File)file2).getTypeId() != 1) {
 						return -1;
-					} else if (file1.getTypeId() != 1 && file2.getTypeId() == 1) {
+					} else if (((models.File)file1).getTypeId() != 1 && ((models.File)file2).getTypeId() == 1) {
 						return 1;
 					}
 					return 0;
@@ -837,6 +879,10 @@ public class HomepageController implements Initializable {
 				permissionCbb.setValue("Chỉnh sửa");
 				permissionCbb.setDisable(false);
 			}
+			else if(userId == ownerId[0]) {
+				permissionCbb.setValue("Chỉ xem");
+				permissionCbb.setDisable(false);
+			}
 			else {
 				shareStage.close();
 			}
@@ -876,13 +922,14 @@ public class HomepageController implements Initializable {
 		shareTxt.setStyle("-fx-background-color: white");
 		shareTxt.setStyle("-fx-border-color: gray");
 		shareTxt.setStyle("-fx-border-width: 1px");
+		shareTxt.setDisable(true);
 
 		centerContainer.getChildren().add(shareTxt);
 
 		VBox sharedContainer = new VBox();
-		sharedContainer.setSpacing(10);
+		sharedContainer.setSpacing(5);
 		sharedContainer.setPadding(new Insets(10));
-		sharedContainer.setStyle("-fx-background-color: white; -fx-border-color: gray; -fx-border-width: 0px; -fx-background-radius: 15px;");
+		sharedContainer.setStyle("-fx-background-color: white;");
 
 		Label sharedTitle = new Label("Đã chia sẻ");
 		sharedTitle.setStyle("-fx-font-size: 16; -fx-font-weight: bold;");
@@ -891,13 +938,18 @@ public class HomepageController implements Initializable {
 		VBox userSelectedContainer = new VBox();
 		userSelectedContainer.setSpacing(10);
 		userSelectedContainer.setPadding(new Insets(10));
-		userSelectedContainer.setStyle("-fx-background-color: white; -fx-border-color: gray; -fx-border-width: 1px; -fx-background-radius: 15px;");
+		userSelectedContainer.setStyle("-fx-background-color: white;");
+		Label userSelectedTitle = new Label("Người dùng được chọn");
+		userSelectedTitle.setStyle("-fx-font-size: 16; -fx-font-weight: bold;");
+		userSelectedContainer.getChildren().add(userSelectedTitle);
 
 		VBox userContainer = new VBox();
 		userContainer.setSpacing(10);
 		userContainer.setPadding(new Insets(10));
-		userContainer.setStyle("-fx-background-color: white; -fx-border-color: gray; -fx-border-width: 1px; -fx-background-radius: 15px;");
-
+		userContainer.setStyle("-fx-background-color: white; -fx-border-color: gray; -fx-border-width: 1px; -fx-background-radius: 15px; -fx-border-radius: 15px;");
+		Label userTitle = new Label("Danh sách tìm kiếm");
+		userTitle.setStyle("-fx-font-size: 16; -fx-font-weight: bold;");
+		userContainer.getChildren().add(userTitle);
 
 		Task<List<User>> getSharedUserTask = new Task<List<User>>() {
 			@Override
@@ -910,7 +962,7 @@ public class HomepageController implements Initializable {
 
 		getSharedUserTask.setOnSucceeded(event -> {
 			List<User> userList = getSharedUserTask.getValue();
-			if(userList != null) {
+			if(userList != null && userList.size() > 0) {
 				for (User user : userList) {
 					HBox userBox = new HBox();
 					userBox.setSpacing(10);
@@ -932,13 +984,17 @@ public class HomepageController implements Initializable {
 
 					sharedContainer.getChildren().add(userBox);
 				}
-
-				centerContainer.getChildren().add(sharedContainer);
+			} else {
+				Label noSharedUser = new Label("Không có người dùng nào đã chia sẻ");
+				sharedContainer.getChildren().add(noSharedUser);
 			}
+			centerContainer.getChildren().add(0, sharedContainer);
+			shareTxt.setDisable(false);
 		});
 
 		getSharedUserTask.setOnFailed(event -> {
 			System.out.println("Lỗi khi lấy danh sách người dùng đã chia sẻ");
+			shareTxt.setDisable(false);
 		});
 
 		Thread thread2 = new Thread(getSharedUserTask);
@@ -946,6 +1002,10 @@ public class HomepageController implements Initializable {
 
 		shareTxt.setOnKeyReleased(e -> {
 			userContainer.getChildren().clear();
+			Label userTitle1 = new Label("Danh sách tìm kiếm");
+			userTitle1.setStyle("-fx-font-size: 16; -fx-font-weight: bold;");
+			userContainer.getChildren().add(userTitle1);
+
 			centerContainer.getChildren().remove(userContainer);
 
 			String keyword = shareTxt.getText();
@@ -1010,9 +1070,11 @@ public class HomepageController implements Initializable {
 
 							userContainer.getChildren().add(userBox);
 						}
-
-						centerContainer.getChildren().add(userContainer);
+					} else {
+						Label noUser = new Label("Không có người dùng nào");
+						userContainer.getChildren().add(noUser);
 					}
+					centerContainer.getChildren().add(1, userContainer);
 				});
 
 				searchUserTask.setOnFailed(event1 -> {
@@ -1036,7 +1098,13 @@ public class HomepageController implements Initializable {
 				}
 			}
 		});
+
 		centerContainer.getChildren().add(userSelectedContainer);
+//		if(userIds.size() > 0) {
+//			centerContainer.getChildren().add(userSelectedContainer);
+//		} else {
+//			centerContainer.getChildren().remove(userSelectedContainer);
+//		}
 		shareLayout.setCenter(scrollPane);
 
 		Button shareBtn = new Button("Chia sẻ");
@@ -1395,7 +1463,7 @@ public class HomepageController implements Initializable {
 			dataTable.setPlaceholder(new Label("Không có dữ liệu"));
 		}
 		else {
-			final ObservableList<models.File> items = FXCollections.observableArrayList(itemList);
+			final ObservableList<Object> items = FXCollections.observableArrayList(itemList);
 			dataTable.setItems(items);
 			System.out.println("not null");
 		}
@@ -1437,7 +1505,7 @@ public class HomepageController implements Initializable {
 			dataTable.setPlaceholder(new Label("Không có dữ liệu"));
 		}
 		else {
-			final ObservableList<models.File> items = FXCollections.observableArrayList(itemList);
+			final ObservableList<Object> items = FXCollections.observableArrayList(itemList);
 			dataTable.setItems(items);
 			System.out.println("not null");
 		}
@@ -1470,7 +1538,7 @@ public class HomepageController implements Initializable {
 			dataTable.setPlaceholder(new Label("Không có dữ liệu"));
 		}
 		else {
-			final ObservableList<models.File> items = FXCollections.observableArrayList(itemList);
+			final ObservableList<Object> items = FXCollections.observableArrayList(itemList);
 			dataTable.setItems(items);
 			System.out.println("not null");
 		}
@@ -1503,7 +1571,7 @@ public class HomepageController implements Initializable {
 			dataTable.setPlaceholder(new Label("Không có dữ liệu"));
 		}
 		else {
-			final ObservableList<models.File> items = FXCollections.observableArrayList(itemList);
+			final ObservableList<Object> items = FXCollections.observableArrayList(itemList);
 			dataTable.setItems(items);
 			System.out.println("not null");
 		}
@@ -1560,7 +1628,7 @@ public class HomepageController implements Initializable {
 			dataTable.setPlaceholder(new Label("Không có dữ liệu"));
 		}
 		else {
-			final ObservableList<models.File> items = FXCollections.observableArrayList(itemList);
+			final ObservableList<Object> items = FXCollections.observableArrayList(itemList);
 			dataTable.setItems(items);
 			System.out.println("not null");
 		}
@@ -1590,10 +1658,10 @@ public class HomepageController implements Initializable {
 			items.addAll(itemList);
 
 			// Tạo SortedList với Comparator để xác định thứ tự của folders và files
-			SortedList<models.File> sortedData = new SortedList<>(items, (file1, file2) -> {
-				if (file1.getTypeId() == 1 && file2.getTypeId() != 1) {
+			SortedList<Object> sortedData = new SortedList<>(items, (file1, file2) -> {
+				if (((models.File)file1).getTypeId() == 1 && ((models.File)file2).getTypeId() != 1) {
 					return -1;
-				} else if (file1.getTypeId() != 1 && file2.getTypeId() == 1) {
+				} else if (((models.File)file1).getTypeId() != 1 && ((models.File)file2).getTypeId() == 1) {
 					return 1;
 				}
 				return 0;
@@ -1639,23 +1707,23 @@ public class HomepageController implements Initializable {
 
 	public void resetDatatable() {
 		dataTable.getColumns().clear();
-		TableColumn<models.File, String> nameColumn = new TableColumn<>("Tên");
-		TableColumn<models.File, String> ownerNameColumn = new TableColumn<>("Chủ sở hữu");
-		TableColumn<models.File, Date> dateModifiedColumn = new TableColumn<>("Đã sửa đổi");
-		TableColumn<models.File, String> lastModifiedByColumn = new TableColumn<>("Người sửa đổi");
-		TableColumn<models.File, String> sizeColumn = new TableColumn<>("Kích thước");
+		TableColumn<Object, String> nameColumn = new TableColumn<>("Tên");
+		TableColumn<Object, String> ownerNameColumn = new TableColumn<>("Chủ sở hữu");
+		TableColumn<Object, Date> dateModifiedColumn = new TableColumn<>("Đã sửa đổi");
+		TableColumn<Object, String> lastModifiedByColumn = new TableColumn<>("Người sửa đổi");
+		TableColumn<Object, String> sizeColumn = new TableColumn<>("Kích thước");
 
 		dataTable.getColumns().addAll(nameColumn, ownerNameColumn, dateModifiedColumn, lastModifiedByColumn, sizeColumn);
 
 		nameColumn.setCellValueFactory(column -> {
-			return new SimpleStringProperty(column.getValue().getName() + (column.getValue().getTypeId() != 1 ? "." + column.getValue().getTypesByTypeId().getName() : ""));
+			return new SimpleStringProperty(((models.File)column.getValue()).getName() + (((models.File)column.getValue()).getTypeId() != 1 ? "." + ((models.File)column.getValue()).getTypesByTypeId().getName() : ""));
 		});
 		nameColumn.setCellFactory(column -> {
-			return new TableCell<models.File, String>() {
+			return new TableCell<Object, String>() {
 				@Override
 				protected void updateItem(String item, boolean empty) {
 					super.updateItem(item, empty);
-					if(empty || item == null || getTableRow() == null ||getTableRow().getItem() == null) {
+					if(empty || item == null || getTableRow() == null ||((models.File)getTableRow().getItem()) == null) {
 						setText(null);
 						setGraphic(null);
 					}
@@ -1663,21 +1731,21 @@ public class HomepageController implements Initializable {
 						ImageView icon = new ImageView();
 						icon.setFitHeight(20);
 						icon.setFitWidth(20);
-						if(getTableRow().getItem().getTypeId() == 1){
+						if(((models.File)getTableRow().getItem()).getTypeId() == 1){
 							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/folder.png").toString()));
-						} else if (getTableRow().getItem().getTypesByTypeId().getName().equals("txt")){
+						} else if (((models.File)getTableRow().getItem()).getTypesByTypeId().getName().equals("txt")){
 							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/txt.png").toString()));
 						}
-						else if (getTableRow().getItem().getTypesByTypeId().getName().matches("docx?|docm|dotx?|dotm")){
+						else if (((models.File)getTableRow().getItem()).getTypesByTypeId().getName().matches("docx?|docm|dotx?|dotm")){
 							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/doc.png").toString()));
 						}
-						else if (getTableRow().getItem().getTypesByTypeId().getName().equals("pdf")){
+						else if (((models.File)getTableRow().getItem()).getTypesByTypeId().getName().equals("pdf")){
 							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/pdf.png").toString()));
 						}
-						else if (getTableRow().getItem().getTypesByTypeId().getName().matches("mp4|mp3|avi|flv|wmv|mov|wav|wma|ogg|mkv")){
+						else if (((models.File)getTableRow().getItem()).getTypesByTypeId().getName().matches("mp4|mp3|avi|flv|wmv|mov|wav|wma|ogg|mkv")){
 							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/mp4.png").toString()));
 						}
-						else if (getTableRow().getItem().getTypesByTypeId().getName().matches("png|svg|jpg|jpeg|gif|bmp")){
+						else if (((models.File)getTableRow().getItem()).getTypesByTypeId().getName().matches("png|svg|jpg|jpeg|gif|bmp")){
 							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/picture.png").toString()));
 						}
 						else {
@@ -1693,10 +1761,10 @@ public class HomepageController implements Initializable {
 		});
 
 		ownerNameColumn.setCellValueFactory(column -> {
-			return new SimpleStringProperty(column.getValue().getUsersByOwnerId().getName() == null ? "" : column.getValue().getUsersByOwnerId().getName());
+			return new SimpleStringProperty(((models.File)column.getValue()).getUsersByOwnerId().getName() == null ? "" : ((models.File)column.getValue()).getUsersByOwnerId().getName());
 		});
 		dateModifiedColumn.setCellFactory(column -> {
-			return new TableCell<models.File, Date>() {
+			return new TableCell<Object, Date>() {
 				private final SimpleDateFormat format = new SimpleDateFormat("dd/MM/yyyy HH:mm");
 				@Override
 				protected void updateItem(Date item, boolean empty) {
@@ -1710,12 +1778,12 @@ public class HomepageController implements Initializable {
 				}
 			};
 		});
-		dateModifiedColumn.setCellValueFactory(new PropertyValueFactory<models.File, Date>("updatedAt"));
+		dateModifiedColumn.setCellValueFactory(new PropertyValueFactory<Object, Date>("updatedAt"));
 		lastModifiedByColumn.setCellValueFactory(column -> {
-			return new SimpleStringProperty(column.getValue().getUsersByUpdatedBy() == null ? "" : column.getValue().getUsersByUpdatedBy().getName());
+			return new SimpleStringProperty(((models.File)column.getValue()).getUsersByUpdatedBy() == null ? "" : ((models.File)column.getValue()).getUsersByUpdatedBy().getName());
 		});
 		sizeColumn.setCellValueFactory(column -> {
-			int size = column.getValue().getSize();
+			int size = ((models.File)column.getValue()).getSize();
 			String sizeStr = "";
 			if(size < 0){
 				sizeStr = (size - Short.MIN_VALUE) + " mục";
@@ -1736,11 +1804,11 @@ public class HomepageController implements Initializable {
 		});
 
 		dataTable.setRowFactory(dataTable -> {
-			TableRow<models.File> row = new TableRow<>();
+			TableRow<Object> row = new TableRow<>();
 			row.setOnMouseClicked(event -> {
 				if(event.getButton() == MouseButton.PRIMARY && !row.isEmpty()){
 					dataTable.getSelectionModel().select(row.getIndex());
-					models.File file = row.getItem();
+					models.File file = ((models.File)row.getItem());
 					if(file.getTypeId() == 1){
 						currentFolderId = file.getId();
 						fillData();
@@ -1755,7 +1823,7 @@ public class HomepageController implements Initializable {
 					}
 				} else if(event.getButton() == MouseButton.SECONDARY && !row.isEmpty()){
 					dataTable.getSelectionModel().select(row.getIndex());
-					showOptionsPopup(event, row.getItem());
+					showOptionsPopup(event, ((models.File)row.getItem()));
 				}
 			});
 
@@ -1780,23 +1848,23 @@ public class HomepageController implements Initializable {
 
 	public void showTrashPage(MouseEvent mouseEvent) {
 		dataTable.getColumns().clear();
-		TableColumn<models.File, String> nameColumn = new TableColumn<>("Tên");
-		TableColumn<models.File, Date> dateDeletedColumn = new TableColumn<>("Ngày xóa");
-		TableColumn<models.File, String> deletedByColumn = new TableColumn<>("Người xóa");
-		TableColumn<models.File, String> sizeColumn = new TableColumn<>("Kích thước");
-		TableColumn<models.File, String> addressColumn = new TableColumn<>("Vị trí ban đầu");
+		TableColumn<Object, String> nameColumn = new TableColumn<>("Tên");
+		TableColumn<Object, Date> dateDeletedColumn = new TableColumn<>("Ngày xóa");
+		TableColumn<Object, String> deletedByColumn = new TableColumn<>("Người xóa");
+		TableColumn<Object, String> sizeColumn = new TableColumn<>("Kích thước");
+		TableColumn<Object, String> addressColumn = new TableColumn<>("Vị trí ban đầu");
 
 		dataTable.getColumns().addAll(nameColumn, dateDeletedColumn, deletedByColumn, sizeColumn, addressColumn);
 
 		nameColumn.setCellValueFactory(column -> {
-			return new SimpleStringProperty(column.getValue().getName() + (column.getValue().getTypeId() != 1 ? "." + column.getValue().getTypesByTypeId().getName() : ""));
+			return new SimpleStringProperty(((models.File)column.getValue()).getName() + (((models.File)column.getValue()).getTypeId() != 1 ? "." + ((models.File)column.getValue()).getTypesByTypeId().getName() : ""));
 		});
 		nameColumn.setCellFactory(column -> {
-			return new TableCell<models.File, String>() {
+			return new TableCell<Object, String>() {
 				@Override
 				protected void updateItem(String item, boolean empty) {
 					super.updateItem(item, empty);
-					if(empty || item == null || getTableRow() == null ||getTableRow().getItem() == null) {
+					if(empty || item == null || getTableRow() == null ||((models.File)getTableRow().getItem()) == null) {
 						setText(null);
 						setGraphic(null);
 					}
@@ -1804,21 +1872,21 @@ public class HomepageController implements Initializable {
 						ImageView icon = new ImageView();
 						icon.setFitHeight(20);
 						icon.setFitWidth(20);
-						if(getTableRow().getItem().getTypeId() == 1){
+						if(((models.File)getTableRow().getItem()).getTypeId() == 1){
 							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/folder.png").toString()));
-						} else if (getTableRow().getItem().getTypesByTypeId().getName().equals("txt")){
+						} else if (((models.File)getTableRow().getItem()).getTypesByTypeId().getName().equals("txt")){
 							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/txt.png").toString()));
 						}
-						else if (getTableRow().getItem().getTypesByTypeId().getName().matches("docx?|docm|dotx?|dotm")){
+						else if (((models.File)getTableRow().getItem()).getTypesByTypeId().getName().matches("docx?|docm|dotx?|dotm")){
 							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/doc.png").toString()));
 						}
-						else if (getTableRow().getItem().getTypesByTypeId().getName().equals("pdf")){
+						else if (((models.File)getTableRow().getItem()).getTypesByTypeId().getName().equals("pdf")){
 							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/pdf.png").toString()));
 						}
-						else if (getTableRow().getItem().getTypesByTypeId().getName().matches("mp4|mp3|avi|flv|wmv|mov|wav|wma|ogg|mkv")){
+						else if (((models.File)getTableRow().getItem()).getTypesByTypeId().getName().matches("mp4|mp3|avi|flv|wmv|mov|wav|wma|ogg|mkv")){
 							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/mp4.png").toString()));
 						}
-						else if (getTableRow().getItem().getTypesByTypeId().getName().matches("png|svg|jpg|jpeg|gif|bmp")){
+						else if (((models.File)getTableRow().getItem()).getTypesByTypeId().getName().matches("png|svg|jpg|jpeg|gif|bmp")){
 							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/picture.png").toString()));
 						}
 						else {
@@ -1834,7 +1902,7 @@ public class HomepageController implements Initializable {
 		});
 
 		dateDeletedColumn.setCellFactory(column -> {
-			return new TableCell<models.File, Date>() {
+			return new TableCell<Object, Date>() {
 				private final SimpleDateFormat format = new SimpleDateFormat("dd/MM/yyyy HH:mm");
 				@Override
 				protected void updateItem(Date item, boolean empty) {
@@ -1848,12 +1916,12 @@ public class HomepageController implements Initializable {
 				}
 			};
 		});
-		dateDeletedColumn.setCellValueFactory(new PropertyValueFactory<models.File, Date>("dateDeleted"));
+		dateDeletedColumn.setCellValueFactory(new PropertyValueFactory<Object, Date>("dateDeleted"));
 		deletedByColumn.setCellValueFactory(column -> {
-			return new SimpleStringProperty(column.getValue().getUsersByDeletedBy() == null ? "" : column.getValue().getUsersByDeletedBy().getName());
+			return new SimpleStringProperty(((models.File)column.getValue()).getUsersByDeletedBy() == null ? "" : ((models.File)column.getValue()).getUsersByDeletedBy().getName());
 		});
 		sizeColumn.setCellValueFactory(column -> {
-			int size = column.getValue().getSize();
+			int size = ((models.File)column.getValue()).getSize();
 			String sizeStr = "";
 			if(size < 0){
 				sizeStr = (size - Short.MIN_VALUE) + " mục";
@@ -1872,14 +1940,14 @@ public class HomepageController implements Initializable {
 			}
 			return new SimpleStringProperty(sizeStr);
 		});
-		addressColumn.setCellValueFactory(new PropertyValueFactory<models.File, String>("finalpath"));
+		addressColumn.setCellValueFactory(new PropertyValueFactory<Object, String>("finalpath"));
 
 		dataTable.setRowFactory(dataTable -> {
-			TableRow<models.File> row = new TableRow<>();
+			TableRow<Object> row = new TableRow<>();
 			row.setOnMouseClicked(event -> {
 				if(event.getButton() == MouseButton.PRIMARY && !row.isEmpty()){
 					dataTable.getSelectionModel().select(row.getIndex());
-					models.File file = row.getItem();
+					models.File file = ((models.File)row.getItem());
 					if(file.getTypeId() == 1){
 						currentFolderId = file.getId();
 						fillData();
@@ -1894,7 +1962,7 @@ public class HomepageController implements Initializable {
 					}
 				} else if(event.getButton() == MouseButton.SECONDARY && !row.isEmpty()){
 					dataTable.getSelectionModel().select(row.getIndex());
-					showDeleteOptionsPopup(event, row.getItem());
+					showDeleteOptionsPopup(event, ((models.File)row.getItem()));
 				}
 			});
 
@@ -1936,7 +2004,7 @@ public class HomepageController implements Initializable {
 			dataTable.setPlaceholder(new Label("Không có dữ liệu"));
 		}
 		else {
-			final ObservableList<models.File> items = FXCollections.observableArrayList(itemList);
+			final ObservableList<Object> items = FXCollections.observableArrayList(itemList);
 			dataTable.setItems(items);
 			System.out.println("not null");
 		}
@@ -1958,10 +2026,10 @@ public class HomepageController implements Initializable {
 			items.addAll(itemList);
 
 			// Tạo SortedList với Comparator để xác định thứ tự của folders và files
-			SortedList<models.File> sortedData = new SortedList<>(items, (file1, file2) -> {
-				if (file1.getTypeId() == 1 && file2.getTypeId() != 1) {
+			SortedList<Object> sortedData = new SortedList<>(items, (file1, file2) -> {
+				if (((models.File)file1).getTypeId() == 1 && ((models.File)file2).getTypeId() != 1) {
 					return -1;
-				} else if (file1.getTypeId() != 1 && file2.getTypeId() == 1) {
+				} else if (((models.File)file1).getTypeId() != 1 && ((models.File)file2).getTypeId() == 1) {
 					return 1;
 				}
 				return 0;
@@ -2061,6 +2129,286 @@ public class HomepageController implements Initializable {
 	}
 
 	public void showRecentOpenPage(MouseEvent mouseEvent) {
+		dataTable.getColumns().clear();
+		TableColumn<Object, String> nameColumn = new TableColumn<>("Tên");
+		TableColumn<Object, Date> dateOpenedColumn = new TableColumn<>("Ngày mở");
+		TableColumn<Object, String> ownerColumn = new TableColumn<>("Chủ sở hữu");
+		TableColumn<Object, String> addressColumn = new TableColumn<>("Vị trí");
 
+		dataTable.getColumns().addAll(nameColumn, dateOpenedColumn, ownerColumn, addressColumn);
+
+		nameColumn.setCellValueFactory(column -> {
+			return new SimpleStringProperty(((RecentFile)column.getValue()).getFilesByFileId().getName() + (((RecentFile)column.getValue()).getFilesByFileId().getTypeId() != 1 ? "." + ((RecentFile)column.getValue()).getFilesByFileId().getTypesByTypeId().getName() : ""));
+		});
+		nameColumn.setCellFactory(column -> {
+			return new TableCell<Object, String>() {
+				@Override
+				protected void updateItem(String item, boolean empty) {
+					super.updateItem(item, empty);
+					if(empty || item == null || getTableRow() == null ||((RecentFile)getTableRow().getItem()) == null) {
+						setText(null);
+						setGraphic(null);
+					}
+					else {
+						ImageView icon = new ImageView();
+						icon.setFitHeight(20);
+						icon.setFitWidth(20);
+						if (((RecentFile)getTableRow().getItem()).getFilesByFileId().getTypesByTypeId().getName().equals("txt")){
+							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/txt.png").toString()));
+						}
+						else if (((RecentFile)getTableRow().getItem()).getFilesByFileId().getTypesByTypeId().getName().matches("docx?|docm|dotx?|dotm")){
+							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/doc.png").toString()));
+						}
+						else if (((RecentFile)getTableRow().getItem()).getFilesByFileId().getTypesByTypeId().getName().equals("pdf")){
+							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/pdf.png").toString()));
+						}
+						else if (((RecentFile)getTableRow().getItem()).getFilesByFileId().getTypesByTypeId().getName().matches("mp4|mp3|avi|flv|wmv|mov|wav|wma|ogg|mkv")){
+							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/mp4.png").toString()));
+						}
+						else if (((RecentFile)getTableRow().getItem()).getFilesByFileId().getTypesByTypeId().getName().matches("png|svg|jpg|jpeg|gif|bmp")){
+							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/picture.png").toString()));
+						}
+						else {
+							icon.setImage(new javafx.scene.image.Image(getClass().getResource("/assets/images/unknown.png").toString()));
+						}
+
+
+						setGraphic(icon);
+						setText(item);
+					}
+				}
+			};
+		});
+
+		dateOpenedColumn.setCellFactory(column -> {
+			return new TableCell<Object, Date>() {
+				private final SimpleDateFormat format = new SimpleDateFormat("dd/MM/yyyy HH:mm");
+				@Override
+				protected void updateItem(Date item, boolean empty) {
+					super.updateItem(item, empty);
+					if(empty || item == null) {
+						setText(null);
+					}
+					else {
+						setText(format.format(item));
+					}
+				}
+			};
+		});
+		dateOpenedColumn.setCellValueFactory(new PropertyValueFactory<Object, Date>("openedAt"));
+		ownerColumn.setCellValueFactory(column -> {
+			return new SimpleStringProperty(((RecentFile)column.getValue()).getFilesByFileId().getUsersByOwnerId() == null ? "" : ((RecentFile)column.getValue()).getFilesByFileId().getUsersByOwnerId().getName());
+		});
+		addressColumn.setCellValueFactory(column -> {
+			return new SimpleStringProperty(((RecentFile)column.getValue()).getFilesByFileId() == null ? "" : ((RecentFile)column.getValue()).getFilesByFileId().getFinalpath());
+		});
+
+		dataTable.setRowFactory(dataTable -> {
+			TableRow<Object> row = new TableRow<>();
+			row.setOnMouseClicked(event -> {
+				if(event.getButton() == MouseButton.PRIMARY && !row.isEmpty()){
+					dataTable.getSelectionModel().select(row.getIndex());
+					RecentFile file = ((RecentFile)row.getItem());
+					if(file.getFilesByFileId().getTypeId() == 1){
+						currentFolderId = file.getId();
+						fillData();
+						// Tạo HBox breadcrumb mới
+						HBox _breadcrumb = createBreadcrumb(file.getId(), file.getFilesByFileId().getName());
+						breadcrumbList.add(_breadcrumb);
+						// Thêm các HBox breadcrumb vào container
+						path.getChildren().setAll(breadcrumbList);
+					}
+					else {
+						// Open file
+					}
+				} else if(event.getButton() == MouseButton.SECONDARY && !row.isEmpty()){
+					dataTable.getSelectionModel().select(row.getIndex());
+//					showDeleteOptionsPopup(event, ((models.File)row.getItem()));
+					showRecentOptionsPopup(event, ((RecentFile)row.getItem()));
+				}
+			});
+
+			row.setOnMouseEntered(event -> {
+				if(!row.isEmpty() && !row.isSelected()){
+					row.setStyle("-fx-background-color: #f2f2f2");
+				}
+			});
+
+			row.setOnMouseExited(event -> {
+				if(!row.isEmpty()){
+					row.setStyle("");
+				}
+			});
+
+			return row;
+		});
+
+		dataTable.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/assets/css/tableview.css")).toExternalForm());
+
+		lbRecentOpenBtn.setFont(Font.font("System", FontWeight.BOLD, FontPosture.REGULAR, lbTrashBtn.getFont().getSize()));
+		setFontLabel(4);
+		searchTxt.setText("");
+		currentSideBarIndex = 4;
+		currentFolderId = -4;
+		breadcrumbList.clear();
+		HBox breadcrumb = createBreadcrumb(-4, "Gần đây");
+		breadcrumbList.add(breadcrumb);
+		// Thêm các HBox breadcrumb vào container
+		path.getChildren().setAll(breadcrumbList);
+
+		ItemService itemService = new ItemService();
+		List<RecentFile> itemList = itemService.getAllRecentOpenedItem(userId, "");
+
+		System.out.println("itemList: " + itemList);
+
+		if(itemList == null) {
+			System.out.println("null");
+			dataTable.setPlaceholder(new Label("Không có dữ liệu"));
+		}
+		else {
+			final ObservableList<Object> items = FXCollections.observableArrayList(itemList);
+			dataTable.setItems(items);
+			System.out.println("not null");
+		}
+
+		createFolderBtn.setDisable(true);
+		uploadFileBtn.setDisable(true);
+		uploadFolderBtn.setDisable(true);
+	}
+
+	private void showRecentOptionsPopup(MouseEvent mouseEvent, RecentFile selectedItem) {
+		Popup popup = new Popup();
+		popup.setAutoHide(true);
+		popup.setAutoFix(true);
+		popup.setHideOnEscape(true);
+
+		FontAwesomeIconView openIcon = new FontAwesomeIconView();
+		openIcon.setGlyphName("FOLDER");
+		openIcon.setSize("20");
+		openIcon.setStyleClass("icon");
+		Button openBtn = new Button("Mở", openIcon);
+
+
+		FontAwesomeIconView openLocationIcon = new FontAwesomeIconView();
+		openLocationIcon.setGlyphName("SHARE_SQUARE");
+		openLocationIcon.setSize("20");
+		openLocationIcon.setStyleClass("icon");
+		Button openLocationBtn = new Button("Mở vị trí", openLocationIcon);
+
+
+		openBtn.setOnAction(event -> {
+			// Open file
+			int itemTypeId = selectedItem.getFilesByFileId().getTypeId();
+			int itemId = selectedItem.getFilesByFileId().getId();
+
+			Task<String> openTask = new Task<String>() {
+				@Override
+				protected String call() throws Exception {
+					ItemService itemService = new ItemService();
+					if(itemTypeId == 1) {
+						return itemService.openFolder(userId, itemId);
+					} else {
+						return itemService.openFile(userId, itemId);
+					}
+				}
+			};
+
+			openTask.setOnSucceeded(e -> {
+				String path = openTask.getValue();
+				if(path!=null && !path.isEmpty()) {
+					// Open file
+					Desktop desktop = Desktop.getDesktop();
+					try {
+						desktop.open(new File(path));
+					} catch (IOException ioException) {
+						ioException.printStackTrace();
+					}
+
+					System.out.println("Mở thành công");
+				}
+				else System.out.println("Mở thất bại");
+			});
+
+			openTask.setOnFailed(e -> {
+				System.out.println("Mở thất bại");
+			});
+
+			Thread thread = new Thread(openTask);
+			thread.start();
+
+			popup.hide();
+		});
+
+		openLocationBtn.setOnAction(event -> {
+//			// Open location of file
+
+			resetDatatable();
+			lbGeneral.setFont(Font.font("System", FontWeight.BOLD, FontPosture.REGULAR, lbGeneral.getFont().getSize()));
+			setFontLabel(0);
+			searchTxt.setText("");
+			currentSideBarIndex = 0;
+			breadcrumbList.clear();
+
+			Folder folder = selectedItem.getFilesByFileId().getFoldersByFolderId();
+			while (folder.getId() != 2) {
+				HBox breadcrumb = createBreadcrumb(folder.getId(), folder.getFolderName());
+				breadcrumbList.add(0, breadcrumb);
+				folder = folder.getFoldersByParentId();
+			}
+			HBox breadcrumb = createBreadcrumb(2, "Chung");
+			breadcrumbList.add(0, breadcrumb);
+			// Thêm các HBox breadcrumb vào container
+			path.getChildren().setAll(breadcrumbList);
+
+			currentFolderId = selectedItem.getFilesByFileId() == null ? 2 : selectedItem.getFilesByFileId().getFolderId();
+			fillData();
+
+			popup.hide();
+		});
+
+		VBox options = new VBox();
+		options.setPrefWidth(150);
+		options.setStyle("-fx-background-color: white; -fx-border-color: gray; -fx-border-radius: 15px; -fx-border-width: 1px; -fx-background-radius: 15px;");
+
+		options.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+		for (Button button : Arrays.asList(openBtn, openLocationBtn)) {
+			if (button != null) {
+				button.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+				button.setPadding(new Insets(5, 5, 5, 15));
+				button.setPrefWidth(150);
+
+				if (button == openBtn) {
+					button.setStyle("-fx-background-color: transparent; -fx-background-radius: 15px 15px 0px 0px; -fx-background-insets: 0px; -fx-border-width: 0;");
+					button.setOnMouseEntered(event -> {
+						button.setStyle("-fx-background-color: #f1f1f1; -fx-background-radius: 15px 15px 0px 0px; -fx-background-insets: 0px; -fx-border-width: 0;");
+					});
+					button.setOnMouseExited(event -> {
+						button.setStyle("-fx-background-color: transparent; -fx-background-radius: 15px 15px 0px 0px; -fx-background-insets: 0px; -fx-border-width: 0;");
+					});
+				} else if(button == openLocationBtn) {
+					button.setStyle("-fx-background-color: transparent; -fx-background-radius: 0px 0px 15px 15px; -fx-background-insets: 0px; -fx-border-width: 0;");
+					button.setOnMouseEntered(event -> {
+						button.setStyle("-fx-background-color: #f1f1f1; -fx-background-radius: 0px 0px 15px 15px; -fx-background-insets: 0px; -fx-border-width: 0;");
+					});
+					button.setOnMouseExited(event -> {
+						button.setStyle("-fx-background-color: transparent; -fx-background-radius: 0px 0px 15px 15px; -fx-background-insets: 0px; -fx-border-width: 0;");
+					});
+				}
+			}
+		}
+
+		options.getChildren().addAll(openBtn, openLocationBtn);
+
+		popup.getContent().add(options);
+
+		popup.show(dataTable.getScene().getWindow(), mouseEvent.getScreenX(), mouseEvent.getScreenY());
+
+		Scene scene = dataTable.getScene();
+		scene.setOnMousePressed(event -> {
+			Node target = (Node) event.getTarget();
+			if (!popup.getScene().getRoot().getBoundsInParent().contains(event.getSceneX(), event.getSceneY())) {
+				popup.hide();
+			}
+		});
 	}
 }
