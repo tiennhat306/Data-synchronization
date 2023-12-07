@@ -2,6 +2,7 @@ package services.server;
 
 import DTO.Connection;
 import models.File;
+import models.RecentFile;
 import models.User;
 
 import java.io.*;
@@ -82,6 +83,12 @@ public class ClientHandler implements Runnable{
                     int folderId = Integer.parseInt((String) receiveRequest());
                     String searchText = (String) receiveRequest();
                     List<File> response = getItemList(userId, folderId, searchText);
+                    sendResponse(response);
+                }
+                case "GET_ALL_RECENT_OPENED_ITEM" -> {
+                    int userId = Integer.parseInt((String) receiveRequest());
+                    String searchText = (String) receiveRequest();
+                    List<RecentFile> response = new RecentFileService().getAllRecentOpenedItem(userId, searchText);
                     sendResponse(response);
                 }
                 case "GET_ALL_DELETED_ITEM" -> {

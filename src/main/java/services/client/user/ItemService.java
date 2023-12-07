@@ -1,6 +1,7 @@
 package services.client.user;
 
 import models.File;
+import models.RecentFile;
 import models.User;
 import services.client.SocketClientHelper;
 
@@ -84,6 +85,26 @@ public class ItemService {
 
                 Object obj = socketClientHelper.receiveResponse();
                 List<File> itemList = (List<File>) obj;
+
+                socketClientHelper.close();
+                return itemList;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+    public List<RecentFile> getAllRecentOpenedItem(int userId, String searchText) {
+        try {
+            while (true) {
+                SocketClientHelper socketClientHelper = new SocketClientHelper();
+                // send request to server
+                socketClientHelper.sendRequest("GET_ALL_RECENT_OPENED_ITEM");
+                socketClientHelper.sendRequest(String.valueOf(userId));
+                socketClientHelper.sendRequest(searchText);
+
+                Object obj = socketClientHelper.receiveResponse();
+                List<RecentFile> itemList = (List<RecentFile>) obj;
 
                 socketClientHelper.close();
                 return itemList;
@@ -399,7 +420,7 @@ public class ItemService {
         }
     }
 
-    public boolean openFolder(int userId, int folderId) {
+    public String openFolder(int userId, int folderId) {
         try {
             SocketClientHelper socketClientHelper = new SocketClientHelper();
             socketClientHelper.sendRequest("OPEN_FOLDER");
@@ -415,14 +436,18 @@ public class ItemService {
 
             boolean response = (boolean) socketClientHelper.receiveResponse();
             socketClientHelper.close();
-            return response;
+            if(response){
+                return folderPath;
+            } else {
+                return "";
+            }
         } catch (Exception e) {
             e.printStackTrace();
-            return false;
+            return "";
         }
     }
 
-    public boolean openFile(int userId, int fileId) {
+    public String openFile(int userId, int fileId) {
         try {
             SocketClientHelper socketClientHelper = new SocketClientHelper();
             socketClientHelper.sendRequest("OPEN_FILE");
@@ -444,10 +469,14 @@ public class ItemService {
 
             boolean response = (boolean) socketClientHelper.receiveResponse();
             socketClientHelper.close();
-            return response;
+            if(response){
+                return filePath;
+            } else {
+                return "";
+            }
         } catch (Exception e) {
             e.printStackTrace();
-            return false;
+            return "";
         }
     }
 }
