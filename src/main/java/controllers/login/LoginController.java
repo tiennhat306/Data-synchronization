@@ -88,7 +88,7 @@ public class LoginController {
                     String role = null;
                     if (numRole == 1) role = "Client";
                     else if (numRole == 2) role = "Admin";
-                    loginSession.createSession(user.getId(), user.getName(), user.getUsername(), role);
+                    loginSession.createSession(user.getId(), user.getName(), user.getUsername(), role, user.getEmail(), user.getPhoneNumber(), user.getBirthday(), user.getGender());
                     if (numRole == 1) {
                         root = FXMLLoader.load(MainApp.class.getResource("/view/user/dashboard.fxml"));
                         stage = (Stage)((Node)event.getSource()).getScene().getWindow();

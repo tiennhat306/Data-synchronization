@@ -9,6 +9,7 @@ import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.nio.file.Files;
+import java.sql.Date;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -58,7 +59,26 @@ public class ClientHandler implements Runnable{
                     List<User> response = getUserList();
                     sendResponse(response);
                 }
-                case "GET_USER_BY_ID" -> {
+                case "GET_USER_BY_USERNAME" -> {
+                    String username = (String) receiveRequest();
+                    User response = getUserByUsername(username);
+                    sendResponse(response);
+                }
+                case "UPDATE_USER" -> {
+                    String username = (String) receiveRequest();
+                    String name = (String) receiveRequest();
+                    String email = (String) receiveRequest();
+                    String phone = (String) receiveRequest();
+                    Date date = (Date) receiveRequest();
+                    boolean gender = (boolean) receiveRequest();
+                    boolean response = updateUser(username, name, email, phone, date, gender);
+                    sendResponse(response);
+                }
+                case "CHANGE_PASS_USER" -> {
+                    String username = (String) receiveRequest();
+                    String newPass = (String) receiveRequest();
+                    boolean response = changePassUser(username, newPass);
+                    sendResponse(response);
                 }
                 case "GET_ALL_ITEM_PRIVATE" -> {
                     String ownerId = (String) receiveRequest();
@@ -397,6 +417,21 @@ public class ClientHandler implements Runnable{
     private List<User> getUserList() {
         UserService userService = new UserService();
         return userService.getAllUser();
+    }
+
+    private User getUserByUsername(String username) {
+        UserService userService = new UserService();
+        return userService.getUserByUserName(username);
+    }
+
+    private boolean updateUser(String username, String name, String email, String phone, Date birth, boolean gender) {
+        UserService userService = new UserService();
+        return userService.updateUser(username, name, email, phone, birth, gender);
+    }
+
+    private boolean changePassUser(String username, String newPass) {
+        UserService userService = new UserService();
+        return userService.changePassUser(username, newPass);
     }
 
     private List<File> getItemList(int userId, int folderId){
