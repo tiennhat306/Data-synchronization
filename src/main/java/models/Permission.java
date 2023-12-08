@@ -39,6 +39,11 @@ public class Permission implements Serializable {
     @Basic
     @Column(name = "shared_by")
     private Integer sharedBy;
+
+    public void setSharedBy(Integer sharedBy) {
+        this.sharedBy = sharedBy;
+    }
+
     @Basic
     @Column(name = "shared_at")
     private Timestamp sharedAt;

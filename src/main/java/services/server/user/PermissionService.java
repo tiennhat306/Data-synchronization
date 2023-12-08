@@ -69,23 +69,23 @@ public class PermissionService {
                 return OWNER_ACCESS;
             }
 
-            Permission permission = null;
+            int defaultPermission = getPermission(typeId, id);
+
+            Permission userPermission = null;
+            currentId = id;
             while (currentId != 1) {
                 try{
-                    permission = session.createQuery("select per from Permission per where per." + (typeId == 1 ? "folderId" : "fileId") + " = :id AND (per.userId is null OR per.userId = :userId)", Permission.class)
+                    userPermission = session.createQuery("select per from Permission per where per." + (typeId == 1 ? "folderId" : "fileId") + " = :id AND (per.userId = :userId)", Permission.class)
                             .setParameter("id", currentId)
                             .setParameter("userId", userId)
                             .uniqueResult();
-                    if(permission == null){
+                    if(userPermission == null){
                         throw new NoResultException();
                     }
-                    return permission.getPermissionType();
+                    else {
+                        break;
+                    }
                 } catch (NoResultException e) {
-//                    if (currentTypeId == 1) {
-//                        currentId = session.find(models.Folder.class, currentId).getParentId();
-//                    } else {
-//                        currentId = session.find(models.File.class, currentId).getFolderId();
-//                    }
                     Integer parentId = session.createQuery("select " + (typeId == 1 ? "fd.parentId" : "f.folderId") + " from " + (typeId == 1 ? "Folder fd" : "File f") + " where " + (typeId == 1 ? "fd.id" : "f.id") + " = :id", Integer.class)
                             .setParameter("id", currentId)
                             .uniqueResult();
@@ -96,7 +96,11 @@ public class PermissionService {
                     }
                 }
             }
-            return permission == null ? -1 : permission.getPermissionType();
+            if (userPermission == null) {
+                return defaultPermission;
+            } else {
+                return Math.max(defaultPermission, userPermission.getPermissionType());
+            }
         } catch (Exception e) {
             e.printStackTrace();
             return -1;
@@ -119,8 +123,12 @@ public class PermissionService {
                     permission = session.createQuery(query, Permission.class)
                             .setParameter("itemId", itemId)
                             .getSingleResult();
-                    permission.setPermissionType((short) finalPermissionId);
-                    session.merge(permission);
+                    if(permission == null){
+                        throw new NoResultException();
+                    } else {
+                        permission.setPermissionType((short) finalPermissionId);
+                        session.merge(permission);
+                    }
                 } else {
                     String nativeQuery = "WITH RECURSIVE folder_cte AS (\n" +
                             "  SELECT id FROM folders" +
@@ -143,6 +151,7 @@ public class PermissionService {
                 } else {
                     permission.setFileId(itemId);
                 }
+                permission.setPermissionType((short) finalPermissionId);
                 session.persist(permission);
             }
             transaction.commit();
@@ -198,14 +207,18 @@ public class PermissionService {
             try {
                 permission = session.createQuery("select per from Permission per where per." + (itemTypeId == 1 ? "folderId" : "fileId") + " = :itemId AND per.userId = null", Permission.class)
                         .setParameter("itemId", itemId)
-                        .getSingleResult();
+                        .uniqueResult();
+                if(permission == null){
+                    throw new NoResultException();
+                } else {
+                    return permission.getPermissionType();
+                }
             } catch (NoResultException e) {
                 int parentId = session.createQuery("select " + (itemTypeId == 1 ? "fd.parentId" : "f.folderId") + " from " + (itemTypeId == 1 ? "Folder fd" : "File f") + " where " + (itemTypeId == 1 ? "fd.id" : "f.id") + " = :id", Integer.class)
                         .setParameter("id", itemId)
                         .uniqueResult();
                 return getPermission(PermissionService.FOLDER_TYPE, parentId);
             }
-            return permission.getPermissionType();
         } catch (Exception e) {
             e.printStackTrace();
             return -1;
@@ -236,6 +249,41 @@ public class PermissionService {
         } catch (Exception e) {
             e.printStackTrace();
             return null;
+        }
+    }
+
+    public int getOwnerId(int itemTypeId, int itemId) {
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
+            return session.createQuery("select " + (itemTypeId == 1 ? "fd.ownerId" : "f.ownerId") + " from " + (itemTypeId == 1 ? "Folder fd" : "File f") + " where " + (itemTypeId == 1 ? "fd.id" : "f.id") + " = :id", Integer.class)
+                    .setParameter("id", itemId)
+                    .uniqueResult();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return -1;
+        }
+    }
+
+    public void deletePermissionByFileId(int id) {
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
+            Transaction transaction = session.beginTransaction();
+            session.createQuery("delete from Permission where fileId = :id")
+                    .setParameter("id", id)
+                    .executeUpdate();
+            transaction.commit();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void deletePermissionByFolderId(int id) {
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
+            Transaction transaction = session.beginTransaction();
+            session.createQuery("delete from Permission where folderId = :id")
+                    .setParameter("id", id)
+                    .executeUpdate();
+            transaction.commit();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }
