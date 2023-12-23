@@ -430,7 +430,30 @@ public class HomepageController implements Initializable {
 
 		renameBtn.setOnAction(event -> {
 			// Rename file
+			// Get the new name from the user
+		    TextInputDialog dialog = new TextInputDialog();
+		    dialog.setTitle("Rename Item");
+		    dialog.setHeaderText("Rename");
+		    dialog.setContentText("Enter the new name:");
 
+		    // Show the dialog and wait for the user's input
+		    dialog.showAndWait().ifPresent(newName -> {
+		        // Ensure the new name is not empty
+		        if (!newName.trim().isEmpty()) {
+		            if (selectedItem.toString().contains("typeId=1")) {
+		                // Call the renameFile method with the selected item's ID and the new name
+		            	ItemService itemService = new ItemService();
+		            	
+		            	renameFolder(selectedItem.getId(), newName, selectedItem.getOwnerId());
+		            } else {
+		            	ItemService itemService = new ItemService();
+		            	renameFile(selectedItem.getId(), newName, selectedItem.getSize());
+		            } 
+		        } else {
+		            // Handle the case where the user entered an empty name
+		            System.out.println("Invalid name");
+		        }
+		    });
 			popup.hide();
 		});
 
@@ -2024,6 +2047,72 @@ public class HomepageController implements Initializable {
 		createFolderBtn.setDisable(true);
 		uploadFileBtn.setDisable(true);
 		uploadFolderBtn.setDisable(true);
+	}
+	
+	public void renameFile(int fileID, String fileName, int fileSize) {
+	    Task<Boolean> renameFileTask = new Task<Boolean>() {
+	        @Override
+	        protected Boolean call() throws Exception {
+	            try {
+	                // Initialize your service outside the call method if it's not a short-lived service
+	                ItemService itemService = new ItemService();
+	                String result = itemService.getRenameFilePath(fileID);
+	                // Perform the background operation
+	                return itemService.renameFile(fileID, fileName, fileSize, result);
+	            } catch (Exception e) {
+	                // Handle exceptions gracefully, you might want to log them or show an error dialog
+	                e.printStackTrace();
+	                return false;
+	            }
+	        }
+	    };
+
+	    renameFileTask.setOnSucceeded(e -> {
+	        boolean response = renameFileTask.getValue();
+			if(response) fillData();
+			else System.out.println("Đổi tên file thành công");
+	    });
+
+	    renameFileTask.setOnFailed(e -> {
+	    	System.out.println("Đổi tên file thất bại");
+	    });
+
+	    // Start the task in a new thread
+	    Thread thread = new Thread(renameFileTask);
+	    thread.start();
+	}
+	
+	public void renameFolder(int folderID, String folderName, int ownerID) {
+	    Task<Boolean> renameFolderTask = new Task<Boolean>() {
+	        @Override
+	        protected Boolean call() throws Exception {
+	            try {
+	                // Initialize your service outside the call method if it's not a short-lived service
+	                ItemService itemService = new ItemService();
+	                String result = itemService.getRenameFolderPath(folderID);
+	                // Perform the background operation
+	                return itemService.renameFolder(folderID, folderName, ownerID, result);
+	            } catch (Exception e) {
+	                // Handle exceptions gracefully, you might want to log them or show an error dialog
+	                e.printStackTrace();
+	                return false;
+	            }
+	        }
+	    };
+
+	    renameFolderTask.setOnSucceeded(e -> {
+	        boolean response = renameFolderTask.getValue();
+			if(response) fillData();
+			else System.out.println("Đổi tên folder thành công");
+	    });
+
+	    renameFolderTask.setOnFailed(e -> {
+	    	System.out.println("Đổi tên folder thất bại");
+	    });
+
+	    // Start the task in a new thread
+	    Thread thread = new Thread(renameFolderTask);
+	    thread.start();
 	}
 
 	private void fillDeletedData() {
