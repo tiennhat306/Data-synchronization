@@ -57,6 +57,32 @@ public class SocketClientHelper {
             return null;
         }
     }
+    
+    public void renameFolder(String folderPath, String folderName) {
+        try {            
+            // Perform the renaming operation
+            File folder = new File(folderPath);
+            File newFolder = new File(folder.getParent(), folderName);
+            boolean renameSuccess = folder.renameTo(newFolder);
+
+            if (renameSuccess) {
+                System.out.println("Rename folder " + folderName + " thành công");
+            } else {
+                System.out.println("Rename folder " + folderName + " thất bại");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    
+    public void deleteFile(String filePath) {
+        File fileToDelete = new File(filePath);
+        if (fileToDelete.delete()) {
+            System.out.println("File deleted successfully.");
+        } else {
+            System.out.println("Failed to delete the file.");
+        }
+    }
 
     public void sendFile(int size, String filePath) throws IOException {
         byte[] buffer = new byte[1024];

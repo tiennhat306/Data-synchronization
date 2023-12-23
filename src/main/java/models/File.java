@@ -234,7 +234,12 @@ public class File implements Serializable {
         return deletedBy;
     }
 
-    public void setDeletedBy(Integer deletedBy) {
+    @Override
+	public String toString() {
+		return "File [typeId=" + typeId + "]";
+	}
+
+	public void setDeletedBy(Integer deletedBy) {
         this.deletedBy = deletedBy;
     }
 

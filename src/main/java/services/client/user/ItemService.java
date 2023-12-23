@@ -385,6 +385,74 @@ public class ItemService {
             return false;
         }
     }
+    
+    public String getRenameFolderPath(int folderID) {
+		try {
+			SocketClientHelper socketClientHelper = new SocketClientHelper();
+			// send request to server
+			socketClientHelper.sendRequest("GET_RENAME_FOLDER_PATH");
+			socketClientHelper.sendRequest(String.valueOf(folderID));
+
+			Object obj = socketClientHelper.receiveResponse();
+			String result = (String) obj;
+
+			socketClientHelper.close();
+			return result;
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+    
+    public String getRenameFilePath(int fileID) {
+		try {
+			SocketClientHelper socketClientHelper = new SocketClientHelper();
+			// send request to server
+			socketClientHelper.sendRequest("GET_RENAME_FILE_PATH");
+			socketClientHelper.sendRequest(String.valueOf(fileID));
+
+			Object obj = socketClientHelper.receiveResponse();
+			String result = (String) obj;
+
+			socketClientHelper.close();
+			return result;
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+    
+    public boolean renameFile(int fileID, String fileName, int fileSize, String filePath) throws IOException {
+		SocketClientHelper socketClientHelper = new SocketClientHelper();
+		socketClientHelper.sendRequest("RENAME_FILE");
+		socketClientHelper.sendRequest(String.valueOf(fileID));
+		socketClientHelper.sendRequest(String.valueOf(fileName));
+		socketClientHelper.sendRequest(String.valueOf(fileSize));
+		
+		socketClientHelper.sendFile(fileSize, filePath);
+		socketClientHelper.deleteFile(filePath);
+
+		boolean response = (boolean) socketClientHelper.receiveResponse();
+		System.out.println("Response: " + response);
+
+		socketClientHelper.close();
+		return response;
+	}
+	
+	public boolean renameFolder(int folderID, String folderName,int ownerId, String folderPath) throws IOException {
+    	SocketClientHelper socketClientHelper = new SocketClientHelper();
+    	socketClientHelper.sendRequest("RENAME_FOLDER");
+        socketClientHelper.sendRequest(String.valueOf(folderID));
+        socketClientHelper.sendRequest(String.valueOf(folderName));
+        
+        socketClientHelper.renameFolder(folderPath, folderName);
+
+		boolean response = (boolean) socketClientHelper.receiveResponse();
+		System.out.println("Response: " + response);
+
+		socketClientHelper.close();
+		return response;
+    }
 
     public boolean restore(int itemTypeId, int itemId) {
         try {
