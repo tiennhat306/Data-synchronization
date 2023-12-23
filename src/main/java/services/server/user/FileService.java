@@ -69,6 +69,51 @@ public class FileService {
             return false;
         }
     }
+    
+    public boolean renameFile(int id, String newName) {
+        Transaction transaction = null;
+        
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            transaction = session.beginTransaction();
+
+            File file = session.find(File.class, id);
+            
+            if (file != null) {
+                // Update the file's name
+                file.setName(newName);
+                transaction.commit();
+                return true;
+            } else {
+                return false;
+            }
+        } catch (Exception e) {
+            if (transaction != null && transaction.isActive()) {
+                transaction.rollback();
+            }
+            e.printStackTrace(); // Handle the exception appropriately
+            return false;
+        }
+    }
+    public String getFilePathChanged(int fileId, String newName) {
+        try(Session session = HibernateUtil.getSessionFactory().openSession()){
+            int folderId = session.createQuery("select f.folderId from File f where f.id = :fileId", Integer.class)
+                    .setParameter("fileId", fileId)
+                    .getSingleResult();
+
+            FolderService folderService = new FolderService();
+            String path = ServerApp.SERVER_PATH + java.io.File.separator + folderService.getPath(folderId);
+
+            TypeService typeService = new TypeService();
+            String type = typeService.getTypeName(session.createQuery("select f.typeId from File f where f.id = :fileId", Integer.class)
+                    .setParameter("fileId", fileId)
+                    .getSingleResult());
+
+            return path + java.io.File.separator + newName + "." + type;
+        } catch (Exception e){
+            e.printStackTrace();
+            return "";
+        }
+    }
     public boolean deleteFile(int id, int userId) {
         Transaction transaction = null;
         try (Session session = HibernateUtil.getSessionFactory().openSession()){
