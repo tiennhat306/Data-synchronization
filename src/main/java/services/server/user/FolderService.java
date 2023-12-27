@@ -5,6 +5,7 @@ import javafx.util.Pair;
 import models.Folder;
 import models.Permission;
 import org.hibernate.Session;
+import org.hibernate.Transaction;
 import org.hibernate.query.Query;
 import utils.HibernateUtil;
 
@@ -73,6 +74,31 @@ public class FolderService {
         } catch (Exception e) {
             e.printStackTrace();
             return 0;
+        }
+    }
+    
+    public boolean renameFolder(int id, String newName) {
+        Transaction transaction = null;
+        
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            transaction = session.beginTransaction();
+
+            Folder folder = session.find(Folder.class, id);
+            
+            if (folder != null) {
+                // Update the file's name
+                folder.setFolderName(newName);
+                transaction.commit();
+                return true;
+            } else {
+                return false;
+            }
+        } catch (Exception e) {
+            if (transaction != null && transaction.isActive()) {
+                transaction.rollback();
+            }
+            e.printStackTrace(); // Handle the exception appropriately
+            return false;
         }
     }
 

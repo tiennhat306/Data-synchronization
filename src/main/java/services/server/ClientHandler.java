@@ -9,6 +9,7 @@ import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.nio.file.Files;
+import java.sql.Date;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -58,7 +59,26 @@ public class ClientHandler implements Runnable{
                     List<User> response = getUserList();
                     sendResponse(response);
                 }
-                case "GET_USER_BY_ID" -> {
+                case "GET_USER_BY_USERNAME" -> {
+                    String username = (String) receiveRequest();
+                    User response = getUserByUsername(username);
+                    sendResponse(response);
+                }
+                case "UPDATE_USER" -> {
+                    String username = (String) receiveRequest();
+                    String name = (String) receiveRequest();
+                    String email = (String) receiveRequest();
+                    String phone = (String) receiveRequest();
+                    Date date = (Date) receiveRequest();
+                    boolean gender = (boolean) receiveRequest();
+                    boolean response = updateUser(username, name, email, phone, date, gender);
+                    sendResponse(response);
+                }
+                case "CHANGE_PASS_USER" -> {
+                    String username = (String) receiveRequest();
+                    String newPass = (String) receiveRequest();
+                    boolean response = changePassUser(username, newPass);
+                    sendResponse(response);
                 }
                 case "GET_ALL_ITEM_PRIVATE" -> {
                     String ownerId = (String) receiveRequest();
@@ -104,6 +124,32 @@ public class ClientHandler implements Runnable{
                     boolean response = new FolderService().createFolder(folderName, ownerId, currentFolderId);
                     sendResponse(response);
                 }
+                case "GET_RENAME_FILE_PATH" -> {
+    				String id = (String) receiveRequest();
+    				String response = getFileRenamePath(Integer.parseInt(id));
+    				sendResponse(response);
+    			}
+    			case "GET_RENAME_FOLDER_PATH" -> {
+    				String id = (String) receiveRequest();
+    				String response = getFolderRenamePath(Integer.parseInt(id));
+    				sendResponse(response);
+    			}
+    			case "RENAME_FILE" -> {
+    				String fileId = (String) receiveRequest();
+    				String fileName = (String) receiveRequest();
+    				String fileSize = (String) receiveRequest();
+    				String filePath = getFileChanged(Integer.parseInt(fileId), fileName);
+    				boolean response = renameFile(Integer.parseInt(fileId), fileName, filePath, Integer.parseInt(fileSize));
+    				sendResponse(response);
+    			}
+    			case "RENAME_FOLDER" -> {
+    				String folderId = (String) receiveRequest();
+    				String folderName = (String) receiveRequest();
+//    				String ownerID = (String) receiveRequest();
+//    				String folderPath = getFolderPathChanged(Integer.parseInt(folderId), folderName);
+    				boolean response = renameFolder(Integer.parseInt(folderId), folderName);
+    				sendResponse(response);
+    			}
                 case "UPLOAD_FILE" -> {
                     String type = (String) receiveRequest();
                     if(type.equals("file")){
@@ -399,6 +445,21 @@ public class ClientHandler implements Runnable{
         return userService.getAllUser();
     }
 
+    private User getUserByUsername(String username) {
+        UserService userService = new UserService();
+        return userService.getUserByUserName(username);
+    }
+
+    private boolean updateUser(String username, String name, String email, String phone, Date birth, boolean gender) {
+        UserService userService = new UserService();
+        return userService.updateUser(username, name, email, phone, birth, gender);
+    }
+
+    private boolean changePassUser(String username, String newPass) {
+        UserService userService = new UserService();
+        return userService.changePassUser(username, newPass);
+    }
+
     private List<File> getItemList(int userId, int folderId){
         return getItemList(userId, folderId, "");
     }
@@ -470,6 +531,36 @@ public class ClientHandler implements Runnable{
         }
 
     }
+    
+    private String getFileChanged(int fileId, String fileName) {
+		FileService fileService = new FileService(); // Ensure FileService is initialized correctly
+		String rs = fileService.getFilePathChanged(fileId, fileName);
+		return rs;
+	}
+    
+    private boolean renameFile(int fileId, String fileName, String filePath, int size) {
+		FileService fileService = new FileService(); // Ensure FileService is initialized correctly
+		boolean response = fileService.renameFile(fileId, fileName);
+		if (response) {
+			System.out.println("Đổi tên file thành công");
+			receiveFile(filePath, size);
+		} else {
+			System.out.println("Không thể đổi tên file");
+		}
+		return response;
+	}
+    
+    private boolean renameFolder(int folderId, String folderName) throws ClassNotFoundException, IOException {
+		FolderService folderService = new FolderService(); // Ensure FileService is initialized correctly
+		boolean response = folderService.renameFolder(folderId, folderName);
+	
+		if (response) {
+			System.out.println("Upload folder " + folderName + " thành công");
+		} else {
+			System.out.println("Upload folder " + folderName + " thất bại");
+		}
+		return response;
+	}
 
     public boolean syncFolder(int userId, int folderId, String folderPath){
         List<File> fileList = getItemList(userId, folderId);
@@ -577,6 +668,16 @@ public class ClientHandler implements Runnable{
         }
         return check;
     }
+    
+    private String getFileRenamePath(int fileId) {
+		FileService fileService = new FileService(); // Ensure FileService is initialized correctly
+		return fileService.getFilePath(fileId);
+	}
+    
+    private String getFolderRenamePath(int folderID) {
+		FolderService folderService = new FolderService();
+		return folderService.getFolderPath(folderID);
+	}
     
     private User getUserById(int id) {
         UserService userService = new UserService();

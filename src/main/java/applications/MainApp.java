@@ -18,6 +18,9 @@ public class MainApp extends Application {
         FXMLLoader loginLoader = new FXMLLoader(MainApp.class.getResource("/view/login/login-view.fxml"));
         Scene scene = new Scene(loginLoader.load());
         stage.setTitle("Login");
+//        FXMLLoader loginLoader = new FXMLLoader(MainApp.class.getResource("/view/user/management.fxml"));
+//        Scene scene = new Scene(loginLoader.load());
+//        stage.setTitle("Login");
 //        FXMLLoader adminLoader = new FXMLLoader(MainApp.class.getResource("/view/user/dashboard.fxml"));
 //        Scene scene = new Scene(adminLoader.load(), 960, 540);
 //        stage.setTitle("Admin - Client");

@@ -16,7 +16,7 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="600.0" prefWidth="900.0" xmlns="http://javafx.com/javafx/20.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="controllers.user.HomepageController">
+<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="600.0" prefWidth="900.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="controllers.user.HomepageController">
     <top>
         <HBox alignment="BASELINE_CENTER" prefHeight="33.0" spacing="100.0" styleClass="topbar" stylesheets="@../../assets/css/style.css" BorderPane.alignment="CENTER">
             <children>
@@ -55,7 +55,7 @@
                             </image>
                         </ImageView>
                         <Label fx:id="userName" prefHeight="52.0" prefWidth="92.0" text="User" />
-                  <FontAwesomeIconView fx:id="settingBtn" glyphName="COG" size="30" text="" />
+                  <FontAwesomeIconView fx:id="settingBtn" glyphName="COG" onMouseClicked="#showSettingPopup" size="30" text="" />
                     </children>
                 </HBox>
             </children>
