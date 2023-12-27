@@ -2,6 +2,7 @@ package controllers.user;
 
 import DTO.LoginSession;
 import applications.MainApp;
+import common.viewattribute.Toast;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView;
 import javafx.beans.property.SimpleStringProperty;
@@ -360,13 +361,12 @@ public class HomepageController implements Initializable {
 					} catch (IOException ioException) {
 						ioException.printStackTrace();
 					}
-					System.out.println("Mở thành công");
 				}
-				else System.out.println("Mở thất bại");
+				else Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Mở thất bại");
 			});
 
 			openTask.setOnFailed(e -> {
-				System.out.println("Mở thất bại");
+				Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Mở thất bại");
 			});
 
 			Thread thread = new Thread(openTask);
@@ -404,12 +404,12 @@ public class HomepageController implements Initializable {
 
 			downloadFileTask.setOnSucceeded(e -> {
 				boolean response = downloadFileTask.getValue();
-				if(response) System.out.println("Download file thành công");
-				else System.out.println("Download file thất bại");
+				if(response) Toast.showToast((Stage) dataTable.getScene().getWindow(), 1, "Download file thành công");
+				else Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Download file thất bại");
 			});
 
 			downloadFileTask.setOnFailed(e -> {
-				System.out.println("Download file thất bại");
+				Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Download file thất bại");
 			});
 
 			Thread thread = new Thread(downloadFileTask);
@@ -429,29 +429,23 @@ public class HomepageController implements Initializable {
 		});
 
 		renameBtn.setOnAction(event -> {
-			// Rename file
-			// Get the new name from the user
 		    TextInputDialog dialog = new TextInputDialog();
 		    dialog.setTitle("Rename Item");
 		    dialog.setHeaderText("Rename");
 		    dialog.setContentText("Enter the new name:");
 
-		    // Show the dialog and wait for the user's input
 		    dialog.showAndWait().ifPresent(newName -> {
-		        // Ensure the new name is not empty
 		        if (!newName.trim().isEmpty()) {
 		            if (selectedItem.toString().contains("typeId=1")) {
-		                // Call the renameFile method with the selected item's ID and the new name
 		            	ItemService itemService = new ItemService();
-		            	
+
 		            	renameFolder(selectedItem.getId(), newName, selectedItem.getOwnerId());
 		            } else {
 		            	ItemService itemService = new ItemService();
 		            	renameFile(selectedItem.getId(), newName, selectedItem.getSize());
-		            } 
+		            }
 		        } else {
-		            // Handle the case where the user entered an empty name
-		            System.out.println("Invalid name");
+					Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Đổi tên thất bại");
 		        }
 		    });
 			popup.hide();
@@ -500,13 +494,13 @@ public class HomepageController implements Initializable {
 			synchronizeTask.setOnSucceeded(e -> {
 				boolean response = synchronizeTask.getValue();
 				if(response) {
-					System.out.println("Đồng bộ thành công");
+					Toast.showToast((Stage) dataTable.getScene().getWindow(), 1, "Đồng bộ thành công");
 				}
-				else System.out.println("Đồng bộ thất bại");
+				else Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Đồng bộ thất bại");
 			});
 
 			synchronizeTask.setOnFailed(e -> {
-				System.out.println("Đồng bộ thất bại");
+				Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Đồng bộ thất bại");
 			});
 
 			Thread thread = new Thread(synchronizeTask);
@@ -585,7 +579,7 @@ public class HomepageController implements Initializable {
 		});
 
 		checkPermissionTask.setOnFailed(e -> {
-			System.out.println("Lỗi khi kiểm tra quyền truy cập");
+			Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Lỗi kiểm tra quyền truy cập");
 		});
 
 		Thread thread = new Thread(checkPermissionTask);
@@ -630,13 +624,13 @@ public class HomepageController implements Initializable {
 			boolean response = deleteTask.getValue();
 			if(response) {
 				fillData();
-				System.out.println("Xóa thành công");
+				Toast.showToast((Stage) dataTable.getScene().getWindow(), 1, "Xóa thành công");
 			}
-			else System.out.println("Xóa thất bại");
+			else Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Xóa thất bại");
 		});
 
 		deleteTask.setOnFailed(e -> {
-			System.out.println("Xóa thất bại");
+			Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Xóa thất bại");
 		});
 
 		Thread thread = new Thread(deleteTask);
@@ -656,13 +650,13 @@ public class HomepageController implements Initializable {
 			boolean response = deleteTask.getValue();
 			if(response) {
 				fillDeletedData();
-				System.out.println("Xóa thành công");
+				Toast.showToast((Stage) dataTable.getScene().getWindow(), 1, "Xóa thành công");
 			}
-			else System.out.println("Xóa thất bại");
+			else Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Xóa thất bại");
 		});
 
 		deleteTask.setOnFailed(e -> {
-			System.out.println("Xóa thất bại");
+			Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Xóa thất bại");
 		});
 
 		Thread thread = new Thread(deleteTask);
@@ -683,13 +677,13 @@ public class HomepageController implements Initializable {
 			boolean response = restoreTask.getValue();
 			if(response) {
 				fillDeletedData();
-				System.out.println("Khôi phục thành công");
+				Toast.showToast((Stage) dataTable.getScene().getWindow(), 1, "Khôi phục thành công");
 			}
-			else System.out.println("Khôi phục thất bại");
+			else Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Khôi phục thất bại");
 		});
 
 		restoreTask.setOnFailed(e -> {
-			System.out.println("Khôi phục thất bại");
+			Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Khôi phục thất bại");
 		});
 
 		Thread thread = new Thread(restoreTask);
@@ -805,20 +799,20 @@ public class HomepageController implements Initializable {
 					boolean response = uploadFileTask.getValue();
 					if(response) {
 						fillData();
-						System.out.println("Upload file thành công");
+						Toast.showToast((Stage) dataTable.getScene().getWindow(), 1, "Upload file thành công");
 					}
-					else System.out.println("Upload file thất bại");
+					else Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Upload file thất bại");
 				});
 
 				uploadFileTask.setOnFailed(e -> {
-					System.out.println("Upload file thất bại");
+					Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Upload file thất bại");
 				});
 
 				Thread thread = new Thread(uploadFileTask);
 				thread.start();
 			}
 		} else {
-			System.out.println("Hãy chọn file cần upload");
+			Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Hãy chọn file cần upload");
 		}
 	}
 
@@ -846,19 +840,19 @@ public class HomepageController implements Initializable {
 				boolean response = uploadFolderTask.getValue();
 				if(response) {
 					fillData();
-					System.out.println("Upload folder thành công");
+					Toast.showToast((Stage) dataTable.getScene().getWindow(), 1, "Upload folder thành công");
 				}
-				else System.out.println("Upload folder thất bại");
+				else Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Upload folder thất bại");
 			});
 
 			uploadFolderTask.setOnFailed(e -> {
-				System.out.println("Upload folder thất bại");
+				Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Upload folder thất bại");
 			});
 
 			Thread thread = new Thread(uploadFolderTask);
 			thread.start();
 		} else {
-			System.out.println("Hãy chọn thư mục cần upload");
+			Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Hãy chọn thư mục cần tải lên");
 		}
 	}
 
@@ -924,7 +918,7 @@ public class HomepageController implements Initializable {
 		});
 
 		getPermissionTask.setOnFailed(e -> {
-			System.out.println("Lỗi khi lấy quyền truy cập");
+			Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Lỗi khi lấy quyền truy cập");
 		});
 
 		Thread thread1 = new Thread(getPermissionTask);
@@ -1028,7 +1022,7 @@ public class HomepageController implements Initializable {
 		});
 
 		getSharedUserTask.setOnFailed(event -> {
-			System.out.println("Lỗi khi lấy danh sách người dùng đã chia sẻ");
+			Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Lỗi lấy danh sách người dùng đã chia sẻ");
 			shareTxt.setDisable(false);
 		});
 
@@ -1113,7 +1107,7 @@ public class HomepageController implements Initializable {
 				});
 
 				searchUserTask.setOnFailed(event1 -> {
-					System.out.println("Tìm kiếm thất bại");
+					Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Tìm kiếm thất bại");
 				});
 
 				Thread thread = new Thread(searchUserTask);
@@ -1165,11 +1159,11 @@ public class HomepageController implements Initializable {
 
 			shareTask.setOnSucceeded(event1 -> {
 				boolean response = shareTask.getValue();
-				System.out.println("Chia sẻ thành công");
+				Toast.showToast((Stage) dataTable.getScene().getWindow(), 1, "Chia sẻ thành công");
 			});
 
 			shareTask.setOnFailed(event1 -> {
-				System.out.println("Chia sẻ thất bại");
+				Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Chia sẻ thất bại");
 			});
 
 			Thread thread = new Thread(shareTask);
@@ -1223,12 +1217,12 @@ public class HomepageController implements Initializable {
 
 		downloadFileTask.setOnSucceeded(e -> {
 			boolean response = downloadFileTask.getValue();
-			if(response) System.out.println("Download file thành công");
-			else System.out.println("Download file thất bại");
+			if(response) Toast.showToast((Stage) dataTable.getScene().getWindow(), 1, "Download file thành công");
+			else Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Download file thất bại");
 		});
 
 		downloadFileTask.setOnFailed(e -> {
-			System.out.println("Download file thất bại");
+			Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Download file thất bại");
 		});
 
 		Thread thread = new Thread(downloadFileTask);
@@ -1248,12 +1242,12 @@ public class HomepageController implements Initializable {
 
 		synchronizeTask.setOnSucceeded(e -> {
 			boolean response = synchronizeTask.getValue();
-			if(response) System.out.println("Đồng bộ thành công");
-			else System.out.println("Đồng bộ thất bại");
+			if(response) Toast.showToast((Stage) dataTable.getScene().getWindow(), 1, "Đồng bộ thành công");
+			else Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Đồng bộ thất bại");
 		});
 
 		synchronizeTask.setOnFailed(e -> {
-			System.out.println("Đồng bộ thất bại");
+			Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Đồng bộ thất bại");
 		});
 
 		Thread thread = new Thread(synchronizeTask);
@@ -1307,12 +1301,15 @@ public class HomepageController implements Initializable {
 
 			createFolderTask.setOnSucceeded(event1 -> {
 				boolean response = createFolderTask.getValue();
-				if(response) fillData();
-				else System.out.println("Tạo folder thành công");
+				if(response){
+					fillData();
+					Toast.showToast((Stage) dataTable.getScene().getWindow(), 1, "Tạo thư mục thành công");
+				}
+				else Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Tạo thư mục thất bại");
 			});
 
 			createFolderTask.setOnFailed(event1 -> {
-				System.out.println("Tạo folder thất bại");
+				Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Tạo thư mục thất bại");
 			});
 
 			Thread thread = new Thread(createFolderTask);
@@ -1375,7 +1372,7 @@ public class HomepageController implements Initializable {
 //		});
 //
 //		getPermissionTask.setOnFailed(e -> {
-//			System.out.println("Lỗi khi lấy quyền truy cập");
+//		Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Lỗi khi lấy quyền truy cập");
 //		});
 
 		PermissionService permissionService = new PermissionService();
@@ -1419,12 +1416,12 @@ public class HomepageController implements Initializable {
 
 			accessTask.setOnSucceeded(event1 -> {
 				boolean response = accessTask.getValue();
-				if(response) System.out.println("Cập nhật quyền truy cập thành công");
-				else System.out.println("Cập nhật quyền truy cập thất bại");
+				if(response) Toast.showToast((Stage) dataTable.getScene().getWindow(), 1, "Cập nhật quyền truy cập thành công");
+				else Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Cập nhật quyền truy cập thất bại");
 			});
 
 			accessTask.setOnFailed(event1 -> {
-				System.out.println("Cập nhật quyền truy cập thất bại");
+				Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Cập nhật quyền truy cập thất bại");
 			});
 
 			Thread thread = new Thread(accessTask);
@@ -1491,16 +1488,12 @@ public class HomepageController implements Initializable {
 		ItemService itemService = new ItemService();
 		List<models.File> itemList = itemService.getAllItem(userId,2, "");
 
-		System.out.println("itemList: " + itemList);
-
 		if(itemList == null) {
-			System.out.println("null");
 			dataTable.setPlaceholder(new Label("Không có dữ liệu"));
 		}
 		else {
 			final ObservableList<Object> items = FXCollections.observableArrayList(itemList);
 			dataTable.setItems(items);
-			System.out.println("not null");
 		}
 
 		PermissionService permissionService = new PermissionService();
@@ -1533,16 +1526,12 @@ public class HomepageController implements Initializable {
 		ItemService itemService = new ItemService();
 		List<models.File> itemList = itemService.getAllItemPrivateOwnerId(currentUserId, "");
 
-		System.out.println("itemList: " + itemList);
-
 		if(itemList == null) {
-			System.out.println("null");
 			dataTable.setPlaceholder(new Label("Không có dữ liệu"));
 		}
 		else {
 			final ObservableList<Object> items = FXCollections.observableArrayList(itemList);
 			dataTable.setItems(items);
-			System.out.println("not null");
 		}
 
 		createFolderBtn.setDisable(true);
@@ -1566,16 +1555,12 @@ public class HomepageController implements Initializable {
 		ItemService itemService = new ItemService();
 		List<models.File> itemList = itemService.getAllOtherShareItem(currentUserId, "");
 
-		System.out.println("itemList: " + itemList);
-
 		if(itemList == null) {
-			System.out.println("null");
 			dataTable.setPlaceholder(new Label("Không có dữ liệu"));
 		}
 		else {
 			final ObservableList<Object> items = FXCollections.observableArrayList(itemList);
 			dataTable.setItems(items);
-			System.out.println("not null");
 		}
 
 		createFolderBtn.setDisable(true);
@@ -1599,16 +1584,12 @@ public class HomepageController implements Initializable {
 		ItemService itemService = new ItemService();
 		List<models.File> itemList = itemService.getAllSharedItem(currentUserId, "");
 
-		System.out.println("itemList: " + itemList);
-
 		if(itemList == null) {
-			System.out.println("null");
 			dataTable.setPlaceholder(new Label("Không có dữ liệu"));
 		}
 		else {
 			final ObservableList<Object> items = FXCollections.observableArrayList(itemList);
 			dataTable.setItems(items);
-			System.out.println("not null");
 		}
 
 		createFolderBtn.setDisable(true);
@@ -1618,7 +1599,6 @@ public class HomepageController implements Initializable {
 	public void search(ActionEvent event) throws IOException {
 		resetDatatable();
 		String txt = searchTxt.getText();
-		System.out.println(txt);
 		ItemService itemService = new ItemService();
 		List<models.File> itemList = null;
 		LoginSession loginSession = LoginService.getCurrentSession();
@@ -1656,16 +1636,13 @@ public class HomepageController implements Initializable {
 				itemList = itemService.getAllItem(userId, currentFolderId, txt);
 			}
 		}
-		System.out.println("itemList: " + itemList);
 
 		if(itemList == null) {
-			System.out.println("null");
 			dataTable.setPlaceholder(new Label("Không có dữ liệu"));
 		}
 		else {
 			final ObservableList<Object> items = FXCollections.observableArrayList(itemList);
 			dataTable.setItems(items);
-			System.out.println("not null");
 		}
 
 		createFolderBtn.setDisable(true);
@@ -1682,10 +1659,7 @@ public class HomepageController implements Initializable {
 		else if (index == -2) itemList = itemService.getAllOtherShareItem(currentUserId, "");
 		else itemList = itemService.getAllSharedItem(currentUserId, "");
 
-		System.out.println("itemList: " + itemList);
-
 		if(itemList == null) {
-			System.out.println("null");
 			dataTable.setPlaceholder(new Label("Không có dữ liệu"));
 		}
 		else {
@@ -1705,7 +1679,6 @@ public class HomepageController implements Initializable {
 
 			dataTable.setItems(sortedData);
 			sortedData.comparatorProperty().bind(dataTable.comparatorProperty());
-			System.out.println("not null");
 		}
 	}
 	// Phương thức tạo HBox breadcrumb
@@ -1723,7 +1696,6 @@ public class HomepageController implements Initializable {
 		breadcrumb.getChildren().addAll(spacer1, folderText, angleRightIcon, spacer2);
 		currentFolderId = folderId;
 		breadcrumb.setOnMouseClicked(event -> {
-			System.out.println("Clicked on Breadcrumb with ID: " + folderId);
 			int clickedIndex = path.getChildren().indexOf(breadcrumb);
 			if (clickedIndex != -1) {
 				List<Node> keepElements = new ArrayList<>(path.getChildren().subList(0, clickedIndex + 1));
@@ -2032,16 +2004,12 @@ public class HomepageController implements Initializable {
 		ItemService itemService = new ItemService();
 		List<models.File> itemList = itemService.getAllDeletedItem(userId, "");
 
-		System.out.println("itemList: " + itemList);
-
 		if(itemList == null) {
-			System.out.println("null");
 			dataTable.setPlaceholder(new Label("Không có dữ liệu"));
 		}
 		else {
 			final ObservableList<Object> items = FXCollections.observableArrayList(itemList);
 			dataTable.setItems(items);
-			System.out.println("not null");
 		}
 
 		createFolderBtn.setDisable(true);
@@ -2069,12 +2037,15 @@ public class HomepageController implements Initializable {
 
 	    renameFileTask.setOnSucceeded(e -> {
 	        boolean response = renameFileTask.getValue();
-			if(response) fillData();
-			else System.out.println("Đổi tên file thành công");
+			if(response){
+				fillData();
+				Toast.showToast((Stage) dataTable.getScene().getWindow(), 1, "Đổi tên file thành công");
+			}
+			else Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Đổi tên file thất bại");
 	    });
 
 	    renameFileTask.setOnFailed(e -> {
-	    	System.out.println("Đổi tên file thất bại");
+			Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Đổi tên file thất bại");
 	    });
 
 	    // Start the task in a new thread
@@ -2102,12 +2073,15 @@ public class HomepageController implements Initializable {
 
 	    renameFolderTask.setOnSucceeded(e -> {
 	        boolean response = renameFolderTask.getValue();
-			if(response) fillData();
-			else System.out.println("Đổi tên folder thành công");
+			if(response) {
+				fillData();
+				Toast.showToast((Stage) dataTable.getScene().getWindow(), 1, "Đổi tên thư mục thành công");
+			}
+			else Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Đổi tên thư mục thất bại");
 	    });
 
 	    renameFolderTask.setOnFailed(e -> {
-	    	System.out.println("Đổi tên folder thất bại");
+			Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Đổi tên thư mục thất bại");
 	    });
 
 	    // Start the task in a new thread
@@ -2360,16 +2334,12 @@ public class HomepageController implements Initializable {
 		ItemService itemService = new ItemService();
 		List<RecentFile> itemList = itemService.getAllRecentOpenedItem(userId, "");
 
-		System.out.println("itemList: " + itemList);
-
 		if(itemList == null) {
-			System.out.println("null");
 			dataTable.setPlaceholder(new Label("Không có dữ liệu"));
 		}
 		else {
 			final ObservableList<Object> items = FXCollections.observableArrayList(itemList);
 			dataTable.setItems(items);
-			System.out.println("not null");
 		}
 
 		createFolderBtn.setDisable(true);
@@ -2424,14 +2394,12 @@ public class HomepageController implements Initializable {
 					} catch (IOException ioException) {
 						ioException.printStackTrace();
 					}
-
-					System.out.println("Mở thành công");
 				}
-				else System.out.println("Mở thất bại");
+				Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Mở thất bại");
 			});
 
 			openTask.setOnFailed(e -> {
-				System.out.println("Mở thất bại");
+				Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Mở thất bại");
 			});
 
 			Thread thread = new Thread(openTask);
