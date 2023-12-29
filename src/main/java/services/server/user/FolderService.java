@@ -13,10 +13,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 public class FolderService {
     public FolderService() {
@@ -199,7 +196,7 @@ public class FolderService {
 
             session.getTransaction().commit();
 
-            String path = ServerApp.SERVER_PATH + File.separator + getPath(folder.getId());
+            String path = ResourceBundle.getBundle("application").getString("server.path") + File.separator + getPath(folder.getId());
             createFolderIfNotExist(path);
 
             return true;

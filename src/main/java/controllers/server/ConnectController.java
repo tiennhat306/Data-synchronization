@@ -1,14 +1,17 @@
 package controllers.server;
 
 import DTO.Connection;
+import applications.ServerApp;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import services.server.ServerCommunicationService;
 
+import java.net.InetAddress;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -30,18 +33,32 @@ public class ConnectController implements Initializable {
     @FXML
     private FontAwesomeIconView searchBtn;
     @FXML
-    private TextField searchTxt;
+    private TextField addressField;
+    @FXML
+    private TextField portField;
+    @FXML
+    private Button changePortBtn;
     @FXML
     private HBox trashBtn;
 
-
+    private int port;
     ServerCommunicationService server;
 
     public ConnectController() {
-        server = new ServerCommunicationService();
+        port = ServerApp.PORT;
+        server = new ServerCommunicationService(port);
         server.startListening();
     }
     public void populateConnectionData() {
+        try {
+            InetAddress address = InetAddress.getLocalHost();
+            addressField.setText(address.getHostAddress());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        portField.setText(String.valueOf(ServerApp.PORT));
+
         TableColumn<Connection, String> addressColumn = new TableColumn<>("Máy kết nối");
         TableColumn<Connection, String> requestColumn = new TableColumn<>("Yêu cầu");
         TableColumn<Connection, Date> requestTimeColumn = new TableColumn<Connection, Date>("Thời gian yêu cầu");
@@ -78,4 +95,21 @@ public class ConnectController implements Initializable {
     }
 
 
+    @FXML
+    public void changePort(MouseEvent mouseEvent) {
+        try {
+            int newPort = Integer.parseInt(portField.getText());
+            ServerApp.PORT = newPort;
+            this.port = newPort;
+            server.stopListening();
+            server = new ServerCommunicationService(port);
+            server.startListening();
+        } catch (Exception e) {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Lỗi");
+            alert.setHeaderText("Cổng không hợp lệ");
+            alert.setContentText("Cổng phải là một số nguyên dương");
+            alert.showAndWait();
+        }
+    }
 }
