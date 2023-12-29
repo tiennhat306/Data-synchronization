@@ -163,13 +163,20 @@ public class FolderService {
         try(Session session = HibernateUtil.getSessionFactory().openSession()) {
             Folder folder = session.find(Folder.class, id);
             if (folder == null) return null;
-            String path = folder.getFolderName();
+            String folderName = folder.getFolderName();
+            String path = "";
             folder = folder.getFoldersByParentId();
             while(folder.getFoldersByParentId() != null ) {
                 path = folder.getFolderName() + File.separator + path;
                 folder = folder.getFoldersByParentId();
             }
-            return path;
+
+            session.beginTransaction();
+            folder.setFinalpath(path);
+            session.merge(folder);
+            session.getTransaction().commit();
+
+            return path + folderName;
         } catch (Exception e) {
             e.printStackTrace();
             return null;
