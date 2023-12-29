@@ -1,6 +1,7 @@
 package services.server;
 
 import DTO.Connection;
+import DTO.UserSession;
 import models.File;
 import models.RecentFile;
 import models.User;
@@ -14,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import services.server.admin.UserService;
+import services.server.auth.LoginService;
 import services.server.user.*;
 import utils.ZipFolder;
 
@@ -55,6 +57,12 @@ public class ClientHandler implements Runnable{
             addConnection(request);
 
             switch (request) {
+                case "LOGIN" -> {
+                    String username = (String) receiveRequest();
+                    String password = (String) receiveRequest();
+                    UserSession response = new LoginService().validate(username, password);
+                    sendResponse(response);
+                }
                 case "GET_ALL_USER" -> {
                     List<User> response = getUserList();
                     sendResponse(response);

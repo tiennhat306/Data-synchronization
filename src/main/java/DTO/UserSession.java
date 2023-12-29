@@ -1,25 +1,23 @@
 package DTO;
 
-import java.util.Date;
-
-public class UserDTO {
+public class UserSession {
     private int userId;
     private String name;
-    private int roleId;
+    private short roleId;
     private String avatar;
 
-    public UserDTO() {
+    public UserSession() {
     }
 
-    public UserDTO(int userId, String name,int roleId, String avatar) {
+    public UserSession(int userId, String name, short roleId, String avatar) {
         this.userId = userId;
         this.name = name;
         this.roleId = roleId;
         this.avatar = avatar;
     }
 
-    public void createSession(int id, String name, int roleId, String avatar) {
-        userId = id;
+    public void createSession(int id, String name, short roleId, String avatar) {
+        this.userId = id;
         this.name = name;
         this.roleId = roleId;
         this.avatar = avatar;
@@ -47,11 +45,11 @@ public class UserDTO {
         this.name = name;
     }
 
-    public int getRoleId() {
+    public short getRoleId() {
         return roleId;
     }
 
-    public void setRoleId(int roleId) {
+    public void setRoleId(short roleId) {
         this.roleId = roleId;
     }
 

@@ -1,11 +1,9 @@
 package controllers.login;
 
-import DTO.LoginSession;
-import applications.MainApp;
+import DTO.UserSession;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
-import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
@@ -14,8 +12,8 @@ import models.User;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 
-import services.login.LoginService;
-import services.server.admin.UserService;
+import services.client.auth.LoginService;
+import services.server.user.UserService;
 import utils.HibernateUtil;
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
@@ -49,10 +47,7 @@ public class LoginController {
     public LoginController(Session session) {
         this.session = session;
     }
-    HashMap<String, String> loginInfo = new HashMap<>();
-    Encryptor encryptor = new Encryptor();
-    byte[] encryptionKey = {65, 12, 12, 12, 12, 12, 12, 12, 12,
-            12, 12, 12, 12, 12, 12, 12};
+
     @FXML
     void changeVisibility(ActionEvent event) {
         if (showPassword.isSelected()) {
@@ -77,39 +72,61 @@ public class LoginController {
         } else if (password.isEmpty()) {
             errorField.setText("Vui lòng nhập password!");
         } else {
-            updateUsernamesAndPasswords();
-            String encryptedPassword = loginInfo.get(username);
-            if (encryptedPassword != null) {
-                if(password.equals(encryptor.decrypt(encryptedPassword,encryptionKey))){
-                    UserService userService = new UserService();
-                    User user = userService.getUserByUserName(username);
-                    LoginSession loginSession = LoginService.getCurrentSession();
-                    short numRole = user.getRole();
-                    String role = null;
-                    if (numRole == 1) role = "Client";
-                    else if (numRole == 2) role = "Admin";
-                    loginSession.createSession(user.getId(), user.getName(), user.getUsername(), role, user.getEmail(), user.getPhoneNumber(), user.getBirthday(), user.getGender());
-                    if (numRole == 1) {
-                        root = FXMLLoader.load(MainApp.class.getResource("/view/user/dashboard.fxml"));
-                        stage = (Stage)((Node)event.getSource()).getScene().getWindow();
-                        scene = new Scene(root, 960, 540);
-                        stage.setScene(scene);
-                        stage.setTitle("Client");
-                        stage.show();
-                    } else if (numRole == 2) {
-                        root = FXMLLoader.load(MainApp.class.getResource("/view/admin/dashboard.fxml"));
-                        stage = (Stage)((Node)event.getSource()).getScene().getWindow();
-                        scene = new Scene(root, 960, 540);
-                        stage.setScene(scene);
-                        stage.setTitle("Admin");
-                        stage.show();
-                    }
+            UserSession userDTO = new LoginService().login(username, password);
+            if(userDTO == null) {
+                errorField.setText("Sai username hoặc password!");
+            } else {
+                errorField.setText("");
+                UserSession userSession = LoginService.getCurrentSession();
+                userSession.createSession(userSession.getUserId(), userSession.getName(), userSession.getRoleId(), userSession.getAvatar());
+                short numRole = userSession.getRoleId();
+                if(numRole == 1) {
+                    root = FXMLLoader.load(getClass().getResource("/view/user/dashboard.fxml"));
+                    stage = (Stage)((Button)event.getSource()).getScene().getWindow();
+                    scene = new Scene(root, 960, 540);
+                    stage.setScene(scene);
+                    stage.setTitle("Client");
+                    stage.show();
+                } else if(numRole == 2) {
+                    root = FXMLLoader.load(getClass().getResource("/view/admin/dashboard.fxml"));
+                    stage = (Stage) ((Button) event.getSource()).getScene().getWindow();
+                    scene = new Scene(root, 960, 540);
+                    stage.setScene(scene);
+                    stage.setTitle("Admin");
+                    stage.show();
                 } else {
                     errorField.setText("Sai username hoặc password!");
                 }
-            }
-            else {
-                errorField.setText("Sai username hoặc password!");
+//            updateUsernamesAndPasswords();
+//            String encryptedPassword = loginInfo.get(username);
+//            if (encryptedPassword != null) {
+//                if(password.equals(encryptor.decrypt(encryptedPassword,encryptionKey))){
+//                    UserService userService = new UserService();
+//                    User user = userService.getUserByUserName(username);
+//                    LoginSession loginSession = LoginService.getCurrentSession();
+//                    short numRole = user.getRole();
+//                    String role = null;
+//                    if (numRole == 1) role = "Client";
+//                    else if (numRole == 2) role = "Admin";
+//                    loginSession.createSession(user.getId(), user.getName(), user.getUsername(), role, user.getEmail(), user.getPhoneNumber(), user.getBirthday(), user.getGender());
+//                    if (numRole == 1) {
+//                        root = FXMLLoader.load(MainApp.class.getResource("/view/user/dashboard.fxml"));
+//                        stage = (Stage)((Node)event.getSource()).getScene().getWindow();
+//                        scene = new Scene(root, 960, 540);
+//                        stage.setScene(scene);
+//                        stage.setTitle("Client");
+//                        stage.show();
+//                    } else if (numRole == 2) {
+//                        root = FXMLLoader.load(MainApp.class.getResource("/view/admin/dashboard.fxml"));
+//                        stage = (Stage)((Node)event.getSource()).getScene().getWindow();
+//                        scene = new Scene(root, 960, 540);
+//                        stage.setScene(scene);
+//                        stage.setTitle("Admin");
+//                        stage.show();
+//                    }
+//                } else {
+//                    errorField.setText("Sai username hoặc password!");
+//                }
             }
         }
     }
@@ -119,17 +136,17 @@ public class LoginController {
         if (passwordText != "") return passwordText;
         return hiddenPasswordText;
     }
-    private void updateUsernamesAndPasswords() throws IOException {
-        loginInfo.clear();
-        loginInfo = new HashMap<>();
-        UserService userService = new UserService();
-        List<User> userList = userService.getAllUser();
-        if (userList != null) {
-            for (User u : userList) {
-                User user = userService.getUserById(u.getId());
-                loginInfo.put(user.getUsername(), user.getPassword());
-                System.out.println(user.getUsername() + " " + user.getPassword());
-            }
-        }
-    }
+//    private void updateUsernamesAndPasswords() throws IOException {
+//        loginInfo.clear();
+//        loginInfo = new HashMap<>();
+//        UserService userService = new UserService();
+//        List<User> userList = userService.getAllUser();
+//        if (userList != null) {
+//            for (User u : userList) {
+//                User user = userService.getUserById(u.getId());
+//                loginInfo.put(user.getUsername(), user.getPassword());
+//                System.out.println(user.getUsername() + " " + user.getPassword());
+//            }
+//        }
+//    }
 }
