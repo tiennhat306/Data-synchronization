@@ -46,13 +46,7 @@ public class ServerCommunicationService {
                     clientSocket.setSoLinger(true, 5000);
                     try {
                         System.out.println("New client connected: " + clientSocket.getInetAddress());
-                        // Create new worker thread for new connection
-                        //Worker w = new Worker(clientSocket, dataPort);
-                        System.out.println("New connection received. Worker was created.");
-                        //w.start();
                         ClientHandler clientHandler = new ClientHandler(clientSocket, noOfThreads++);
-                        //System.out.println("Client handler connected: " + clientHandler);
-                        ////clientHandler.join();
                         executor.execute(clientHandler);
                     } catch (Exception e) {
                         e.printStackTrace();
