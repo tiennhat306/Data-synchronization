@@ -1,6 +1,6 @@
 package controllers.user;
 
-import DTO.LoginSession;
+import DTO.UserSession;
 import applications.MainApp;
 import common.viewattribute.Toast;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
@@ -40,9 +40,9 @@ import models.Folder;
 import models.RecentFile;
 import models.Type;
 import models.User;
+import services.client.auth.LoginService;
 import services.client.user.ItemService;
 import services.client.user.PermissionService;
-import services.login.LoginService;
 import services.server.admin.UserService;
 
 import java.awt.*;
@@ -115,7 +115,7 @@ public class HomepageController implements Initializable {
 	private Scene scene;
 	private Parent root;
     public HomepageController() {
-		userId = LoginService.getCurrentSession().getCurrentUserID();
+		userId = LoginService.getCurrentSession().getUserId();
     }
 
 	public void refreshName(String name) {
@@ -123,8 +123,8 @@ public class HomepageController implements Initializable {
 	}
 
     public void populateData() {
-		LoginSession loginSession = LoginService.getCurrentSession();
-		refreshName(loginSession.getCurrentUserName());
+		UserSession loginSession = LoginService.getCurrentSession();
+		refreshName(loginSession.getName());
 
 		TableColumn<Object, String> nameColumn = new TableColumn<>("Tên");
         TableColumn<Object, String> ownerNameColumn = new TableColumn<>("Chủ sở hữu");
@@ -1521,10 +1521,8 @@ public class HomepageController implements Initializable {
 		breadcrumbList.add(breadcrumb);
 		// Thêm các HBox breadcrumb vào container
 		path.getChildren().setAll(breadcrumbList);
-		LoginSession loginSession = LoginService.getCurrentSession();
-		int currentUserId = loginSession.getCurrentUserID();
 		ItemService itemService = new ItemService();
-		List<models.File> itemList = itemService.getAllItemPrivateOwnerId(currentUserId, "");
+		List<models.File> itemList = itemService.getAllItemPrivateOwnerId(userId, "");
 
 		if(itemList == null) {
 			dataTable.setPlaceholder(new Label("Không có dữ liệu"));
@@ -1550,10 +1548,9 @@ public class HomepageController implements Initializable {
 		breadcrumbList.add(breadcrumb);
 		// Thêm các HBox breadcrumb vào container
 		path.getChildren().setAll(breadcrumbList);
-		LoginSession loginSession = LoginService.getCurrentSession();
-		int currentUserId = loginSession.getCurrentUserID();
+
 		ItemService itemService = new ItemService();
-		List<models.File> itemList = itemService.getAllOtherShareItem(currentUserId, "");
+		List<models.File> itemList = itemService.getAllOtherShareItem(userId, "");
 
 		if(itemList == null) {
 			dataTable.setPlaceholder(new Label("Không có dữ liệu"));
@@ -1579,10 +1576,8 @@ public class HomepageController implements Initializable {
 		breadcrumbList.add(breadcrumb);
 		// Thêm các HBox breadcrumb vào container
 		path.getChildren().setAll(breadcrumbList);
-		LoginSession loginSession = LoginService.getCurrentSession();
-		int currentUserId = loginSession.getCurrentUserID();
 		ItemService itemService = new ItemService();
-		List<models.File> itemList = itemService.getAllSharedItem(currentUserId, "");
+		List<models.File> itemList = itemService.getAllSharedItem(userId, "");
 
 		if(itemList == null) {
 			dataTable.setPlaceholder(new Label("Không có dữ liệu"));
@@ -1601,25 +1596,23 @@ public class HomepageController implements Initializable {
 		String txt = searchTxt.getText();
 		ItemService itemService = new ItemService();
 		List<models.File> itemList = null;
-		LoginSession loginSession = LoginService.getCurrentSession();
-		int currentUserId = loginSession.getCurrentUserID();
 		if (currentSideBarIndex == 0) {
 			itemList = itemService.getAllItem(userId, currentFolderId, txt);
 		} else if (currentSideBarIndex == 1) {
 			if (currentFolderId == -1) {
-				itemList = itemService.getAllItemPrivateOwnerId(currentUserId, txt);
+				itemList = itemService.getAllItemPrivateOwnerId(userId, txt);
 			} else {
 				itemList = itemService.getAllItem(userId, currentFolderId, txt);
 			}
 		} else if (currentSideBarIndex == 2) {
 			if (currentFolderId == -2) {
-				itemList = itemService.getAllOtherShareItem(currentUserId, txt);
+				itemList = itemService.getAllOtherShareItem(userId, txt);
 			} else {
 				itemList = itemService.getAllItem(userId, currentFolderId, txt);
 			}
 		} else if (currentSideBarIndex == 3) {
 			if (currentFolderId == -3) {
-				itemList = itemService.getAllSharedItem(currentUserId, txt);
+				itemList = itemService.getAllSharedItem(userId, txt);
 			} else {
 				itemList = itemService.getAllItem(userId, currentFolderId, txt);
 			}
@@ -1653,11 +1646,9 @@ public class HomepageController implements Initializable {
 		resetDatatable();
 		ItemService itemService = new ItemService();
 		List<models.File> itemList = null;
-		LoginSession loginSession = LoginService.getCurrentSession();
-		int currentUserId = loginSession.getCurrentUserID();
-		if (index == -1) itemList = itemService.getAllItemPrivateOwnerId(currentUserId, "");
-		else if (index == -2) itemList = itemService.getAllOtherShareItem(currentUserId, "");
-		else itemList = itemService.getAllSharedItem(currentUserId, "");
+		if (index == -1) itemList = itemService.getAllItemPrivateOwnerId(userId, "");
+		else if (index == -2) itemList = itemService.getAllOtherShareItem(userId, "");
+		else itemList = itemService.getAllSharedItem(userId, "");
 
 		if(itemList == null) {
 			dataTable.setPlaceholder(new Label("Không có dữ liệu"));
@@ -2522,7 +2513,7 @@ public class HomepageController implements Initializable {
 
 		logoutBtn.setOnAction(event -> {
 			// Thực hiện đăng xuất
-			LoginSession loginSession = LoginService.getCurrentSession();
+			UserSession loginSession = LoginService.getCurrentSession();
 			loginSession.destroySession();
 			LoginService.clearCurrentSession();
 
