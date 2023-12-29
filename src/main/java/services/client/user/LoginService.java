@@ -1,4 +1,4 @@
-package services.client.auth;
+package services.client.user;
 
 import DTO.UserSession;
 import services.client.SocketClientHelper;
