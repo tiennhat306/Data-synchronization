@@ -14,7 +14,7 @@
             org.hibernate.dialect.MySQLDialect
         </property>
         <!-- Show all executed SQL to stdout -->
-        <property name="show_sql">true</property>
+        <property name="show_sql">false</property>
 
         <!-- List mapping annotation classes -->
         <mapping class="models.File"/>

@@ -4,6 +4,8 @@ import java.io.*;
 import java.net.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.MissingResourceException;
+import java.util.ResourceBundle;
 
 
 public class SocketClientHelper {
@@ -27,7 +29,42 @@ public class SocketClientHelper {
     }
 
     public SocketClientHelper() throws UnknownHostException {
-        this(InetAddress.getLocalHost().getHostAddress(), 6969);
+        ResourceBundle application = ResourceBundle.getBundle("application");
+        String host;
+        int port;
+        try {
+            host = application.getString("server.host");
+        } catch (MissingResourceException e) {
+            System.out.println("Missing server.host in application.properties");
+            host = "localhost";
+        }
+
+        if(host.isEmpty()) host = "localhost";
+
+        try {
+            port = Integer.parseInt(application.getString("server.port"));
+        } catch (MissingResourceException e) {
+            System.out.println("Missing server.port in application.properties");
+            port = 6969;
+        } catch (NumberFormatException e) {
+            System.out.println("server.port in application.properties must be a number");
+            port = 6969;
+        } catch (Exception e) {
+            port = 6969;
+        }
+
+        try{
+            socket = new Socket();
+            InetSocketAddress address = new InetSocketAddress(host, port);
+            socket.connect(address, 20000);
+            socket.setSoTimeout(10000);
+            socket.setSoLinger(true, 5000);
+            System.out.println("Connected to server: " + socket.getInetAddress());
+            out = new ObjectOutputStream(socket.getOutputStream());
+            in = new ObjectInputStream(socket.getInputStream());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public void close() {
