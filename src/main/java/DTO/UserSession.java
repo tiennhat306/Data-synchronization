@@ -1,6 +1,8 @@
 package DTO;
 
-public class UserSession {
+import java.io.Serializable;
+
+public class UserSession implements Serializable {
     private int userId;
     private String name;
     private short roleId;
