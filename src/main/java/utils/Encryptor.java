@@ -1,4 +1,4 @@
-package controllers.login;
+package utils;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -42,7 +42,7 @@ public class Encryptor {
         return key;
     }
 
-    public static void main(String[] args) throws NoSuchPaddingException, InvalidKeyException, NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException {
+//    public static void main(String[] args) throws NoSuchPaddingException, InvalidKeyException, NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException {
 //        Encryptor encryptor = new Encryptor();
 //
 //        //128 bit
@@ -60,5 +60,5 @@ public class Encryptor {
 //        //output: VyEcl0pLeqQLemGONcik0w==
 //
 //        System.out.println(encryptor.decrypt("VyEcl0pLeqQLemGONcik0w==",key));
-    }
+//    }
 }

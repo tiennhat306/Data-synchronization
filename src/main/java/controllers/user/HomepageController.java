@@ -1,6 +1,5 @@
 package controllers.user;
 
-import DTO.LoginSession;
 import DTO.UserSession;
 import applications.MainApp;
 import common.viewattribute.Toast;
