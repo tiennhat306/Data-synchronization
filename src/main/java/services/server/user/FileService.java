@@ -345,7 +345,7 @@ public class FileService {
             FolderService folderService = new FolderService();
             String path = folderService.getPath(folderId);
 
-            String fileName = session.createQuery("select f.name from File f where f.id = :fileId", String.class)
+            File file = session.createQuery("select f from File f where f.id = :fileId", File.class)
                     .setParameter("fileId", fileId)
                     .getSingleResult();
 
@@ -354,7 +354,12 @@ public class FileService {
                     .setParameter("fileId", fileId)
                     .getSingleResult());
 
-            return path + java.io.File.separator + fileName + "." + type;
+            session.beginTransaction();
+            file.setFinalpath(path);
+            session.merge(file);
+            session.getTransaction().commit();
+
+            return path + java.io.File.separator + file.getName() + "." + type;
         } catch (Exception e){
             e.printStackTrace();
             return "";

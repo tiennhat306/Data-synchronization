@@ -84,19 +84,29 @@ public class ItemService {
         }
     }
 
-    public List<File> getAllItemPrivateOwnerId(int id, String searchText){
-        int parentId = 1;
+    public List<File> getAllItemPrivateOwnerId(int userId, String searchText){
         try(Session session = HibernateUtil.getSessionFactory().openSession()) {
             List<File> itemList = new ArrayList<>();
-//            List<Folder> folderList = session.createQuery("select fd from Folder fd where fd.ownerId = :id and fd.parentId = :parentId", Folder.class)
-//                    .setParameter("id", id)
-//                    .setParameter("parentId", parentId)
-//                    .list();
-            List<Folder> folderList = session.createQuery("SELECT fd FROM Folder fd WHERE fd.ownerId = :id AND fd.parentId = :parentId AND fd.folderName LIKE :searchText", Folder.class)
-                    .setParameter("id", id)
-                    .setParameter("parentId", parentId)
-                    .setParameter("searchText", "%" + searchText + "%")
-                    .list();
+
+            List<Folder> folderList;
+
+            if(searchText.equals("")) {
+                String folderQuery = "select distinct fd from Folder fd" +
+                        " where fd.ownerId = :userId AND fd.isDeleted = false" +
+                        " and fd.parentId NOT IN (SELECT fd2.id FROM Folder fd2" +
+                        " where fd2.ownerId = :userId and fd2.isDeleted = false)";
+                folderList = session.createQuery(folderQuery, Folder.class)
+                        .setParameter("userId", userId)
+                        .list();
+            } else {
+                String folderQuery = "select distinct fd from Folder fd" +
+                        " where fd.ownerId = :userId AND fd.folderName LIKE :searchText AND fd.isDeleted = false";
+                folderList = session.createQuery(folderQuery, Folder.class)
+                        .setParameter("searchText", "%" + searchText + "%")
+                        .setParameter("userId", userId)
+                        .list();
+            }
+
             if(folderList != null) {
                 for (Folder folder : folderList) {
                     File folderToFile = new File();
@@ -123,11 +133,24 @@ public class ItemService {
                 }
             }
 
-            List<File> fileList = session.createQuery("select f from File f where f.ownerId = :id and f.folderId = :parentId AND f.name LIKE :searchText", File.class)
-                    .setParameter("id", id)
-                    .setParameter("parentId", parentId)
-                    .setParameter("searchText", "%" + searchText + "%")
-                    .list();
+            List<File> fileList;
+            if(searchText.equals("")){
+                String fileQuery = "select distinct fl from File fl" +
+                        " where fl.ownerId = :userId AND fl.isDeleted = false" +
+                        " AND fl.folderId NOT IN (SELECT fd.id FROM Folder fd" +
+                        " WHERE fd.ownerId = :userId and fd.isDeleted = false)";
+                fileList = session.createQuery(fileQuery, File.class)
+                        .setParameter("userId", userId)
+                        .list();
+            } else {
+                String fileQuery = "select distinct fl from File fl" +
+                        " where fl.ownerId = :userId AND fl.name LIKE :searchText AND fl.isDeleted = false";
+                fileList = session.createQuery(fileQuery, File.class)
+                        .setParameter("searchText", "%" + searchText + "%")
+                        .setParameter("userId", userId)
+                        .list();
+            }
+
             if(fileList != null) {
                 itemList.addAll(fileList);
             }
@@ -138,40 +161,30 @@ public class ItemService {
             return null;
         }
     }
-    public List<File> getAllOtherShareItem(int id, String searchText){
-        Map<Integer, Pair<Integer, Integer>> mapFd = MapUtil.getMapFolder();
-        Map<Integer, Pair<Integer, Integer>> mapFi = MapUtil.getMapFile();
+    public List<File> getAllOtherShareItem(int userId, String searchText){
         try(Session session = HibernateUtil.getSessionFactory().openSession()) {
-            PermissionService permissionService = new PermissionService();
-            FolderService folderService = new FolderService();
-            FileService fileService = new FileService();
-            List<Permission> permissionList = permissionService.getItemPermission(id);
             List<File> itemList = new ArrayList<>();
-            List<Folder> folderList = new ArrayList<>();
-            List<File> fileList = new ArrayList<>();
-            for (Permission permission : permissionList) {
-                Integer folderId = permission.getFolderId();
-                Integer fileId = permission.getFileId();
-                if (folderId != null) {
-                    Pair<Integer, Integer> value = mapFd.get(folderId);
-                    Integer secondValue = value.getValue();
-                    if (secondValue != id) {
-                        String nameFolder = folderService.getFolderName(folderId);
-                        if (nameFolder.contains(searchText)) {
-                            folderList.add(folderService.getFolderById(folderId));
-                        }
-                    }
-                } else {
-                    Pair<Integer, Integer> value = mapFi.get(fileId);
-                    Integer secondValue = value.getValue();
-                    if (secondValue != id) {
-                        String nameFile = fileService.getFileName(fileId);
-                        if (nameFile.contains(searchText)) {
-                            fileList.add(fileService.getFileById(fileId));
-                        }
-                    }
-                }
+
+            List<Folder> folderList;
+            if(searchText.equals("")) {
+                String folderQuery = "select distinct fd from Folder fd Join Permission per on fd.id = per.folderId" +
+                        " where fd.isDeleted = false" +
+                        " AND per.permissionType IN (2, 3) AND per.userId = :userId" +
+                        " AND fd.parentId NOT IN (SELECT fd2.id FROM Folder fd2 Join Permission per2 on fd2.id = per2.folderId" +
+                        " WHERE per2.userId = :userId AND per2.permissionType IN (2, 3) and fd2.isDeleted = false)";
+                folderList = session.createQuery(folderQuery, Folder.class)
+                        .setParameter("userId", userId)
+                        .list();
+            } else {
+                String folderQuery = "select distinct fd from Folder fd Join Permission per on fd.id = per.folderId" +
+                        " where fd.folderName LIKE :searchText AND fd.isDeleted = false" +
+                        " AND per.permissionType IN (2, 3) AND per.userId = :userId";
+                folderList = session.createQuery(folderQuery, Folder.class)
+                        .setParameter("searchText", "%" + searchText + "%")
+                        .setParameter("userId", userId)
+                        .list();
             }
+
             if(folderList != null) {
                 for (Folder folder : folderList) {
                     File folderToFile = new File();
@@ -183,6 +196,7 @@ public class ItemService {
                     folderToFile.setOwnerId(folder.getOwnerId());
                     folderToFile.setUsersByOwnerId(folder.getUsersByOwnerId());
 
+                    FolderService folderService = new FolderService();
                     Pair<Timestamp, Integer> updatedFolderInfo = folderService.getLastModifiedInfo(folder.getId());
                     folderToFile.setUpdatedAt(updatedFolderInfo.getKey() != null? updatedFolderInfo.getKey() : null);
 
@@ -197,6 +211,26 @@ public class ItemService {
                 }
             }
 
+            List<File> fileList;
+            if(searchText.equals("")){
+                String fileQuery = "select distinct f from File f Join Permission per on f.id = per.fileId" +
+                        " where f.isDeleted = false" +
+                        " AND per.permissionType IN (2, 3) AND per.userId = :userId" +
+                        " AND f.folderId NOT IN (SELECT fd.id FROM Folder fd Join Permission per on fd.id = per.folderId" +
+                        " WHERE per.userId = :userId AND per.permissionType IN (2, 3) and fd.isDeleted = false)";
+                fileList = session.createQuery(fileQuery, File.class)
+                        .setParameter("userId", userId)
+                        .list();
+            } else {
+                String fileQuery = "select distinct f from File f Join Permission per on f.id = per.fileId" +
+                        " where f.name LIKE :searchText AND f.isDeleted = false" +
+                        " AND per.permissionType IN (2, 3) AND per.userId = :userId";
+                fileList = session.createQuery(fileQuery, File.class)
+                        .setParameter("searchText", "%" + searchText + "%")
+                        .setParameter("userId", userId)
+                        .list();
+            }
+
             if(fileList != null) {
                 itemList.addAll(fileList);
             }
@@ -206,43 +240,31 @@ public class ItemService {
             e.printStackTrace();
             return null;
         }
-//        List<File> ret = new ArrayList<>();
-//        return ret;
     }
-    public List<File> getAllSharedItem(int id, String searchText){
-        Map<Integer, Pair<Integer, Integer>> mapFd = MapUtil.getMapFolder();
-        Map<Integer, Pair<Integer, Integer>> mapFi = MapUtil.getMapFile();
+    public List<File> getAllSharedItem(int userId, String searchText){
         try(Session session = HibernateUtil.getSessionFactory().openSession()) {
-            PermissionService permissionService = new PermissionService();
-            FolderService folderService = new FolderService();
-            FileService fileService = new FileService();
-            List<Permission> permissionList = permissionService.getItemPermission(id);
             List<File> itemList = new ArrayList<>();
-            List<Folder> folderList = new ArrayList<>();
-            List<File> fileList = new ArrayList<>();
-            for (Permission permission : permissionList) {
-                Integer folderId = permission.getFolderId();
-                Integer fileId = permission.getFileId();
-                if (folderId != null) {
-                    Pair<Integer, Integer> value = mapFd.get(folderId);
-                    Integer secondValue = value.getValue();
-                    if (secondValue == id) {
-                        String nameFolder = folderService.getFolderName(folderId);
-                        if (nameFolder.contains(searchText)) {
-                            folderList.add(folderService.getFolderById(folderId));
-                        }
-                    }
-                } else {
-                    Pair<Integer, Integer> value = mapFi.get(fileId);
-                    Integer secondValue = value.getValue();
-                    if (secondValue == id) {
-                        String nameFile = fileService.getFileName(fileId);
-                        if (nameFile.contains(searchText)) {
-                            fileList.add(fileService.getFileById(fileId));
-                        }
-                    }
-                }
+
+            List<Folder> folderList;
+            if(searchText.equals("")) {
+                String folderQuery = "select distinct fd from Folder fd Join Permission per on fd.id = per.folderId" +
+                        " where fd.isDeleted = false" +
+                        " AND per.permissionType IN (2, 3) AND per.sharedBy = :userId" +
+                        " AND fd.parentId NOT IN (SELECT fd2.id FROM Folder fd2 Join Permission per2 on fd2.id = per2.folderId" +
+                        " WHERE per2.sharedBy = :userId AND per2.permissionType IN (2, 3) and fd2.isDeleted = false)";
+                folderList = session.createQuery(folderQuery, Folder.class)
+                        .setParameter("userId", userId)
+                        .list();
+            } else {
+                String folderQuery = "select distinct fd from Folder fd Join Permission per on fd.id = per.folderId" +
+                        " where fd.folderName LIKE :searchText AND fd.isDeleted = false" +
+                        " AND per.permissionType IN (2, 3) AND per.sharedBy = :userId";
+                folderList = session.createQuery(folderQuery, Folder.class)
+                        .setParameter("searchText", "%" + searchText + "%")
+                        .setParameter("userId", userId)
+                        .list();
             }
+
             if(folderList != null) {
                 for (Folder folder : folderList) {
                     File folderToFile = new File();
@@ -254,6 +276,7 @@ public class ItemService {
                     folderToFile.setOwnerId(folder.getOwnerId());
                     folderToFile.setUsersByOwnerId(folder.getUsersByOwnerId());
 
+                    FolderService folderService = new FolderService();
                     Pair<Timestamp, Integer> updatedFolderInfo = folderService.getLastModifiedInfo(folder.getId());
                     folderToFile.setUpdatedAt(updatedFolderInfo.getKey() != null? updatedFolderInfo.getKey() : null);
 
@@ -264,9 +287,28 @@ public class ItemService {
 
                     int countItem = folderService.getNumberItemOfFolder(folder.getId());
                     folderToFile.setSize(Short.MIN_VALUE + countItem);
-
                     itemList.add(folderToFile);
                 }
+            }
+
+            List<File> fileList;
+            if(searchText.equals("")){
+                String fileQuery = "select distinct f from File f Join Permission per on f.id = per.fileId" +
+                        " where f.isDeleted = false" +
+                        " AND per.permissionType IN (2, 3) AND per.sharedBy = :userId" +
+                        " AND f.folderId NOT IN (SELECT fd.id FROM Folder fd Join Permission per on fd.id = per.folderId" +
+                        " WHERE per.sharedBy = :userId AND per.permissionType IN (2, 3) and fd.isDeleted = false)";
+                fileList = session.createQuery(fileQuery, File.class)
+                        .setParameter("userId", userId)
+                        .list();
+            } else {
+                String fileQuery = "select distinct f from File f Join Permission per on f.id = per.fileId" +
+                        " where f.name LIKE :searchText AND f.isDeleted = false" +
+                        " AND per.permissionType IN (2, 3) AND per.userId = :userId";
+                fileList = session.createQuery(fileQuery, File.class)
+                        .setParameter("searchText", "%" + searchText + "%")
+                        .setParameter("userId", userId)
+                        .list();
             }
 
             if(fileList != null) {
@@ -278,19 +320,30 @@ public class ItemService {
             e.printStackTrace();
             return null;
         }
-//        List<File> ret = new ArrayList<>();
-//        return ret;
     }
 
     public List<File> getAllDeletedItem(int userId, String searchText) {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             List<File> itemList = new ArrayList<>();
-            String folderQuery = "select distinct fd from Folder fd" +
-                    " where fd.folderName LIKE :searchText AND fd.isDeleted = true AND fd.ownerId = :userId";
-            List<Folder> folderList = session.createQuery(folderQuery, Folder.class)
-                    .setParameter("searchText", "%" + searchText + "%")
-                    .setParameter("userId", userId)
-                    .list();
+
+            List<Folder> folderList;
+            if(searchText.equals("")){
+                String folderQuery = "select distinct fd from Folder fd" +
+                        " where fd.isDeleted = true AND fd.ownerId = :userId" +
+                        " AND fd.parentId NOT IN (SELECT fd2.id FROM Folder fd2" +
+                        " WHERE fd2.ownerId = :userId and fd2.isDeleted = true)";
+                folderList = session.createQuery(folderQuery, Folder.class)
+                        .setParameter("userId", userId)
+                        .list();
+            } else {
+                String folderQuery = "select distinct fd from Folder fd" +
+                        " where fd.folderName LIKE :searchText AND fd.isDeleted = true AND fd.ownerId = :userId";
+                folderList = session.createQuery(folderQuery, Folder.class)
+                        .setParameter("searchText", "%" + searchText + "%")
+                        .setParameter("userId", userId)
+                        .list();
+            }
+
             if (folderList != null) {
                 for (Folder folder : folderList) {
                     File folderToFile = new File();
@@ -322,12 +375,25 @@ public class ItemService {
                     itemList.add(folderToFile);
                 }
             }
-            String fileQuery = "select distinct fl from File fl" +
-                    " where fl.name LIKE :searchText AND fl.isDeleted = true AND fl.ownerId = :userId";
-            List<File> fileList = session.createQuery(fileQuery, File.class)
-                    .setParameter("searchText", "%" + searchText + "%")
-                    .setParameter("userId", userId)
-                    .list();
+
+            List<File> fileList;
+            if(searchText.equals("")){
+                String fileQuery = "select distinct f from File f" +
+                        " where f.isDeleted = true AND f.ownerId = :userId" +
+                        " AND f.folderId NOT IN (SELECT fd.id FROM Folder fd" +
+                        " WHERE fd.ownerId = :userId and fd.isDeleted = true)";
+                fileList = session.createQuery(fileQuery, File.class)
+                        .setParameter("userId", userId)
+                        .list();
+            } else {
+                String fileQuery = "select distinct f from File f" +
+                        " where f.name LIKE :searchText AND f.isDeleted = true AND f.ownerId = :userId";
+                fileList = session.createQuery(fileQuery, File.class)
+                        .setParameter("searchText", "%" + searchText + "%")
+                        .setParameter("userId", userId)
+                        .list();
+            }
+
             if (fileList != null) {
                 itemList.addAll(fileList);
             }
