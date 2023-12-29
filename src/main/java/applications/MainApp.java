@@ -5,9 +5,12 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 import java.io.IOException;
-import java.util.Objects;
+import java.util.MissingResourceException;
+import java.util.ResourceBundle;
 
 public class MainApp extends Application {
+    public static String HOST;
+    public static int PORT;
     @Override
     public void start(Stage stage) throws IOException {
 //        FXMLLoader userLoader = new FXMLLoader(MainApp.class.getResource("/view/admin/dashboard.fxml"));
@@ -32,6 +35,28 @@ public class MainApp extends Application {
     }
 
     public static void main(String[] args) {
+        ResourceBundle application = ResourceBundle.getBundle("application");
+        try {
+            HOST = application.getString("server.host");
+        } catch (MissingResourceException e) {
+            System.out.println("Missing server.host in application.properties");
+            HOST = "localhost";
+        }
+
+        if(HOST.isEmpty()) HOST = "localhost";
+
+        try {
+            PORT = Integer.parseInt(application.getString("server.port"));
+        } catch (MissingResourceException e) {
+            System.out.println("Missing server.port in application.properties");
+            PORT = 6969;
+        } catch (NumberFormatException e) {
+            System.out.println("server.port in application.properties must be a number");
+            PORT = 6969;
+        } catch (Exception e) {
+            PORT = 6969;
+        }
+
         launch();
     }
 }

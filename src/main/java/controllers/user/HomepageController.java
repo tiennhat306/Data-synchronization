@@ -14,7 +14,6 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
-import javafx.geometry.Bounds;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -43,7 +42,6 @@ import models.User;
 import services.client.auth.LoginService;
 import services.client.user.ItemService;
 import services.client.user.PermissionService;
-import services.server.admin.UserService;
 
 import java.awt.*;
 import java.io.*;
@@ -2485,6 +2483,12 @@ public class HomepageController implements Initializable {
 		updateIcon.setStyleClass("icon");
 		Button updateBtn = new Button("Cập nhật", updateIcon);
 
+		FontAwesomeIconView socketConfigIcon = new FontAwesomeIconView();
+		socketConfigIcon.setGlyphName("COG");
+		socketConfigIcon.setSize("20");
+		socketConfigIcon.setStyleClass("icon");
+		Button socketConfigBtn = new Button("Cấu hình socket", socketConfigIcon);
+
 		FontAwesomeIconView logoutIcon = new FontAwesomeIconView();
 		logoutIcon.setGlyphName("SIGN_OUT");
 		logoutIcon.setSize("20");
@@ -2509,6 +2513,77 @@ public class HomepageController implements Initializable {
 			// Đóng form gốc (nếu cần)
 			((Node)(event.getSource())).getScene().getWindow().hide();
 			popup.hide();
+		});
+
+		socketConfigBtn.setOnAction(event -> {
+			popup.hide();
+			Stage socketStage = new Stage();
+			socketStage.initModality(Modality.APPLICATION_MODAL);
+			socketStage.setTitle("Cấu hình kết nối Socket");
+
+			socketStage.initStyle(StageStyle.UTILITY);
+
+			BorderPane socketLayout = new BorderPane();
+			socketLayout.setPadding(new Insets(10));
+
+			Label addressLabel = new Label("Địa chỉ");
+			TextField addressTextField = new TextField();
+			addressTextField.setPromptText("Địa chỉ");
+			addressTextField.setText(MainApp.HOST);
+			Label portLabel = new Label("Cổng");
+			TextField portTextField = new TextField();
+			portTextField.setPromptText("Cổng");
+			portTextField.setText(String.valueOf(MainApp.PORT));
+
+			GridPane gridPane = new GridPane();
+			gridPane.setHgap(10);
+			gridPane.setVgap(10);
+			gridPane.add(addressLabel, 0, 0);
+			gridPane.add(addressTextField, 1, 0);
+			gridPane.add(portLabel, 0, 1);
+			gridPane.add(portTextField, 1, 1);
+
+			socketLayout.setCenter(gridPane);
+
+			Button socketBtn = new Button("Cập nhật");
+			socketBtn.setPrefWidth(100);
+			socketBtn.setPrefHeight(30);
+			socketBtn.setStyle("-fx-background-color: white");
+			socketBtn.setStyle("-fx-border-color: gray");
+			socketBtn.setStyle("-fx-border-width: 1px");
+
+			socketBtn.setOnAction(e -> {
+				socketStage.close();
+				try{
+					MainApp.HOST = addressTextField.getText();
+					MainApp.PORT = Integer.parseInt(portTextField.getText());
+					Toast.showToast((Stage) dataTable.getScene().getWindow(), 1, "Cấu hình kết nối thành công");
+				} catch (Exception ex) {
+					ex.printStackTrace();
+					Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Cấu hình kết nối thất bại");
+				}
+			});
+
+			Button cancelBtn = new Button("Hủy");
+			cancelBtn.setPrefWidth(100);
+			cancelBtn.setPrefHeight(30);
+			cancelBtn.setStyle("-fx-background-color: white");
+			cancelBtn.setStyle("-fx-border-color: gray");
+			cancelBtn.setStyle("-fx-border-width: 1px");
+
+			cancelBtn.setOnAction(e -> socketStage.close());
+
+			HBox footerLabel = new HBox();
+			footerLabel.setSpacing(10);
+			footerLabel.setPadding(new Insets(10));
+			footerLabel.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
+			footerLabel.getChildren().addAll(socketBtn, cancelBtn);
+
+			socketLayout.setBottom(footerLabel);
+
+			Scene socketScene = new Scene(socketLayout, 250, 150);
+			socketStage.setScene(socketScene);
+			socketStage.showAndWait();
 		});
 
 		logoutBtn.setOnAction(event -> {
@@ -2542,7 +2617,7 @@ public class HomepageController implements Initializable {
 		options.setStyle("-fx-background-color: white; -fx-border-color: gray; -fx-border-radius: 15px; -fx-border-width: 1px; -fx-background-radius: 15px;");
 
 		options.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
-		for (Button button : Arrays.asList(updateBtn, logoutBtn)) {
+		for (Button button : Arrays.asList(updateBtn, socketConfigBtn, logoutBtn)) {
 			if (button != null) {
 				button.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
 				button.setPadding(new Insets(5, 5, 5, 15));
@@ -2558,7 +2633,7 @@ public class HomepageController implements Initializable {
 			}
 		}
 
-		options.getChildren().addAll(updateBtn, logoutBtn);
+		options.getChildren().addAll(updateBtn, socketConfigBtn, logoutBtn);
 		popup.getContent().add(options);
 
 		popup.show(settingBtn.getScene().getWindow(), mouseEvent.getScreenX() - 140, mouseEvent.getScreenY() + 14);
