@@ -1,6 +1,8 @@
 package services.server;
 
 import DTO.Connection;
+import DTO.UserAccountDTO;
+import DTO.UserSession;
 import models.File;
 import models.RecentFile;
 import models.User;
@@ -14,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import services.server.admin.UserService;
+import services.server.auth.LoginService;
 import services.server.user.*;
 import utils.ZipFolder;
 
@@ -55,6 +58,24 @@ public class ClientHandler implements Runnable{
             addConnection(request);
 
             switch (request) {
+                case "LOGIN" -> {
+                    String username = (String) receiveRequest();
+                    String password = (String) receiveRequest();
+                    UserSession response = new LoginService().validate(username, password);
+                    sendResponse(response);
+                }
+                case "GET_USER_ACCOUNT_INFO" -> {
+                    int userId = Integer.parseInt((String) receiveRequest());
+                    UserAccountDTO response = new AccountService().getUserAccountInfo(userId);
+                    sendResponse(response);
+                }
+                case "UPDATE_PASSWORD" -> {
+                    int userId = Integer.parseInt((String) receiveRequest());
+                    String oldPassword = (String) receiveRequest();
+                    String newPassword = (String) receiveRequest();
+                    boolean response = new AccountService().updatePassword(userId, oldPassword, newPassword);
+                    sendResponse(response);
+                }
                 case "GET_ALL_USER" -> {
                     List<User> response = getUserList();
                     sendResponse(response);
@@ -72,12 +93,6 @@ public class ClientHandler implements Runnable{
                     Date date = (Date) receiveRequest();
                     boolean gender = (boolean) receiveRequest();
                     boolean response = updateUser(username, name, email, phone, date, gender);
-                    sendResponse(response);
-                }
-                case "CHANGE_PASS_USER" -> {
-                    String username = (String) receiveRequest();
-                    String newPass = (String) receiveRequest();
-                    boolean response = changePassUser(username, newPass);
                     sendResponse(response);
                 }
                 case "GET_ALL_ITEM_PRIVATE" -> {

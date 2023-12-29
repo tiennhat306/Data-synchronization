@@ -1,18 +1,17 @@
 package controllers.user;
 
-import DTO.LoginSession;
-import controllers.login.Encryptor;
+import DTO.UserAccountDTO;
+import DTO.UserSession;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.stage.Stage;
-import models.User;
+import services.client.AccountService;
 import services.client.admin.UserService;
-import services.login.LoginService;
+import services.client.auth.LoginService;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
@@ -23,7 +22,6 @@ import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.ResourceBundle;
@@ -52,7 +50,7 @@ public class ManagementController implements Initializable {
     @FXML
     private Label emailErr;
     @FXML
-    private Label nameErr;
+    private Label usernameErr;
     @FXML
     private Label phoneErr;
     @FXML
@@ -75,24 +73,21 @@ public class ManagementController implements Initializable {
     private Label newPassErr;
     @FXML
     private Label confirmPassErr;
-    private String Username;
-    Encryptor encryptor = new Encryptor();
-    byte[] encryptionKey = {65, 12, 12, 12, 12, 12, 12, 12, 12,
-            12, 12, 12, 12, 12, 12, 12};
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
-        LoginSession loginSession = LoginService.getCurrentSession();
-        tfUsername.setText(loginSession.getCurrentUserUName());
-        Username = tfUsername.getText();
+        UserSession userSession = LoginService.getCurrentSession();
+        int userId = userSession.getUserId();
+        UserAccountDTO userAccountInfo = new AccountService().getUserAccountInfo(userId);
+
+        tfUsername.setText(userAccountInfo.getUsername());
         tfUsername.setEditable(false);
         UserService userService = new UserService();
-        User user = userService.getUserByUserName(loginSession.getCurrentUserUName());
-        tfName.setText(user.getName());
-        tfEmail.setText(user.getEmail());
-        tfPhone.setText(user.getPhoneNumber());
-        // Lấy ngày sinh từ LoginSession
-        Date birthDate = loginSession.getCurrenUserBirth();
+        tfName.setText(userAccountInfo.getName());
+        tfEmail.setText(userAccountInfo.getEmail());
+        tfPhone.setText(userAccountInfo.getPhoneNumber());
+
+        Date birthDate = userAccountInfo.getBirthday();
         // Chuyển đổi Date thành LocalDate
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(birthDate);
@@ -103,7 +98,7 @@ public class ManagementController implements Initializable {
         );
         // Gán giá trị LocalDate vào DatePicker
         birthday.setValue(birthLocalDate);
-        if (loginSession.isCurrentUserGender()) {
+        if (userAccountInfo.isGender()) {
            rdFemale.setSelected(true);
         } else {
             rdMale.setSelected(true);
@@ -113,12 +108,12 @@ public class ManagementController implements Initializable {
     @FXML
     private void submitFormUpdate(ActionEvent event) throws IOException {
         // Xử lý logic cập nhật thông tin cá nhân
-        boolean nameError = textFieldIsNull(tfName, nameErr, "User không được để trống!");
+        boolean usernameError = textFieldIsNull(tfUsername, usernameErr, "Tên đăng nhập không được để trống!");
         boolean emailError = textFieldIsNull(tfEmail, emailErr, "Email không được để trống!");
         boolean phoneError = textFieldIsNull(tfPhone, phoneErr, "Số điện thoại không được để trống!");
-        System.out.println(nameError + " " + emailError + " " + phoneError);
-        if (!nameError) {
-            nameError = nameFormat(tfName, nameErr, "Tên sai định dạng");
+        System.out.println(usernameError + " " + emailError + " " + phoneError);
+        if (!usernameError) {
+            usernameError = usernameFormat(tfName, usernameErr, "Tên đăng nhập sai định dạng");
         }
         if (!emailError) {
             emailError = emailFormat(tfEmail, emailErr, "Email sai định dạng");
@@ -126,8 +121,8 @@ public class ManagementController implements Initializable {
         if (!phoneError) {
             phoneError = phoneFormat(tfPhone, phoneErr, "Số điện thoại sai định dạng");
         }
-        System.out.println(nameError + " " + emailError + " " + phoneError);
-        if ((!nameError) && (!emailError) && (!phoneError)) {
+        System.out.println(usernameError + " " + emailError + " " + phoneError);
+        if ((!usernameError) && (!emailError) && (!phoneError)) {
             String usernameForm = tfUsername.getText();
             String nameForm = tfName.getText();
             String mailForm = tfEmail.getText();
@@ -136,7 +131,7 @@ public class ManagementController implements Initializable {
             java.sql.Date date = java.sql.Date.valueOf(selectedDate);
             boolean genderForm = (rdFemale.isSelected()) ? true : false;
             UserService userService = new UserService();
-            boolean success = userService.updateUser(usernameForm, nameForm, mailForm, phoneForm, date, genderForm);
+            boolean success = new AccountService().updateUserInfo(usernameForm, nameForm, mailForm, phoneForm, date, genderForm);
             if (success) {
                 // Đóng form hiện tại
                 FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/user/dashboard.fxml"));
@@ -152,84 +147,64 @@ public class ManagementController implements Initializable {
     // Phương thức được gọi khi nhấp vào nút "Lưu" trong Tab "Đổi mật khẩu"
     @FXML
     private void submitFormPass(ActionEvent event) throws InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, NoSuchAlgorithmException, BadPaddingException, InvalidKeyException {
-        UserService userService = new UserService();
-        User user = userService.getUserByUserName(tfUsername.getText());
-        String oldPassEncrypt = user.getPassword();
         boolean oldPassError = textFieldIsNull(tfOldPass, oldPassErr, "Mật khẩu cũ không được để trống!");
         boolean newPassError = textFieldIsNull(tfNewPass, newPassErr, "Mật khẩu mới không được để trống!");
         boolean confirmPassError = textFieldIsNull(tfConfirmPass, confirmPassErr, "Xác nhận mật khẩu không được để trống!");
-        if (!oldPassError) {
-            System.out.println(tfOldPass.getText());
-            oldPassError = oldpassMatch(tfOldPass, oldPassEncrypt, oldPassErr, "Mật khẩu không khớp!");
-        }
         if (!newPassError) {
-            newPassError = passFormat(tfNewPass, newPassErr, "Mật khẩu chưa đủ mạnh");
+//            newPassError = passFormat(tfNewPass, newPassErr, "Mật khẩu chưa đủ mạnh");
         }
         if (!confirmPassError) {
             confirmPassError = confirmPassMatch(tfNewPass, tfConfirmPass, confirmPassErr, "Xác nhận mật khẩu không khớp!");
         }
         if ((!oldPassError) && (!newPassError) && (!confirmPassError)) {
-            String newPass = encryptor.encrypt(tfNewPass.getText(), encryptionKey);
-            boolean success = userService.changePass(Username, newPass);
+            UserSession userSession = LoginService.getCurrentSession();
+            int userId = userSession.getUserId();
+            boolean success = new AccountService().updatePassword(userId, tfOldPass.getText(), tfNewPass.getText());
             Stage currentStage = (Stage) tfOldPass.getScene().getWindow();
             currentStage.close();
         }
     }
 
-    public static boolean nameFormat(TextField inputTextField, Label inputLabel, String validationText) {
-        boolean isEmail = false;
+    public static boolean usernameFormat(TextField inputTextField, Label inputLabel, String validationText) {
+        boolean noValid = false;
         String validationString = null;
 
-        if (!inputTextField.getText().matches("[a-zA-Z_ÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚĂĐĨŨƠàáâãèéêìíòóôõùúăđĩũơƯĂẠẢẤẦẨẪẬẮẰẲẴẶ\" +\n" +
-                "            \"ẸẺẼỀỀỂưăạảấầẩẫậắằẳẵặẹẻẽềềểỄỆỈỊỌỎỐỒỔỖỘỚỜỞỠỢỤỦỨỪễệỉịọỏốồổỗộớờởỡợ\" +\n" +
-                "            \"ụủứừỬỮỰỲỴÝỶỸửữựỳỵỷỹ\\\\s]+")) {
-            isEmail = true;
-            validationString = validationText;
-
-        }
-        inputLabel.setText(validationString);
-        return isEmail;
-
+//        if (!inputTextField.getText().matches("[a-zA-Z0-9_]+")) {
+//            noValid = true;
+//            validationString = validationText;
+//        }
+//
+//        inputLabel.setText(validationString);
+        return noValid;
     }
 
     public static boolean phoneFormat(TextField inputTextField, Label inputLabel, String validationText) {
-        boolean isNumeric = false;
+        boolean noValid = false;
         String validationString = null;
 
-        if (!inputTextField.getText().matches("0[35789][0-9]{8}\\b")) {
-            isNumeric = true;
+        try {
+            Long.parseLong(inputTextField.getText());
+        } catch (NumberFormatException e) {
+            noValid = true;
             validationString = validationText;
-
         }
         inputLabel.setText(validationString);
-        return isNumeric;
-
+        return noValid;
     }
 
     public static boolean emailFormat(TextField inputTextField, Label inputLabel, String validationText) {
-        boolean isEmail = false;
+        boolean noValid = false;
         String validationString = null;
 
-        if (!inputTextField.getText().matches("[a-z0-9](\\.?[a-z0-9]){4,}@gmail\\.com")) {
-            isEmail = true;
-            validationString = validationText;
-
-        }
-        inputLabel.setText(validationString);
-        return isEmail;
+//        if (!inputTextField.getText().matches("[a-z0-9](\\.?[a-z0-9]){4,}@([a-z0-9]+\\.?)+")) {
+//            noValid = true;
+//            validationString = validationText;
+//        }
+//
+//        inputLabel.setText(validationString);
+        return noValid;
     }
 
-    public boolean oldpassMatch(TextField inputTextField, String oldPass, Label inputLabel, String validationText) throws InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, NoSuchAlgorithmException, BadPaddingException, InvalidKeyException {
-        boolean isPass = false;
-        String validationString = null;
-        String oldPassDecrypt = encryptor.decrypt(oldPass, encryptionKey);
-        if (!inputTextField.getText().equals(oldPassDecrypt)) {
-            isPass = true;
-            validationString = validationText;
-        }
-        inputLabel.setText(validationString);
-        return isPass;
-    }
     public static boolean passFormat(TextField inputTextField, Label inputLabel, String validationText) {
         boolean isPass = false;
         String validationString = null;

@@ -1,5 +1,7 @@
 package services.server;
 
+import applications.ServerApp;
+
 import java.io.*;
 import java.net.InetAddress;
 import java.net.ServerSocket;
@@ -25,7 +27,7 @@ public class ServerCommunicationService {
     }
 
     public ServerCommunicationService(){
-        this(6969);
+        this(ServerApp.PORT);
     }
 
 
@@ -66,7 +68,6 @@ public class ServerCommunicationService {
                     }
                 } catch (IOException e) {
                     System.err.println("Could not close server socket");
-                    System.exit(1);
                 }
             }
         });

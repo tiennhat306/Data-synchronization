@@ -1,6 +1,6 @@
 package controllers.user;
 
-import DTO.LoginSession;
+import DTO.UserSession;
 import applications.MainApp;
 import common.viewattribute.Toast;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
@@ -14,7 +14,6 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
-import javafx.geometry.Bounds;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -40,10 +39,9 @@ import models.Folder;
 import models.RecentFile;
 import models.Type;
 import models.User;
+import services.client.auth.LoginService;
 import services.client.user.ItemService;
 import services.client.user.PermissionService;
-import services.login.LoginService;
-import services.server.admin.UserService;
 
 import java.awt.*;
 import java.io.*;
@@ -115,7 +113,7 @@ public class HomepageController implements Initializable {
 	private Scene scene;
 	private Parent root;
     public HomepageController() {
-		userId = LoginService.getCurrentSession().getCurrentUserID();
+		userId = LoginService.getCurrentSession().getUserId();
     }
 
 	public void refreshName(String name) {
@@ -123,8 +121,8 @@ public class HomepageController implements Initializable {
 	}
 
     public void populateData() {
-		LoginSession loginSession = LoginService.getCurrentSession();
-		refreshName(loginSession.getCurrentUserName());
+		UserSession loginSession = LoginService.getCurrentSession();
+		refreshName(loginSession.getName());
 
 		TableColumn<Object, String> nameColumn = new TableColumn<>("Tên");
         TableColumn<Object, String> ownerNameColumn = new TableColumn<>("Chủ sở hữu");
@@ -1521,10 +1519,8 @@ public class HomepageController implements Initializable {
 		breadcrumbList.add(breadcrumb);
 		// Thêm các HBox breadcrumb vào container
 		path.getChildren().setAll(breadcrumbList);
-		LoginSession loginSession = LoginService.getCurrentSession();
-		int currentUserId = loginSession.getCurrentUserID();
 		ItemService itemService = new ItemService();
-		List<models.File> itemList = itemService.getAllItemPrivateOwnerId(currentUserId, "");
+		List<models.File> itemList = itemService.getAllItemPrivateOwnerId(userId, "");
 
 		if(itemList == null) {
 			dataTable.setPlaceholder(new Label("Không có dữ liệu"));
@@ -1550,10 +1546,9 @@ public class HomepageController implements Initializable {
 		breadcrumbList.add(breadcrumb);
 		// Thêm các HBox breadcrumb vào container
 		path.getChildren().setAll(breadcrumbList);
-		LoginSession loginSession = LoginService.getCurrentSession();
-		int currentUserId = loginSession.getCurrentUserID();
+
 		ItemService itemService = new ItemService();
-		List<models.File> itemList = itemService.getAllOtherShareItem(currentUserId, "");
+		List<models.File> itemList = itemService.getAllOtherShareItem(userId, "");
 
 		if(itemList == null) {
 			dataTable.setPlaceholder(new Label("Không có dữ liệu"));
@@ -1579,10 +1574,8 @@ public class HomepageController implements Initializable {
 		breadcrumbList.add(breadcrumb);
 		// Thêm các HBox breadcrumb vào container
 		path.getChildren().setAll(breadcrumbList);
-		LoginSession loginSession = LoginService.getCurrentSession();
-		int currentUserId = loginSession.getCurrentUserID();
 		ItemService itemService = new ItemService();
-		List<models.File> itemList = itemService.getAllSharedItem(currentUserId, "");
+		List<models.File> itemList = itemService.getAllSharedItem(userId, "");
 
 		if(itemList == null) {
 			dataTable.setPlaceholder(new Label("Không có dữ liệu"));
@@ -1601,25 +1594,23 @@ public class HomepageController implements Initializable {
 		String txt = searchTxt.getText();
 		ItemService itemService = new ItemService();
 		List<models.File> itemList = null;
-		LoginSession loginSession = LoginService.getCurrentSession();
-		int currentUserId = loginSession.getCurrentUserID();
 		if (currentSideBarIndex == 0) {
 			itemList = itemService.getAllItem(userId, currentFolderId, txt);
 		} else if (currentSideBarIndex == 1) {
 			if (currentFolderId == -1) {
-				itemList = itemService.getAllItemPrivateOwnerId(currentUserId, txt);
+				itemList = itemService.getAllItemPrivateOwnerId(userId, txt);
 			} else {
 				itemList = itemService.getAllItem(userId, currentFolderId, txt);
 			}
 		} else if (currentSideBarIndex == 2) {
 			if (currentFolderId == -2) {
-				itemList = itemService.getAllOtherShareItem(currentUserId, txt);
+				itemList = itemService.getAllOtherShareItem(userId, txt);
 			} else {
 				itemList = itemService.getAllItem(userId, currentFolderId, txt);
 			}
 		} else if (currentSideBarIndex == 3) {
 			if (currentFolderId == -3) {
-				itemList = itemService.getAllSharedItem(currentUserId, txt);
+				itemList = itemService.getAllSharedItem(userId, txt);
 			} else {
 				itemList = itemService.getAllItem(userId, currentFolderId, txt);
 			}
@@ -1653,11 +1644,9 @@ public class HomepageController implements Initializable {
 		resetDatatable();
 		ItemService itemService = new ItemService();
 		List<models.File> itemList = null;
-		LoginSession loginSession = LoginService.getCurrentSession();
-		int currentUserId = loginSession.getCurrentUserID();
-		if (index == -1) itemList = itemService.getAllItemPrivateOwnerId(currentUserId, "");
-		else if (index == -2) itemList = itemService.getAllOtherShareItem(currentUserId, "");
-		else itemList = itemService.getAllSharedItem(currentUserId, "");
+		if (index == -1) itemList = itemService.getAllItemPrivateOwnerId(userId, "");
+		else if (index == -2) itemList = itemService.getAllOtherShareItem(userId, "");
+		else itemList = itemService.getAllSharedItem(userId, "");
 
 		if(itemList == null) {
 			dataTable.setPlaceholder(new Label("Không có dữ liệu"));
@@ -2494,6 +2483,12 @@ public class HomepageController implements Initializable {
 		updateIcon.setStyleClass("icon");
 		Button updateBtn = new Button("Cập nhật", updateIcon);
 
+		FontAwesomeIconView socketConfigIcon = new FontAwesomeIconView();
+		socketConfigIcon.setGlyphName("COG");
+		socketConfigIcon.setSize("20");
+		socketConfigIcon.setStyleClass("icon");
+		Button socketConfigBtn = new Button("Cấu hình socket", socketConfigIcon);
+
 		FontAwesomeIconView logoutIcon = new FontAwesomeIconView();
 		logoutIcon.setGlyphName("SIGN_OUT");
 		logoutIcon.setSize("20");
@@ -2520,9 +2515,80 @@ public class HomepageController implements Initializable {
 			popup.hide();
 		});
 
+		socketConfigBtn.setOnAction(event -> {
+			popup.hide();
+			Stage socketStage = new Stage();
+			socketStage.initModality(Modality.APPLICATION_MODAL);
+			socketStage.setTitle("Cấu hình kết nối Socket");
+
+			socketStage.initStyle(StageStyle.UTILITY);
+
+			BorderPane socketLayout = new BorderPane();
+			socketLayout.setPadding(new Insets(10));
+
+			Label addressLabel = new Label("Địa chỉ");
+			TextField addressTextField = new TextField();
+			addressTextField.setPromptText("Địa chỉ");
+			addressTextField.setText(MainApp.HOST);
+			Label portLabel = new Label("Cổng");
+			TextField portTextField = new TextField();
+			portTextField.setPromptText("Cổng");
+			portTextField.setText(String.valueOf(MainApp.PORT));
+
+			GridPane gridPane = new GridPane();
+			gridPane.setHgap(10);
+			gridPane.setVgap(10);
+			gridPane.add(addressLabel, 0, 0);
+			gridPane.add(addressTextField, 1, 0);
+			gridPane.add(portLabel, 0, 1);
+			gridPane.add(portTextField, 1, 1);
+
+			socketLayout.setCenter(gridPane);
+
+			Button socketBtn = new Button("Cập nhật");
+			socketBtn.setPrefWidth(100);
+			socketBtn.setPrefHeight(30);
+			socketBtn.setStyle("-fx-background-color: white");
+			socketBtn.setStyle("-fx-border-color: gray");
+			socketBtn.setStyle("-fx-border-width: 1px");
+
+			socketBtn.setOnAction(e -> {
+				socketStage.close();
+				try{
+					MainApp.HOST = addressTextField.getText();
+					MainApp.PORT = Integer.parseInt(portTextField.getText());
+					Toast.showToast((Stage) dataTable.getScene().getWindow(), 1, "Cấu hình kết nối thành công");
+				} catch (Exception ex) {
+					ex.printStackTrace();
+					Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Cấu hình kết nối thất bại");
+				}
+			});
+
+			Button cancelBtn = new Button("Hủy");
+			cancelBtn.setPrefWidth(100);
+			cancelBtn.setPrefHeight(30);
+			cancelBtn.setStyle("-fx-background-color: white");
+			cancelBtn.setStyle("-fx-border-color: gray");
+			cancelBtn.setStyle("-fx-border-width: 1px");
+
+			cancelBtn.setOnAction(e -> socketStage.close());
+
+			HBox footerLabel = new HBox();
+			footerLabel.setSpacing(10);
+			footerLabel.setPadding(new Insets(10));
+			footerLabel.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
+			footerLabel.getChildren().addAll(socketBtn, cancelBtn);
+
+			socketLayout.setBottom(footerLabel);
+
+			Scene socketScene = new Scene(socketLayout, 250, 150);
+			socketStage.setScene(socketScene);
+			socketStage.showAndWait();
+		});
+
 		logoutBtn.setOnAction(event -> {
 			// Thực hiện đăng xuất
-			LoginSession loginSession = LoginService.getCurrentSession();
+			UserSession loginSession = LoginService.getCurrentSession();
 			loginSession.destroySession();
 			LoginService.clearCurrentSession();
 
@@ -2551,7 +2617,7 @@ public class HomepageController implements Initializable {
 		options.setStyle("-fx-background-color: white; -fx-border-color: gray; -fx-border-radius: 15px; -fx-border-width: 1px; -fx-background-radius: 15px;");
 
 		options.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
-		for (Button button : Arrays.asList(updateBtn, logoutBtn)) {
+		for (Button button : Arrays.asList(updateBtn, socketConfigBtn, logoutBtn)) {
 			if (button != null) {
 				button.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
 				button.setPadding(new Insets(5, 5, 5, 15));
@@ -2567,7 +2633,7 @@ public class HomepageController implements Initializable {
 			}
 		}
 
-		options.getChildren().addAll(updateBtn, logoutBtn);
+		options.getChildren().addAll(updateBtn, socketConfigBtn, logoutBtn);
 		popup.getContent().add(options);
 
 		popup.show(settingBtn.getScene().getWindow(), mouseEvent.getScreenX() - 140, mouseEvent.getScreenY() + 14);

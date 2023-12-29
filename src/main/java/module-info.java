@@ -24,5 +24,7 @@ module com.datasynchronization.datasynchronization {
     opens controllers.login to javafx.fxml;
     exports  controllers.login;
     exports DTO;
+    exports utils;
+    opens utils to javafx.fxml;
 
 }

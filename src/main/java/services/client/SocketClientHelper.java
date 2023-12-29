@@ -1,5 +1,7 @@
 package services.client;
 
+import applications.MainApp;
+
 import java.io.*;
 import java.net.*;
 import java.nio.file.Files;
@@ -27,7 +29,7 @@ public class SocketClientHelper {
     }
 
     public SocketClientHelper() throws UnknownHostException {
-        this(InetAddress.getLocalHost().getHostAddress(), 6969);
+        this(MainApp.HOST, MainApp.PORT);
     }
 
     public void close() {
