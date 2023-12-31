@@ -1,6 +1,7 @@
 package services.client;
 
 import applications.MainApp;
+import enums.TypeEnum;
 
 import java.io.*;
 import java.net.*;
@@ -104,27 +105,28 @@ public class SocketClientHelper {
         File folder = new File(folderPath);
 
         int folderId = Integer.parseInt((String) receiveResponse());
+        if(folderId == -1) {
+            return; // Error
+        }
 
         File[] listOfFiles = folder.listFiles();
         if(listOfFiles != null){
             for (File file : listOfFiles) {
                 if (file.isDirectory()) {
-                    sendRequest("folder");
+                    sendRequest(String.valueOf(TypeEnum.FOLDER.getValue()));
                     sendRequest(file.getName());
-                    sendRequest(String.valueOf(ownerId));
                     sendRequest(String.valueOf(folderId));
                     sendFolder(ownerId, file.getAbsolutePath());
                 } else { // if (file.isFile())
-                    sendRequest("file");
+                    sendRequest(String.valueOf(TypeEnum.FILE.getValue()));
                     sendRequest(file.getName());
-                    sendRequest(String.valueOf(ownerId));
                     sendRequest(String.valueOf(folderId));
                     int size = (int) file.length();
                     sendRequest(String.valueOf(size));
                     sendFile(size ,file.getAbsolutePath());
                 }
             }
-            sendRequest("END_FOLDER");
+            sendRequest(String.valueOf(TypeEnum.EOF.getValue()));
         }
     }
 
@@ -144,9 +146,9 @@ public class SocketClientHelper {
     }
 
     public void syncFolder(String folderPath) {
-        String type = (String) receiveResponse();
-        while (!type.equals("END_FOLDER")) {
-            if (type.equals("folder")) {
+        int typeEnum = Integer.parseInt((String) receiveResponse());
+        while (typeEnum != TypeEnum.EOF.getValue()) {
+            if (typeEnum == TypeEnum.FOLDER.getValue()) {
                 String folderName = (String) receiveResponse();
                 String newFolderPath = folderPath + java.io.File.separator + folderName;
                 try {
@@ -155,12 +157,12 @@ public class SocketClientHelper {
                     e.printStackTrace();
                 }
                 syncFolder(newFolderPath);
-            } else if (type.equals("file")) {
+            } else if (typeEnum == TypeEnum.FILE.getValue()) {
                 String fileName = (String) receiveResponse();
-                String size = (String) receiveResponse();
-                syncFile(folderPath + java.io.File.separator + fileName, Integer.parseInt(size));
+                int size = Integer.parseInt((String) receiveResponse());
+                syncFile(folderPath + java.io.File.separator + fileName, size);
             }
-            type = (String) receiveResponse();
+            typeEnum = Integer.parseInt((String) receiveResponse());
         }
     }
 
@@ -171,20 +173,6 @@ public class SocketClientHelper {
         } catch (Exception e) {
             e.printStackTrace();
         }
-//        byte[] buffer = new byte[1024];
-//
-//        try(FileOutputStream fileOutputStream = new FileOutputStream(FolderZipPath)) {
-//            InputStream fileInputStream = socket.getInputStream();
-//            int bytesRead;
-//            while(size > 0 && (bytesRead = fileInputStream.read(buffer, 0, Math.min(buffer.length, size))) != -1) {
-//                fileOutputStream.write(buffer, 0, bytesRead);
-//                size -= bytesRead;
-//            }
-//            return true;
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//            return false;
-//        }
     }
 
     public void downloadFile(String filePath, int size) {

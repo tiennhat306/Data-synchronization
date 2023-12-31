@@ -10,11 +10,8 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.stage.Stage;
-import org.hibernate.Session;
-import org.hibernate.SessionFactory;
 
 import services.client.auth.LoginService;
-import utils.HibernateUtil;
 import java.io.IOException;
 
 
@@ -29,16 +26,10 @@ public class LoginController {
     private PasswordField hiddenPasswordTextField;
     @FXML
     private CheckBox showPassword;
-    private Session session;
     private Stage stage;
     private Scene scene;
     private Parent root;
     public LoginController() {
-        SessionFactory sessionFactory = HibernateUtil.getSessionFactory();
-        this.session = sessionFactory.openSession();
-    }
-    public LoginController(Session session) {
-        this.session = session;
     }
 
     @FXML

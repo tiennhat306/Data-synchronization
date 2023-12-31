@@ -18,7 +18,7 @@ public class File implements Serializable {
     @Column(name = "id", nullable = false)
     private int id;
     @Basic
-    @Column(name = "name", nullable = false)
+    @Column(name = "name")
     private String name;
     @Basic
     @Column(name = "type_id",nullable = false)

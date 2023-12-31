@@ -21,6 +21,7 @@ public class ServerCommunicationService {
             InetAddress address = InetAddress.getLocalHost();
             System.out.println("TCP/Server running on: " + address + ", Port: " + serverSocket.getLocalPort());
             ServerCommunicationService.isRunning = true;
+            services.ClientHandler clientHandler = new services.ClientHandler(serverSocket.accept(), noOfThreads++);
         } catch (IOException e) {
             e.printStackTrace();
         }

@@ -1,5 +1,6 @@
 package controllers.admin;
 
+import DTO.UserDTO;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -52,7 +53,7 @@ public class UserController implements Initializable {
     @FXML
     private Label userName;
     @FXML
-    private TableView<User> userTable;
+    private TableView<UserDTO> userTable;
     @FXML
     private HBox usersBtn;
 
@@ -65,51 +66,51 @@ public class UserController implements Initializable {
     }
 
     public void populateData() {
-        TableColumn<User, String> nameColumn = new TableColumn<>("Tên");
-        TableColumn<User, String> genderColumn = new TableColumn<>("Giới tính");
-        TableColumn<User, Date> birthdayColumn = new TableColumn<>("Ngày sinh");
-        TableColumn<User, String> phoneNumberColumn = new TableColumn<>("Số điện thoại");
-        TableColumn<User, String> emailColumn = new TableColumn<>("Email");
-        TableColumn<User, String> roleColumn = new TableColumn<>("Chức vụ");
+        TableColumn<UserDTO, String> nameColumn = new TableColumn<>("Tên");
+        TableColumn<UserDTO, String> genderColumn = new TableColumn<>("Giới tính");
+        TableColumn<UserDTO, Date> birthdayColumn = new TableColumn<>("Ngày sinh");
+        TableColumn<UserDTO, String> phoneNumberColumn = new TableColumn<>("Số điện thoại");
+        TableColumn<UserDTO, String> emailColumn = new TableColumn<>("Email");
+        TableColumn<UserDTO, String> roleColumn = new TableColumn<>("Chức vụ");
 
         userTable.getColumns().addAll(nameColumn, genderColumn, birthdayColumn, phoneNumberColumn, emailColumn, roleColumn);
 
-        nameColumn.setCellValueFactory(new PropertyValueFactory<User, String>("name"));
+        nameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
         //genderColumn.setCellValueFactory(new PropertyValueFactory<User, String>("gender"));
         genderColumn.setCellValueFactory(column -> {
-            return column.getValue().getGender() ? new SimpleStringProperty("Nam") : new SimpleStringProperty("Nữ");
+            return column.getValue().isGender() ? new SimpleStringProperty("Nam") : new SimpleStringProperty("Nữ");
         });
         birthdayColumn.setCellFactory(column -> {
-            return new TableCell<User, Date>() {
+            return new TableCell<>() {
                 private final SimpleDateFormat format = new SimpleDateFormat("dd/MM/yyyy");
+
                 @Override
                 protected void updateItem(Date item, boolean empty) {
                     super.updateItem(item, empty);
-                    if(empty) {
+                    if (empty) {
                         setText(null);
-                    }
-                    else {
+                    } else {
                         setText(format.format(item));
                     }
                 }
             };
         });
-        birthdayColumn.setCellValueFactory(new PropertyValueFactory<User, Date>("birthday"));
-        phoneNumberColumn.setCellValueFactory(new PropertyValueFactory<User, String>("phoneNumber"));
-        emailColumn.setCellValueFactory(new PropertyValueFactory<User, String>("email"));
+        birthdayColumn.setCellValueFactory(new PropertyValueFactory<>("birthday"));
+        phoneNumberColumn.setCellValueFactory(new PropertyValueFactory<>("phoneNumber"));
+        emailColumn.setCellValueFactory(new PropertyValueFactory<>("email"));
         //roleColumn.setCellValueFactory(new PropertyValueFactory<User, String>("role"));
         roleColumn.setCellValueFactory(column -> {
             return column.getValue().getRole() == 1 ? new SimpleStringProperty("Quản trị viên") : new SimpleStringProperty("Người dùng");
         });
 
         UserService userService = new UserService();
-        List<User> userList = userService.getAllUser();
+        List<UserDTO> userList = userService.getAllUser();
 
         if(userList == null) {
             userTable.setPlaceholder(new Label("Không có dữ liệu người dùng"));
         }
         else {
-            ObservableList<User> users = FXCollections.observableArrayList(userList);
+            ObservableList<UserDTO> users = FXCollections.observableArrayList(userList);
             userTable.setItems(users);
         }
 
