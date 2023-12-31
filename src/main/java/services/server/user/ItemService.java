@@ -2,8 +2,10 @@ package services.server.user;
 
 import DTO.ItemDTO;
 import DTO.ItemDeletedDTO;
+import DTO.MoveCopyFolderDTO;
 import DTO.PathItem;
 import enums.FolderTypeId;
+import enums.PermissionType;
 import enums.TypeEnum;
 import javafx.util.Pair;
 import models.File;
@@ -48,6 +50,47 @@ public class ItemService {
                     .list();
 
             return mapToListItemDTO(userId, folderList, fileList);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+    
+    public List<MoveCopyFolderDTO> getAllFolderPopups(int userId, int folderId){
+        PermissionService permissionService = new PermissionService();
+        int permission = permissionService.checkUserPermission(userId, folderId, true);
+        if (permission < PermissionType.READ.getValue()) {
+            return null;
+        }
+
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
+            List<MoveCopyFolderDTO> itemList = new ArrayList<>();
+
+            String folderPermissionConditions = "(per.permissionType IN (2, 3) AND (per.userId is null OR per.userId = :userId)) OR fd.ownerId = :userId";
+            String folderQuery = "select distinct fd from Folder fd Join Permission per on fd.id = per.folderId" +
+                    " where fd.parentId = :folderId AND fd.isDeleted = false" +
+                    " AND (" + folderPermissionConditions + ")";
+            List<Folder> folderList = session.createQuery(folderQuery, Folder.class)
+                    .setParameter("folderId", folderId)
+                    .setParameter("userId", userId)
+                    .list();
+            if(folderList != null) {
+                for (Folder folder : folderList) {
+                    MoveCopyFolderDTO folderToMoveCopyDTO = new MoveCopyFolderDTO();
+                    folderToMoveCopyDTO.setId(folder.getId());
+                    folderToMoveCopyDTO.setName(folder.getFolderName());
+
+                    FolderService folderService = new FolderService();
+                    while(folder.getId() != FolderTypeId.ROOT.getValue()) {
+                        folderToMoveCopyDTO.addPathItem(new PathItem(folder.getId(), folder.getFolderName()));
+                        folder = folderService.getFolderById(folder.getParentId());
+                    }
+
+                    itemList.add(folderToMoveCopyDTO);
+                }
+            }
+
+            return itemList;
         } catch (Exception e) {
             e.printStackTrace();
             return null;

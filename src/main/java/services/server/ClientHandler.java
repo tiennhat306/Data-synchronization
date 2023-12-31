@@ -5,7 +5,6 @@ import applications.ServerApp;
 import enums.PermissionType;
 import enums.TypeEnum;
 import enums.UploadStatus;
-import models.User;
 
 import java.io.*;
 import java.net.InetAddress;
@@ -120,29 +119,25 @@ public class ClientHandler implements Runnable{
                     int response = new FolderService().createFolder(folderName, ownerId, currentFolderId);
                     sendResponse(response);
                 }
-                case "GET_RENAME_FILE_PATH" -> {
-    				int fileId = Integer.parseInt((String) receiveRequest());
-    				String response = FileService.getFilePath(fileId);
-    				sendResponse(response);
-    			}
-    			case "GET_RENAME_FOLDER_PATH" -> {
-    				int folderId = Integer.parseInt((String) receiveRequest());
-    				String response = FolderService.getFolderPath(folderId);
-    				sendResponse(response);
-    			}
-    			case "RENAME_FILE" -> {
-                    int fileId = Integer.parseInt((String) receiveRequest());
-                    String fileName = (String) receiveRequest();
+    			case "RENAME" -> {
                     int userId = Integer.parseInt((String) receiveRequest());
-
-    				boolean response = new FileService().renameFile(userId, fileId, fileName);
-    				sendResponse(response);
-    			}
-    			case "RENAME_FOLDER" -> {
-                    int userId = Integer.parseInt((String) receiveRequest());
-                    int folderId = Integer.parseInt((String) receiveRequest());
-                    String folderName = (String) receiveRequest();
-    				boolean response = new FolderService().renameFolder(userId, folderId, folderName);
+                    int itemId = Integer.parseInt((String) receiveRequest());
+                    boolean isFolder = Boolean.parseBoolean((String) receiveRequest());
+                    String newName = (String) receiveRequest();
+                    boolean response = false;
+                    if(isFolder){
+                        boolean isRenameInDB = new FolderService().renameFolder(userId, itemId, newName);
+                        if(isRenameInDB){
+                            FolderService.renameFolderInPath(itemId, newName);
+                            response = true;
+                        }
+                    } else {
+                        boolean isRenameInDB = new FileService().renameFile(userId, itemId, newName);
+                        if(isRenameInDB){
+                            FileService.renameFileInPath(itemId, newName);
+                            response = true;
+                        }
+                    }
     				sendResponse(response);
     			}
                 case "UPLOAD_FILE" -> {
@@ -281,6 +276,184 @@ public class ClientHandler implements Runnable{
                     boolean response = new RecentFileService().addRecentFile(userId, fileId);
                     sendResponse(response);
                 }
+                case "GET_ALL_ITEM_POPS_UP" -> {
+                    int userId = Integer.parseInt((String) receiveRequest());
+                    int folderId = Integer.parseInt((String) receiveRequest());
+                    List<MoveCopyFolderDTO> response = new ItemService().getAllFolderPopups(userId, folderId);
+                    sendResponse(response);
+                }
+                case "MOVE" -> {
+                    int userId = Integer.parseInt((String) receiveRequest());
+                    int itemId = Integer.parseInt((String) receiveRequest());
+                    boolean isFolder = Boolean.parseBoolean((String) receiveRequest());
+                    int targetId = Integer.parseInt((String) receiveRequest());
+                    int permission = new PermissionService().checkUserPermission(userId, itemId, isFolder);
+                    if (permission <= PermissionType.READ.getValue()) {
+                        sendResponse(UploadStatus.PERMISSION_DENIED.getValue());
+                        break;
+                    }
+                    int targetPermission = new PermissionService().checkUserPermission(userId, targetId, isFolder);
+                    if (targetPermission <= PermissionType.READ.getValue()) {
+                        sendResponse(UploadStatus.PERMISSION_DENIED.getValue());
+                        break;
+                    }
+                    if (isFolder) {
+                        String folderName = FolderService.getFolderNameById(itemId);
+                        if (FolderService.checkFolderExist(folderName, targetId) || FolderService.checkFolderExistInPath(folderName, targetId)) {
+                            sendResponse(UploadStatus.EXISTED.getValue());
+                            break;
+                        }
+                    } else {
+                        String fileName = new FileService().getFullNameById(itemId);
+                        if (FileService.checkFileExist(fileName, targetId) || FileService.checkFileExistInPath(fileName, targetId)) {
+                            sendResponse(UploadStatus.EXISTED.getValue());
+                            break;
+                        }
+                    }
+                    int response;
+                    if(isFolder){
+                        boolean isMoveInDB = new FolderService().moveFolder(itemId, targetId);
+                        if(isMoveInDB){
+                            FolderService.moveFolderInPath(itemId, targetId);
+                            response = UploadStatus.SUCCESS.getValue();
+                        } else {
+                            response = UploadStatus.FAILED.getValue();
+                        }
+                    } else {
+                        boolean isMoveInDB = new FileService().moveFile(itemId, targetId);
+                        if(isMoveInDB){
+                            FileService.moveFileInPath(itemId, targetId);
+                            response = UploadStatus.SUCCESS.getValue();
+                        } else {
+                            response = UploadStatus.FAILED.getValue();
+                        }
+                    }
+                    sendResponse(response);
+                }
+                case "MOVE_AND_REPLACE" -> {
+                    int userId = Integer.parseInt((String) receiveRequest());
+                    int itemId = Integer.parseInt((String) receiveRequest());
+                    boolean isFolder = Boolean.parseBoolean((String) receiveRequest());
+                    int targetId = Integer.parseInt((String) receiveRequest());
+                    int permission = new PermissionService().checkUserPermission(userId, itemId, isFolder);
+                    if (permission <= PermissionType.READ.getValue()) {
+                        sendResponse(UploadStatus.PERMISSION_DENIED.getValue());
+                        break;
+                    }
+                    int targetPermission = new PermissionService().checkUserPermission(userId, targetId, isFolder);
+                    if (targetPermission <= PermissionType.READ.getValue()) {
+                        sendResponse(UploadStatus.PERMISSION_DENIED.getValue());
+                        break;
+                    }
+
+                    int response;
+                    if(isFolder){
+                        boolean isMoveInDB = new FolderService().moveFolder(itemId, targetId);
+                        if(isMoveInDB){
+                            FolderService.moveFolderInPath(itemId, targetId);
+                            response = UploadStatus.SUCCESS.getValue();
+                        } else {
+                            response = UploadStatus.FAILED.getValue();
+                        }
+                    } else {
+                        boolean isMoveInDB = new FileService().moveFile(itemId, targetId);
+                        if(isMoveInDB){
+                            FileService.moveFileInPath(itemId, targetId);
+                            response = UploadStatus.SUCCESS.getValue();
+                        } else {
+                            response = UploadStatus.FAILED.getValue();
+                        }
+                    }
+                    sendResponse(response);
+                }
+                case "COPY" -> {
+                    int userId = Integer.parseInt((String) receiveRequest());
+                    int itemId = Integer.parseInt((String) receiveRequest());
+                    boolean isFolder = Boolean.parseBoolean((String) receiveRequest());
+                    int targetId = Integer.parseInt((String) receiveRequest());
+
+                    int permission = new PermissionService().checkUserPermission(userId, itemId, isFolder);
+                    if (permission <= PermissionType.READ.getValue()) {
+                        sendResponse(UploadStatus.PERMISSION_DENIED.getValue());
+                        break;
+                    }
+                    int targetPermission = new PermissionService().checkUserPermission(userId, targetId, isFolder);
+                    if (targetPermission <= PermissionType.READ.getValue()) {
+                        sendResponse(UploadStatus.PERMISSION_DENIED.getValue());
+                        break;
+                    }
+
+                    if (isFolder) {
+                        String folderName = FolderService.getFolderNameById(itemId);
+                        if (FolderService.checkFolderExist(folderName, targetId) || FolderService.checkFolderExistInPath(folderName, targetId)) {
+                            sendResponse(UploadStatus.EXISTED.getValue());
+                            break;
+                        }
+                    } else {
+                        String fileName = new FileService().getFullNameById(itemId);
+                        if (FileService.checkFileExist(fileName, targetId) || FileService.checkFileExistInPath(fileName, targetId)) {
+                            sendResponse(UploadStatus.EXISTED.getValue());
+                            break;
+                        }
+                    }
+
+                    int response;
+                    if(isFolder){
+                        boolean isCopyInDB = new FolderService().copyFolder(itemId, targetId);
+                        if(isCopyInDB){
+                            FolderService.copyFolderInPath(itemId, targetId);
+                            response = UploadStatus.SUCCESS.getValue();
+                        } else {
+                            response = UploadStatus.FAILED.getValue();
+                        }
+                    } else {
+                        boolean isCopyInDB = new FileService().copyFile(itemId, targetId);
+                        if(isCopyInDB){
+                            FileService.copyFileInPath(itemId, targetId);
+                            response = UploadStatus.SUCCESS.getValue();
+                        } else {
+                            response = UploadStatus.FAILED.getValue();
+                        }
+                    }
+                    sendResponse(response);
+                }
+                case "COPY_AND_REPLACE" -> {
+                    int userId = Integer.parseInt((String) receiveRequest());
+                    int itemId = Integer.parseInt((String) receiveRequest());
+                    boolean isFolder = Boolean.parseBoolean((String) receiveRequest());
+                    int targetId = Integer.parseInt((String) receiveRequest());
+
+                    int permission = new PermissionService().checkUserPermission(userId, itemId, isFolder);
+                    if (permission <= PermissionType.READ.getValue()) {
+                        sendResponse(UploadStatus.PERMISSION_DENIED.getValue());
+                        break;
+                    }
+                    int targetPermission = new PermissionService().checkUserPermission(userId, targetId, isFolder);
+                    if (targetPermission <= PermissionType.READ.getValue()) {
+                        sendResponse(UploadStatus.PERMISSION_DENIED.getValue());
+                        break;
+                    }
+
+                    int response;
+                    if(isFolder){
+                        boolean isCopyInDB = new FolderService().copyFolder(itemId, targetId);
+                        if(isCopyInDB){
+                            FolderService.copyFolderInPath(itemId, targetId);
+                            response = UploadStatus.SUCCESS.getValue();
+                        } else {
+                            response = UploadStatus.FAILED.getValue();
+                        }
+                    } else {
+                        boolean isCopyInDB = new FileService().copyFile(itemId, targetId);
+                        if(isCopyInDB){
+                            FileService.copyFileInPath(itemId, targetId);
+                            response = UploadStatus.SUCCESS.getValue();
+                        } else {
+                            response = UploadStatus.FAILED.getValue();
+                        }
+                    }
+                    sendResponse(response);
+                }
                 case "OPEN_FOLDER" -> {
                     int userId = Integer.parseInt((String) receiveRequest());
                     int folderId = Integer.parseInt((String) receiveRequest());
@@ -305,13 +478,13 @@ public class ClientHandler implements Runnable{
                     boolean response = new PermissionService().deleteSharedUser(itemId, isFolder, userId);
                     sendResponse(response);
                 }
-                case "UPDATE_SHARE_PERMISSION" -> {
+                case "UPDATE_SHARED_PERMISSION" -> {
                     int itemId = Integer.parseInt((String) receiveRequest());
                     boolean isFolder = Boolean.parseBoolean((String) receiveRequest());
                     int permissionType = Integer.parseInt((String) receiveRequest());
                     int ownerId = Integer.parseInt((String) receiveRequest());
                     PermissionService permissionService = new PermissionService();
-                    if(!(permissionType == PermissionType.READ.getValue() || permissionType == PermissionType.PUBLIC.getValue())){
+                    if(!(permissionType == PermissionType.READ.getValue() || permissionType == PermissionType.WRITE.getValue())){
                         sendResponse(false);
                         break;
                     }
@@ -320,7 +493,7 @@ public class ClientHandler implements Runnable{
                         sendResponse(false);
                         break;
                     }
-                    boolean response = permissionService.updateSharePermission(itemId, isFolder, permissionType);
+                    boolean response = permissionService.updateSharedPermission(itemId, isFolder, permissionType);
                     sendResponse(response);
                 }
                 case "SEARCH_UNSHARED_USER" -> {
@@ -341,7 +514,7 @@ public class ClientHandler implements Runnable{
                     for(int i = 0; i < userListSize; i++){
                         userList.add(Integer.parseInt((String) receiveRequest()));
                     }
-                    if(!(permissionType == PermissionType.READ.getValue() || permissionType == PermissionType.PUBLIC.getValue())){
+                    if(!(permissionType == PermissionType.READ.getValue() || permissionType == PermissionType.WRITE.getValue())){
                         sendResponse(false);
                         break;
                     }
@@ -387,7 +560,7 @@ public class ClientHandler implements Runnable{
                     boolean isFolder = Boolean.parseBoolean((String) receiveRequest());
                     int userId = Integer.parseInt((String) receiveRequest());
                     int permission = new PermissionService().checkUserPermission(userId, itemId, isFolder);
-                    if (permission < PermissionType.PUBLIC.getValue()) {
+                    if (permission < PermissionType.WRITE.getValue()) {
                         sendResponse(false);
                         break;
                     }
@@ -501,7 +674,6 @@ public class ClientHandler implements Runnable{
                 default -> {
                     System.out.println("Unknown request: " + request);
                 }
-
             }
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
@@ -558,7 +730,7 @@ public class ClientHandler implements Runnable{
 
             sendZipFolder(zipFilePath, size);
             zipFolder.deleteOutputZipFile();
-            folderService.deleteFolderIfExist(folderPath);
+            FolderService.deleteFolderIfExist(folderPath);
             return true;
         } catch (Exception e) {
             e.printStackTrace();
@@ -638,12 +810,6 @@ public class ClientHandler implements Runnable{
             e.printStackTrace();
         }
     }
-    
-    private String getFileChanged(int fileId, String fileName) {
-		FileService fileService = new FileService(); // Ensure FileService is initialized correctly
-		String rs = fileService.getFilePathChanged(fileId, fileName);
-		return rs;
-	}
 
     public boolean syncFolder(int userId, int folderId, String folderPath){
         List<ItemDTO> fileList = getItemList(userId, folderId);
@@ -788,12 +954,7 @@ public class ClientHandler implements Runnable{
 
         return isSuccess;
     }
-    
-    private User getUserById(int id) {
-        UserService userService = new UserService();
-        System.out.println("Get user by id");
-        return userService.getUserById(id);
-    }
+
     private List<ItemDTO> getPrivateItemList(int ownerId, String searchText) {
         ItemService itemService = new ItemService();
         System.out.println("Get all private item");

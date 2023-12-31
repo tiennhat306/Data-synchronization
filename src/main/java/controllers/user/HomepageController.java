@@ -5,6 +5,7 @@ import applications.MainApp;
 import common.viewattribute.Toast;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView;
+import enums.PermissionType;
 import enums.TypeEnum;
 import enums.UploadStatus;
 import javafx.application.Platform;
@@ -98,6 +99,8 @@ public class HomepageController implements Initializable {
 	private int currentFolderId = 2;
 	private ObservableList<ItemDTO> items = FXCollections.observableArrayList();
 	private ObservableList<ItemDeletedDTO> deletedItems = FXCollections.observableArrayList();
+	private static final int GENERAL = 2;
+	private int moveCopyFolderId;
 	@FXML
 	private Label lbGeneral;
 	@FXML
@@ -109,11 +112,14 @@ public class HomepageController implements Initializable {
 	private int currentSideBarIndex = 0;
 	List<HBox> breadcrumbList = new ArrayList<>();
 	private final int userId;
-	private Stage stage;
-	private Scene scene;
-	private Parent root;
     public HomepageController() {
 		userId = LoginService.getCurrentSession().getUserId();
+		ResourceBundle application = ResourceBundle.getBundle("application");
+		try {
+			currentFolderId = Integer.parseInt(application.getString("database.general.id"));
+		} catch (Exception e) {
+			currentFolderId = 2;
+		}
     }
 
 	public void refreshName(String name) {
@@ -417,9 +423,9 @@ public class HomepageController implements Initializable {
 		    dialog.showAndWait().ifPresent(newName -> {
 		        if (!newName.trim().isEmpty()) {
 		            if (selectedItem.getTypeId() == TypeEnum.FOLDER.getValue()) {
-		            	renameFolder(selectedItem.getId(), newName, selectedItem.getId());
+		            	renameFolder(selectedItem.getId(), newName);
 		            } else {
-		            	renameFile(selectedItem.getId(), newName, selectedItem.getId());
+		            	renameFile(selectedItem.getId(), newName);
 		            }
 		        } else {
 					Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Đổi tên thất bại");
@@ -430,13 +436,18 @@ public class HomepageController implements Initializable {
 
 		moveBtn.setOnAction(event -> {
 			// Move file
+			int itemTypeId = selectedItem.getTypeId();
+			int itemId = selectedItem.getId();
 
+			showMoveCopyPopup(itemId, itemTypeId, false);
 			popup.hide();
 		});
 
 		copyBtn.setOnAction(event -> {
 			// Copy file
-
+			int itemTypeId = selectedItem.getTypeId();
+			int itemId = selectedItem.getId();
+			showMoveCopyPopup(itemId, itemTypeId, true);
 			popup.hide();
 		});
 
@@ -678,6 +689,7 @@ public class HomepageController implements Initializable {
 		Thread thread = new Thread(restoreTask);
 		thread.start();
 	}
+	
 	private void fillData() {
 		ItemService itemService = new ItemService();
 		List<ItemDTO> itemList = itemService.getAllItem(userId, currentFolderId, "");
@@ -878,6 +890,300 @@ public class HomepageController implements Initializable {
 	@FXML
 	public void handleOpenButtonAction(ActionEvent event) {
 	}
+	VBox centerContainer;
+	VBox moveCopyContainer;
+	List<HBox> breadList;
+	
+	public void showMoveCopyPopup(int itemID, int itemTypeID, boolean isCopy) {
+	    Stage moveCopyStage = new Stage();
+	    moveCopyStage.initModality(Modality.APPLICATION_MODAL);
+	    moveCopyStage.setTitle(isCopy ? "Sao chép" : "Di chuyển");
+
+	    moveCopyStage.initStyle(StageStyle.UTILITY);
+
+	    BorderPane moveCopyLayout = new BorderPane();
+	    moveCopyLayout.setPadding(new Insets(10));
+
+	    HBox topContainer = new HBox();
+	    topContainer.setSpacing(10);
+	    topContainer.setPadding(new Insets(10));
+
+	    Label title = new Label(isCopy ? "Sao chép" : "Di chuyển");
+	    title.setStyle("-fx-font-size: 18;");
+
+	    moveCopyLayout.setTop(topContainer);
+
+	    centerContainer = new VBox();
+	    centerContainer.setSpacing(10);
+	    centerContainer.setPadding(new Insets(10));
+	    centerContainer.setStyle("-fx-background-color: white; -fx-border-color: gray; -fx-border-width: 1px; -fx-background-radius: 15px;");
+
+	    ScrollPane scrollPane = new ScrollPane();
+	    scrollPane.setContent(centerContainer);
+	    scrollPane.setFitToWidth(true);
+	    scrollPane.setPadding(new Insets(10));
+
+	    moveCopyContainer = new VBox();
+	    moveCopyContainer.setSpacing(5);
+	    moveCopyContainer.setPadding(new Insets(10));
+	    moveCopyContainer.setStyle("-fx-background-color: white;");
+
+	    
+	    breadList = new ArrayList<>();
+	    HBox breadcrumb = createBreadcrumbForm(GENERAL, "Chung");
+		moveCopyFolderId = GENERAL;
+	    breadList.add(breadcrumb);
+	    moveCopyContainer.getChildren().setAll(breadList);
+
+	    Task<List<MoveCopyFolderDTO>> getFolderListTask = new Task<List<MoveCopyFolderDTO>>() {
+	        @Override
+	        protected List<MoveCopyFolderDTO> call() throws Exception {
+	            ItemService itemService = new ItemService();
+	            return itemService.getAllFolderPopUps(userId, moveCopyFolderId);
+	        }
+	    };
+
+	    getFolderListTask.setOnSucceeded(event -> {
+	        List<MoveCopyFolderDTO> itemList = getFolderListTask.getValue();
+	        updateMoveCopyContainer(itemList, moveCopyContainer, breadList);
+	    });
+
+	    getFolderListTask.setOnFailed(event -> {
+			Toast.showToast(moveCopyStage, 0, "Lỗi khi lấy danh sách thư mục.");
+	    });
+
+	    // Start the initial task
+	    Thread thread = new Thread(getFolderListTask);
+	    thread.start();
+
+	    moveCopyLayout.setCenter(scrollPane);
+
+	    Button moveCopyBtn = new Button(isCopy ? "Sao chép" : "Di chuyển");
+	    moveCopyBtn.setPrefWidth(100);
+	    moveCopyBtn.setPrefHeight(30);
+	    moveCopyBtn.setStyle("-fx-background-color: white");
+	    moveCopyBtn.setStyle("-fx-border-color: gray");
+	    moveCopyBtn.setStyle("-fx-border-width: 1px");
+	    
+	    moveCopyBtn.setOnAction(e -> {
+			moveCopyStage.close();
+	        Task<Integer> moveCopyTask = new Task<Integer>() {
+	            @Override
+	            protected Integer call() throws Exception {
+	                try {
+	                    ItemService itemService = new ItemService();
+						int response;
+	                    if(isCopy) {
+							response = itemService.copy(userId, itemID, itemTypeID ==  TypeEnum.FOLDER.getValue(), moveCopyFolderId, false);
+						} else {
+							response = itemService.move(userId, itemID, itemTypeID == TypeEnum.FOLDER.getValue(), moveCopyFolderId, false);
+						}
+						if(response == UploadStatus.SUCCESS.getValue()) return UploadStatus.SUCCESS.getValue();
+						else if(response == UploadStatus.EXISTED.getValue()) {
+							Platform.runLater(() -> {
+								if(AlertConfirm("Xác nhận", "Tập tin đã tồn tại, bạn có muốn thay thế không?")) {
+									int success;
+									try {
+										if(isCopy) {
+											success = itemService.copy(userId, itemID, itemTypeID == TypeEnum.FOLDER.getValue(), moveCopyFolderId, true);
+										} else {
+											success = itemService.move(userId, itemID, itemTypeID == TypeEnum.FOLDER.getValue(), moveCopyFolderId, true);
+										}
+									} catch (Exception e) {
+										success = UploadStatus.FAILED.getValue();
+									}
+
+									if(success == UploadStatus.SUCCESS.getValue()) {
+										if(!isCopy) fillData();
+										Toast.showToast((Stage) dataTable.getScene().getWindow(), 1, (isCopy ? "Sao chép" : "Di chuyển" ) +  " thành công");
+									}
+									else Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, (isCopy ? "Sao chép" : "Di chuyển" ) +  " thất bại");
+								}
+							});
+						}
+						return UploadStatus.FAILED.getValue();
+	                } catch (Exception e) {
+	                    return UploadStatus.FAILED.getValue();
+	                }
+	            }
+	        };
+
+	        moveCopyTask.setOnSucceeded(event -> {
+	            int response = moveCopyTask.getValue();
+	            if (response == UploadStatus.SUCCESS.getValue()) {
+					Toast.showToast((Stage) dataTable.getScene().getWindow(), 1, (isCopy ? "Sao chép" : "Di chuyển" ) +  " thành công");
+	            } else {
+					Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, (isCopy ? "Sao chép" : "Di chuyển" ) +  " thất bại");
+	            }
+	            if(!isCopy) fillData();
+	            moveCopyStage.close();
+	        });
+
+	        moveCopyTask.setOnFailed(event -> {
+				Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, (isCopy ? "Sao chép" : "Di chuyển" ) +  " thất bại");
+	        });
+
+	        Thread thread1 = new Thread(moveCopyTask);
+	        thread1.start();
+	    });
+
+
+	    Button cancelBtn = new Button("Hủy");
+	    cancelBtn.setPrefWidth(100);
+	    cancelBtn.setPrefHeight(30);
+	    cancelBtn.setStyle("-fx-background-color: white");
+	    cancelBtn.setStyle("-fx-border-color: gray");
+	    cancelBtn.setStyle("-fx-border-width: 1px");
+
+	    cancelBtn.setOnAction(e -> {
+	        moveCopyStage.close();
+	    });
+
+	    HBox btnContainer = new HBox();
+	    btnContainer.setSpacing(10);
+	    btnContainer.setAlignment(Pos.CENTER);
+	    btnContainer.getChildren().addAll(moveCopyBtn, cancelBtn);
+
+	    moveCopyLayout.setBottom(btnContainer);
+
+	    Scene scene = new Scene(moveCopyLayout, 450, 300);
+	    moveCopyStage.setScene(scene);
+	    moveCopyStage.show();
+	}
+
+	private void updateMoveCopyContainer(List<MoveCopyFolderDTO> itemList, VBox moveCopyContainer, List<HBox> breadList) {
+	    // Create a new VBox to hold the updated content
+	    VBox newMoveCopyContainer = new VBox();
+	    newMoveCopyContainer.setSpacing(5);
+	    newMoveCopyContainer.setPadding(new Insets(10));
+	    newMoveCopyContainer.setStyle("-fx-background-color: white;");
+
+	    HBox horiSharedContainer = new HBox();
+	    horiSharedContainer.setSpacing(5);
+	    horiSharedContainer.setPadding(new Insets(10));
+	    horiSharedContainer.setStyle("-fx-background-color: white;");
+
+	    // Add the breadcrumbs to the horizontal container
+	    horiSharedContainer.getChildren().addAll(breadList);
+
+	    Label moveCopyTitle = new Label("Danh sách folder");
+	    moveCopyTitle.setStyle("-fx-font-size: 16; -fx-font-weight: bold; -fx-text-fill: black;");
+	    newMoveCopyContainer.getChildren().add(moveCopyTitle);
+
+	    if (itemList != null && !itemList.isEmpty()) {
+	        for (MoveCopyFolderDTO file : itemList) {
+	            HBox fileBox = createFileBox(file, moveCopyContainer, breadList);
+	            newMoveCopyContainer.getChildren().add(fileBox);
+	        }
+	    } else {
+	        Label noFilesLabel = new Label("Không có thư mục nào.");
+	        newMoveCopyContainer.getChildren().add(noFilesLabel);
+	    }
+
+	    // Combine the horizontal and vertical containers
+	    VBox combinedContainer = new VBox();
+	    combinedContainer.getChildren().addAll(horiSharedContainer, newMoveCopyContainer);
+
+	    // Update the UI on the JavaFX Application Thread
+	    Platform.runLater(() -> {
+	        moveCopyContainer.getChildren().setAll(combinedContainer);
+	        centerContainer.getChildren().setAll(moveCopyContainer);
+	    });
+	}
+
+
+	private HBox createFileBox(MoveCopyFolderDTO file, VBox moveCopyContainer, List<HBox> breadList) {
+	    HBox fileBox = new HBox();
+	    fileBox.setSpacing(10);
+	    fileBox.setAlignment(Pos.CENTER_LEFT);
+
+	    FontAwesomeIconView fileIcon = new FontAwesomeIconView();
+	    fileIcon.setGlyphName("FOLDER");
+	    fileIcon.setSize("20");
+	    fileIcon.setStyleClass("icon");
+	    fileBox.getChildren().add(fileIcon);
+
+	    fileBox.setId(file.getId() + "");
+
+	    Label fileName = new Label(file.getName());
+	    fileBox.getChildren().add(fileName);
+	    fileBox.setUserData(file);
+
+	    fileBox.setOnMouseClicked(mouseEvent -> {
+	        MoveCopyFolderDTO selectedFile = (MoveCopyFolderDTO) fileBox.getUserData();
+	        System.out.println("Selected File ID: " + selectedFile.getId());
+	        System.out.println("Selected File Name: " + selectedFile.getName());
+
+			HBox _breadcumb = createBreadcrumbForm(selectedFile.getId(), selectedFile.getName());
+			breadList.add(_breadcumb);
+
+			// Update the UI on the JavaFX Application Thread
+			Platform.runLater(() -> {
+				moveCopyContainer.getChildren().setAll(breadList);
+				updateFolderList(breadList, moveCopyContainer);
+			});
+	    });
+
+	    return fileBox;
+	}
+
+
+	private void updateFolderList(List<HBox> breadList, VBox moveCopyContainer) {
+		Task<List<MoveCopyFolderDTO>> nextTask = new Task<List<MoveCopyFolderDTO>>() {
+	        @Override
+	        protected List<MoveCopyFolderDTO> call() throws Exception {
+	            ItemService itemService = new ItemService();
+	            return itemService.getAllFolderPopUps(userId, moveCopyFolderId);
+	        }
+	    };
+	    
+	    nextTask.setOnSucceeded(event -> {
+	        System.out.println("Thành công");
+	        List<MoveCopyFolderDTO> itemList = nextTask.getValue();
+	        updateMoveCopyContainer(itemList, moveCopyContainer, breadList);
+	    });
+
+	    nextTask.setOnFailed(event -> {
+	        Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Lỗi khi lấy danh sách thư mục.");
+	    });
+
+	    Thread thread = new Thread(nextTask);
+	    thread.start();
+	}
+	
+	private HBox createBreadcrumbForm(int folderId, String folderName) {
+	    HBox breadcrumb = new HBox();  // Use HBox instead of VBox
+	    breadcrumb.setAlignment(Pos.CENTER_LEFT);
+	    breadcrumb.setSpacing(7.0);
+	    breadcrumb.setId(String.valueOf(folderId));
+
+	    Text folderText = new Text(folderName);
+	    FontAwesomeIconView angleRightIcon = new FontAwesomeIconView(FontAwesomeIcon.ANGLE_RIGHT);
+	    Region spacer1 = new Region();
+	    Region spacer2 = new Region();
+	    HBox.setHgrow(spacer1, Priority.ALWAYS);
+	    HBox.setHgrow(spacer2, Priority.ALWAYS);
+
+	    // Change the order here
+	    breadcrumb.getChildren().addAll(folderText, angleRightIcon, spacer1, spacer2);
+
+	    currentFolderId = folderId;
+
+	    breadcrumb.setOnMouseClicked(event -> {
+	        System.out.println("Clicked on Breadcrumb with ID: " + folderId);
+	        int clickedIndex = breadList.indexOf(breadcrumb);
+	        System.out.println(clickedIndex);
+	        if (clickedIndex != -1) {
+	            List<HBox> keepBreadcrumbs = new ArrayList<>(breadList.subList(0, clickedIndex + 1));
+	            breadList.clear();
+	            breadList.addAll(keepBreadcrumbs);
+	            moveCopyFolderId = folderId;
+	            updateFolderList(breadList, moveCopyContainer);
+	        }
+	    });
+
+	    return breadcrumb;
+	}
 
 	public void showSharePopup(int itemId, boolean isFolder) {
 		Stage shareStage = new Stage();
@@ -900,9 +1206,10 @@ public class HomepageController implements Initializable {
 
 		ComboBox<String> permissionCbb = new ComboBox<>();
 
-		permissionCbb.getItems().addAll("Chỉ xem", "Chỉnh sửa");
+		permissionCbb.getItems().addAll("Riêng tư", "Chỉ xem", "Chỉnh sửa");
 
 		final int[] ownerId = {-1};
+		boolean[] initCbb = {false};
 		Task<Integer> getPermissionTask = new Task<Integer>() {
 			@Override
 			protected Integer call() throws Exception {
@@ -915,26 +1222,25 @@ public class HomepageController implements Initializable {
 
 		getPermissionTask.setOnSucceeded(e -> {
 			int permission = getPermissionTask.getValue();
-			if(userId == ownerId[0]) {
-				permissionCbb.setValue("Chỉnh sửa");
-				permissionCbb.setDisable(false);
+			System.out.println("Permission: " + permission);
+			if(permission == 1) {
+				permissionCbb.setValue("Riêng tư");
 			} else if(permission == 2) {
 				permissionCbb.setValue("Chỉ xem");
-				permissionCbb.setDisable(true);
-
-				if(userId == ownerId[0]) {
-					permissionCbb.setDisable(false);
-				}
 			} else if(permission >= 3){
 				permissionCbb.setValue("Chỉnh sửa");
-				permissionCbb.setDisable(false);
 			} else {
 				shareStage.close();
 			}
+			permissionCbb.setDisable(true);
+			if(userId == ownerId[0]) {
+				permissionCbb.setDisable(false);
+			}
+			initCbb[0] = true;
 		});
 
 		getPermissionTask.setOnFailed(e -> {
-			Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Lỗi khi lấy quyền truy cập");
+			Toast.showToast(shareStage, 0, "Lỗi khi lấy quyền truy cập");
 		});
 
 		Thread thread1 = new Thread(getPermissionTask);
@@ -944,6 +1250,34 @@ public class HomepageController implements Initializable {
 		permissionCbb.setPrefWidth(100);
 		permissionCbb.setPrefHeight(30);
 		permissionCbb.setPadding(new Insets(5));
+
+		// on combobox click change permission
+		permissionCbb.setOnAction(event -> {
+			if(!initCbb[0]) return;
+			int permission = permissionCbb.getSelectionModel().getSelectedIndex() == 0 ? PermissionType.READ.getValue() : PermissionType.WRITE.getValue();
+			Task<Boolean> changePermissionTask = new Task<Boolean>() {
+				@Override
+				protected Boolean call() throws Exception {
+					PermissionService permissionService = new PermissionService();
+					return permissionService.updateSharedPermission(itemId, isFolder, permission, userId);
+				}
+			};
+
+			changePermissionTask.setOnSucceeded(event1 -> {
+				boolean response = changePermissionTask.getValue();
+				if(response) {
+					Toast.showToast(shareStage, 1, "Thay đổi quyền chia sẻ thành công");
+				}
+				else Toast.showToast(shareStage, 0, "Thay đổi quyền chia sẻ thất bại");
+			});
+
+			changePermissionTask.setOnFailed(event1 -> {
+				Toast.showToast(shareStage, 0, "Thay đổi quyền chia sẻ thất bại");
+			});
+
+			Thread thread2 = new Thread(changePermissionTask);
+			thread2.start();
+		});
 
 		topContainer.getChildren().addAll(title, permissionCbb);
 		shareLayout.setTop(topContainer);
@@ -1000,14 +1334,13 @@ public class HomepageController implements Initializable {
 			@Override
 			protected List<UserToShareDTO> call() throws Exception {
 				ItemService itemService = new ItemService();
-				List<UserToShareDTO> userList = itemService.getSharedUser(itemId, isFolder);
-				return userList;
+                return itemService.getSharedUser(itemId, isFolder);
 			}
 		};
 
 		getSharedUserTask.setOnSucceeded(event -> {
 			List<UserToShareDTO> userList = getSharedUserTask.getValue();
-			if(userList != null && userList.size() > 0) {
+			if(userList != null && !userList.isEmpty()) {
 				for (UserToShareDTO user : userList) {
 					HBox userBox = new HBox();
 					userBox.setSpacing(10);
@@ -1038,7 +1371,7 @@ public class HomepageController implements Initializable {
 		});
 
 		getSharedUserTask.setOnFailed(event -> {
-			Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Lỗi lấy danh sách người dùng đã chia sẻ");
+			Toast.showToast(shareStage, 0, "Lỗi lấy danh sách người dùng đã chia sẻ");
 			shareTxt.setDisable(false);
 		});
 
@@ -1054,13 +1387,12 @@ public class HomepageController implements Initializable {
 			centerContainer.getChildren().remove(userContainer);
 
 			String keyword = shareTxt.getText();
-			if(keyword.length() > 0) {
+			if(!keyword.isEmpty()) {
 				Task<List<UserToShareDTO>> searchUserTask = new Task<List<UserToShareDTO>>() {
 					@Override
 					protected List<UserToShareDTO> call() throws Exception {
 						ItemService itemService = new ItemService();
-						List<UserToShareDTO> userList = itemService.searchUnsharedUser(itemId, isFolder, keyword);
-						return userList;
+                        return itemService.searchUnsharedUser(itemId, isFolder, keyword);
 					}
 				};
 
@@ -1123,7 +1455,7 @@ public class HomepageController implements Initializable {
 				});
 
 				searchUserTask.setOnFailed(event1 -> {
-					Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Tìm kiếm thất bại");
+					Toast.showToast(shareStage, 0, "Tìm kiếm thất bại");
 				});
 
 				Thread thread = new Thread(searchUserTask);
@@ -1137,9 +1469,40 @@ public class HomepageController implements Initializable {
 			if(target instanceof HBox) {
 				HBox userBox = (HBox) target;
 				if(userBox.getId() != null) {
-					int userId = Integer.parseInt(userBox.getId());
-					userIds.remove((Integer) userId);
-					userSelectedContainer.getChildren().remove(userBox);
+					try {
+						int userId = Integer.parseInt(userBox.getId());
+
+						// task to remove permission of user in server
+						Task<Boolean> removePermissionTask = new Task<Boolean>() {
+							@Override
+							protected Boolean call() throws Exception {
+								PermissionService permissionService = new PermissionService();
+								return permissionService.removeSharedPermission(itemId, isFolder, userId);
+							}
+						};
+
+						removePermissionTask.setOnSucceeded(event1 -> {
+							boolean response = removePermissionTask.getValue();
+							if(response) {
+								Toast.showToast(shareStage, 1, "Xóa quyền chia sẻ thành công");
+
+								userIds.remove((Integer) userId);
+								userSelectedContainer.getChildren().remove(userBox);
+							}
+							else Toast.showToast(shareStage, 0, "Xóa quyền chia sẻ thất bại");
+						});
+
+						removePermissionTask.setOnFailed(event1 -> {
+							Toast.showToast(shareStage, 0, "Xóa quyền chia sẻ thất bại");
+						});
+
+						Thread thread = new Thread(removePermissionTask);
+						thread.start();
+					} catch (NumberFormatException exc) {
+						Toast.showToast(shareStage, 0, "Lỗi định dạng ID người dùng");
+					} catch (Exception exc) {
+						Toast.showToast(shareStage, 0, "Lỗi khi xóa quyền chia sẻ");
+					}
 				}
 			}
 		});
@@ -1160,6 +1523,11 @@ public class HomepageController implements Initializable {
 		shareBtn.setStyle("-fx-border-width: 1px");
 
 		shareBtn.setOnAction(e -> {
+			if (permissionCbb.getValue().isEmpty() || permissionCbb.getValue().equals("Riêng tư")) {
+				Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Không thể chia sẻ quyền Riêng tư");
+				return;
+			}
+
 			String shareName = shareTxt.getText();
 			shareStage.close();
 
@@ -1167,15 +1535,17 @@ public class HomepageController implements Initializable {
 				@Override
 				protected Boolean call() throws Exception {
 					ItemService itemService = new ItemService();
-					int permissionId = permissionCbb.getValue().equals("Chỉ xem") ? 2 : 3;
-					boolean rs = itemService.share(itemId, isFolder, permissionId, userId, userIds);
-					return rs;
+					int permissionId = permissionCbb.getValue().equals("Chỉ xem") ? PermissionType.READ.getValue() : PermissionType.WRITE.getValue();
+                    return itemService.share(itemId, isFolder, permissionId, userId, userIds);
 				}
 			};
 
 			shareTask.setOnSucceeded(event1 -> {
 				boolean response = shareTask.getValue();
-				Toast.showToast((Stage) dataTable.getScene().getWindow(), 1, "Chia sẻ thành công");
+				if(response) {
+					Toast.showToast((Stage) dataTable.getScene().getWindow(), 1, "Chia sẻ thành công");
+				} else Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Chia sẻ thất bại");
+
 			});
 
 			shareTask.setOnFailed(event1 -> {
@@ -1208,6 +1578,7 @@ public class HomepageController implements Initializable {
 		shareStage.setScene(scene);
 		shareStage.show();
 	}
+	
 	@FXML
 	public void shareClicked(ActionEvent event) {
 		showSharePopup(currentFolderId, true);
@@ -1465,6 +1836,7 @@ public class HomepageController implements Initializable {
 		accessStage.setScene(accessScene);
 		accessStage.showAndWait();
 	}
+	
 	public void setFontLabel(int number) {
 		for (int i = 0; i <= 5; ++i) {
 			if (i == number) continue;
@@ -2003,13 +2375,13 @@ public class HomepageController implements Initializable {
 		uploadFolderBtn.setDisable(true);
 	}
 	
-	public void renameFile(int fileID, String fileName, int userId) {
+	public void renameFile(int fileID, String fileName) {
 	    Task<Boolean> renameFileTask = new Task<Boolean>() {
 	        @Override
 	        protected Boolean call() throws Exception {
 	            try {
 	                ItemService itemService = new ItemService();
-	                return itemService.renameFile(fileID, fileName, userId);
+	                return itemService.rename(userId, fileID, false, fileName);
 	            } catch (Exception e) {
 	                e.printStackTrace();
 	                return false;
@@ -2035,18 +2407,14 @@ public class HomepageController implements Initializable {
 	    thread.start();
 	}
 	
-	public void renameFolder(int folderID, String folderName, int ownerID) {
+	public void renameFolder(int folderID, String folderName) {
 	    Task<Boolean> renameFolderTask = new Task<Boolean>() {
 	        @Override
 	        protected Boolean call() throws Exception {
 	            try {
-	                // Initialize your service outside the call method if it's not a short-lived service
 	                ItemService itemService = new ItemService();
-	                String result = itemService.getRenameFolderPath(folderID);
-	                // Perform the background operation
-	                return itemService.renameFolder(folderID, folderName, ownerID, result);
+	                return itemService.rename(userId, folderID, true, folderName);
 	            } catch (Exception e) {
-	                // Handle exceptions gracefully, you might want to log them or show an error dialog
 	                e.printStackTrace();
 	                return false;
 	            }

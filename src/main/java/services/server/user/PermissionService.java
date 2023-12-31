@@ -245,7 +245,7 @@ public class PermissionService {
         }
     }
 
-    public boolean updateSharePermission(int itemId, boolean isFolder, int permissionType) {
+    public boolean updateSharedPermission(int itemId, boolean isFolder, int permissionType) {
         try(Session session = HibernateUtil.getSessionFactory().openSession()) {
             Transaction transaction = session.beginTransaction();
             try {

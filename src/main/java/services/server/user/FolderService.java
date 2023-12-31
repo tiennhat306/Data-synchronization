@@ -8,6 +8,9 @@ import jakarta.persistence.NoResultException;
 import javafx.util.Pair;
 import models.Folder;
 import models.Permission;
+
+import org.hibernate.HibernateException;
+import org.hibernate.NonUniqueResultException;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.hibernate.query.Query;
@@ -76,6 +79,41 @@ public class FolderService {
         }
     }
 
+    public static void moveFolderInPath(int itemId, int targetId) {
+        try {
+            String folderPath = getFolderPath(itemId);
+            String targetPath = getFolderPath(targetId);
+            String folderName = folderPath.substring(folderPath.lastIndexOf(File.separator) + 1);
+            targetPath = targetPath + File.separator + folderName;
+            moveFolder(folderPath, targetPath);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void renameFolderInPath(int itemId, String folderName) {
+        try {
+            String folderPath = getFolderPath(itemId);
+            String targetPath = folderPath.substring(0, folderPath.lastIndexOf(File.separator) + 1) + folderName;
+            File file = new File(folderPath);
+            file.renameTo(new File(targetPath));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void copyFolderInPath(int itemId, int targetId) {
+        try {
+            String folderPath = getFolderPath(itemId);
+            String targetPath = getFolderPath(targetId);
+            String folderName = folderPath.substring(folderPath.lastIndexOf(File.separator) + 1);
+            targetPath = targetPath + File.separator + folderName;
+            copyFolder(folderPath, targetPath);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     public List<Folder> getAllFolder() {
         try(Session session = HibernateUtil.getSessionFactory().openSession()) {
             return session.createQuery("select fd from Folder fd", Folder.class).list();
@@ -114,6 +152,93 @@ public class FolderService {
         } catch (Exception e) {
             e.printStackTrace();
             return 0;
+        }
+    }
+    
+    public int getFolderIDByName(String name, int parentID) {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            Integer folderId = session.createQuery("select f.id from Folder f where f.folderName = :name and f.parentId = :parentID", Integer.class)
+                    .setParameter("name", name)
+                    .setParameter("parentID", parentID)
+                    .uniqueResult();
+
+            return (folderId != null) ? folderId : -1; // If fileId is null, return -1 (file not found)
+        } catch (NoResultException e) {
+            // Handle the case where no result is found
+            System.err.println("Warning: No file found with the specified name.");
+            return -1;
+        } catch (NonUniqueResultException e) {
+            // Handle the case where there are multiple files with the same name
+            System.err.println("Warning: Multiple files found with the same name.");
+            return -1;
+        } catch (HibernateException e) {
+            e.printStackTrace(); // Log the exception or handle it appropriately
+            return -1; // Handle the exception appropriately
+        }
+    }
+    
+    public int copyFolder(int id, int parentId, int permissionType) throws IOException {
+        Transaction transaction = null;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            transaction = session.beginTransaction();
+
+            Folder folder = session.find(Folder.class, id);
+
+            if (folder != null) {
+                Folder newFolder = new Folder();
+                newFolder.setFolderName(folder.getFolderName());
+                newFolder.setParentId(parentId);
+                newFolder.setOwnerId(folder.getOwnerId());
+                newFolder.setDeleted(false);
+
+                session.persist(newFolder);
+
+                Permission permission = new Permission();
+                permission.setFolderId(newFolder.getId());
+                permission.setPermissionType((short) permissionType);
+                session.persist(permission);
+
+                transaction.commit();
+
+                String path = ServerApp.SERVER_PATH + File.separator + getPath(newFolder.getId());
+                createFolderIfNotExist(path);
+                return newFolder.getId();
+            } else {
+                return -1;
+            }
+        } catch (HibernateException e) {
+            if (transaction != null) {
+                transaction.rollback();
+            }
+            e.printStackTrace();
+            return -1;
+        }
+    }
+
+
+    
+    public boolean moveFolder(int id, int folder_id) {
+        Transaction transaction = null;
+
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            transaction = session.beginTransaction();
+
+            Folder folder = session.find(Folder.class, id);
+            
+            if (folder != null) {
+                // Update the file's name
+                folder.setParentId(folder_id);
+                transaction.commit();
+                return true;
+            } else {
+                return false;
+            }
+        } catch (Exception e) {
+            if (transaction != null && transaction.isActive()) {
+                transaction.rollback();
+            }
+            e.printStackTrace(); // Handle the exception appropriately
+            return false;
         }
     }
     public int getNumberItemOfFolder(int userId, int id) {
@@ -553,34 +678,36 @@ public class FolderService {
         }
     }
 
-private static void moveFolder(String folderPath, String targetPath) {
-    File targetFolder = new File(targetPath);
-    if (!targetFolder.exists()) {
-        try {
-            Files.createDirectories(targetFolder.toPath());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
 
-    File folder = new File(folderPath);
-    File[] files = folder.listFiles();
-    if (files != null) {
-        for (File file : files) {
-            String newFilePath = targetPath + File.separator + file.getName();
-            if (file.isDirectory()) {
-                moveFolder(file.getAbsolutePath(), newFilePath);
-            } else {
-                try {
-                    Files.move(file.toPath(), new File(newFilePath).toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-                } catch (IOException e) {
-                    e.printStackTrace();
+
+    private static void moveFolder(String folderPath, String targetPath) {
+        File targetFolder = new File(targetPath);
+        if (!targetFolder.exists()) {
+            try {
+                Files.createDirectories(targetFolder.toPath());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        File folder = new File(folderPath);
+        File[] files = folder.listFiles();
+        if (files != null) {
+            for (File file : files) {
+                String newFilePath = targetPath + File.separator + file.getName();
+                if (file.isDirectory()) {
+                    moveFolder(file.getAbsolutePath(), newFilePath);
+                } else {
+                    try {
+                        Files.move(file.toPath(), new File(newFilePath).toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
         }
+        deleteFolderIfExist(folderPath);
     }
-    deleteFolderIfExist(folderPath);
-}
 
     private static void copyFolder(String folderPath, String targetPath) {
         File targetFolder = new File(targetPath);
@@ -707,6 +834,49 @@ private static void moveFolder(String folderPath, String targetPath) {
                 session.merge(folder);
                 transaction.commit();
                 return updateRestoredFolder(itemId);
+            } catch (Exception e) {
+                e.printStackTrace();
+                transaction.rollback();
+                return false;
+            }
+        } catch (Exception e){
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean copyFolder(int itemId, int targetId) {
+        try(Session session = HibernateUtil.getSessionFactory().openSession()){
+            Transaction transaction = session.beginTransaction();
+            try {
+                Folder folder = session.find(Folder.class, itemId);
+                if(folder == null) return false;
+
+                Folder targetFolder = session.find(Folder.class, targetId);
+                if(targetFolder == null) return false;
+
+                String folderName = folder.getFolderName();
+                int ownerId = folder.getOwnerId();
+                int permissionType = new PermissionService().getPublicPermission(targetId, true);
+
+                Folder newFolder = new Folder();
+                newFolder.setFolderName(folderName);
+                newFolder.setParentId(targetId);
+                newFolder.setOwnerId(ownerId);
+                newFolder.setDeleted(false);
+
+                session.persist(newFolder);
+                session.flush();
+
+                Permission permission = new Permission();
+                permission.setFolderId(newFolder.getId());
+                permission.setPermissionType((short) permissionType);
+
+                session.persist(permission);
+
+                session.getTransaction().commit();
+
+                return true;
             } catch (Exception e) {
                 e.printStackTrace();
                 transaction.rollback();

@@ -3,7 +3,7 @@ package enums;
 public enum PermissionType {
     PRIVATE(1),
     READ(2),
-    PUBLIC(3),
+    WRITE(3),
     OWNER(4);
 
     private final int permissionType;
