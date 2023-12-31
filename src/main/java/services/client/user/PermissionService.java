@@ -3,13 +3,13 @@ package services.client.user;
 import services.client.SocketClientHelper;
 
 public class PermissionService {
-    public int checkPermission(int userId, int typeId, int id) {
+    public int checkPermission(int userId, int id, boolean isFolder) {
         try{
             SocketClientHelper socketClientHelper = new SocketClientHelper();
-            socketClientHelper.sendRequest("CHECK_PERMISSION");
+            socketClientHelper.sendRequest("CHECK_USER_PERMISSION");
             socketClientHelper.sendRequest(String.valueOf(userId));
-            socketClientHelper.sendRequest(String.valueOf(typeId));
             socketClientHelper.sendRequest(String.valueOf(id));
+            socketClientHelper.sendRequest(String.valueOf(isFolder));
 
             int response = (int) socketClientHelper.receiveResponse();
             socketClientHelper.close();
@@ -20,12 +20,12 @@ public class PermissionService {
         }
     }
 
-    public boolean updatePermission(int itemTypeId, int itemId, int finalPermissionId) {
+    public boolean updatePublicPermission(int itemId, boolean isFolder, int finalPermissionId) {
         try{
             SocketClientHelper socketClientHelper = new SocketClientHelper();
-            socketClientHelper.sendRequest("UPDATE_PERMISSION");
-            socketClientHelper.sendRequest(String.valueOf(itemTypeId));
+            socketClientHelper.sendRequest("UPDATE_PUBLIC_PERMISSION");
             socketClientHelper.sendRequest(String.valueOf(itemId));
+            socketClientHelper.sendRequest(String.valueOf(isFolder));
             socketClientHelper.sendRequest(String.valueOf(finalPermissionId));
 
             boolean response = (boolean) socketClientHelper.receiveResponse();
@@ -37,15 +37,14 @@ public class PermissionService {
         }
     }
 
-    public Integer getPermission(int itemTypeId, int itemId) {
+    public Integer getPublicPermission(int itemId, boolean isFolder) {
         try{
             SocketClientHelper socketClientHelper = new SocketClientHelper();
-            socketClientHelper.sendRequest("GET_PERMISSION");
-            socketClientHelper.sendRequest(String.valueOf(itemTypeId));
+            socketClientHelper.sendRequest("GET_PUBLIC_PERMISSION");
             socketClientHelper.sendRequest(String.valueOf(itemId));
+            socketClientHelper.sendRequest(String.valueOf(isFolder));
 
             int response = (int) socketClientHelper.receiveResponse();
-            System.out.println("Client get permission: " + response);
             socketClientHelper.close();
             return response;
         } catch (Exception e) {
@@ -54,12 +53,12 @@ public class PermissionService {
         }
     }
 
-    public int getOwnerId(int itemTypeId, int itemId) {
+    public int getOwnerId(int itemId, boolean isFolder) {
         try{
             SocketClientHelper socketClientHelper = new SocketClientHelper();
             socketClientHelper.sendRequest("GET_OWNER_ID");
-            socketClientHelper.sendRequest(String.valueOf(itemTypeId));
             socketClientHelper.sendRequest(String.valueOf(itemId));
+            socketClientHelper.sendRequest(String.valueOf(isFolder));
 
             int response = (int) socketClientHelper.receiveResponse();
             socketClientHelper.close();

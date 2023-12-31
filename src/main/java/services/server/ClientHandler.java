@@ -1,21 +1,19 @@
 package services.server;
 
-import DTO.Connection;
-import DTO.UserAccountDTO;
-import DTO.UserSession;
-import models.File;
-import models.RecentFile;
+import DTO.*;
+import applications.ServerApp;
+import enums.PermissionType;
+import enums.TypeEnum;
+import enums.UploadStatus;
 import models.User;
 
 import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.nio.file.Files;
-import java.sql.Date;
 import java.util.ArrayList;
 import java.util.List;
 
-import services.server.admin.UserService;
 import services.server.auth.LoginService;
 import services.server.user.*;
 import utils.ZipFolder;
@@ -32,8 +30,6 @@ public class ClientHandler implements Runnable{
         try{
             this.clientSocket = clientSocket;
             clientAddress = clientSocket.getInetAddress();
-            System.out.println("Client handler connected: " + clientSocket);
-            System.out.println("Server thread number " + clientNumber + " Started");
 
             this.out = new ObjectOutputStream(clientSocket.getOutputStream());
             this.in = new ObjectInputStream(clientSocket.getInputStream());
@@ -77,121 +73,153 @@ public class ClientHandler implements Runnable{
                     sendResponse(response);
                 }
                 case "GET_ALL_USER" -> {
-                    List<User> response = getUserList();
-                    sendResponse(response);
-                }
-                case "GET_USER_BY_USERNAME" -> {
-                    String username = (String) receiveRequest();
-                    User response = getUserByUsername(username);
-                    sendResponse(response);
-                }
-                case "UPDATE_USER" -> {
-                    String username = (String) receiveRequest();
-                    String name = (String) receiveRequest();
-                    String email = (String) receiveRequest();
-                    String phone = (String) receiveRequest();
-                    Date date = (Date) receiveRequest();
-                    boolean gender = (boolean) receiveRequest();
-                    boolean response = updateUser(username, name, email, phone, date, gender);
+                    List<UserDTO> response = getUserList();
                     sendResponse(response);
                 }
                 case "GET_ALL_ITEM_PRIVATE" -> {
                     String ownerId = (String) receiveRequest();
                     String searchText = (String) receiveRequest();
-                    List<File> response = getPrivateItemList(Integer.parseInt(ownerId), searchText);
+                    List<ItemDTO> response = getPrivateItemList(Integer.parseInt(ownerId), searchText);
                     sendResponse(response);
                 }
                 case "GET_ALL_ITEM_OSHARE" -> {
                     String ownerId = (String) receiveRequest();
                     String searchText = (String) receiveRequest();
-                    List<File> response = getOtherShareItemList(Integer.parseInt(ownerId), searchText);
+                    List<ItemDTO> response = getOtherShareItemList(Integer.parseInt(ownerId), searchText);
                     sendResponse(response);
                 }
                 case "GET_ALL_ITEM_SHARED" -> {
                     String ownerId = (String) receiveRequest();
                     String searchText = (String) receiveRequest();
-                    List<File> response = getSharedItemList(Integer.parseInt(ownerId), searchText);
+                    List<ItemDTO> response = getSharedItemList(Integer.parseInt(ownerId), searchText);
                     sendResponse(response);
                 }
                 case "GET_ALL_ITEM" -> {
                     int userId = Integer.parseInt((String) receiveRequest());
                     int folderId = Integer.parseInt((String) receiveRequest());
                     String searchText = (String) receiveRequest();
-                    List<File> response = getItemList(userId, folderId, searchText);
+                    List<ItemDTO> response = getItemList(userId, folderId, searchText);
                     sendResponse(response);
                 }
                 case "GET_ALL_RECENT_OPENED_ITEM" -> {
                     int userId = Integer.parseInt((String) receiveRequest());
                     String searchText = (String) receiveRequest();
-                    List<RecentFile> response = new RecentFileService().getAllRecentOpenedItem(userId, searchText);
+                    List<RecentFileDTO> response = new RecentFileService().getAllRecentOpenedItem(userId, searchText);
                     sendResponse(response);
                 }
                 case "GET_ALL_DELETED_ITEM" -> {
                     int userId = Integer.parseInt((String) receiveRequest());
                     String searchText = (String) receiveRequest();
-                    List<File> response = getDeletedItemList(userId, searchText);
+                    List<ItemDeletedDTO> response = getDeletedItemList(userId, searchText);
                     sendResponse(response);
                 }
                 case "CREATE_FOLDER" -> {
                     String folderName = (String) receiveRequest();
                     int ownerId = Integer.parseInt((String) receiveRequest());
                     int currentFolderId = Integer.parseInt((String) receiveRequest());
-                    boolean response = new FolderService().createFolder(folderName, ownerId, currentFolderId);
+                    int response = new FolderService().createFolder(folderName, ownerId, currentFolderId);
                     sendResponse(response);
                 }
                 case "GET_RENAME_FILE_PATH" -> {
-    				String id = (String) receiveRequest();
-    				String response = getFileRenamePath(Integer.parseInt(id));
+    				int fileId = Integer.parseInt((String) receiveRequest());
+    				String response = FileService.getFilePath(fileId);
     				sendResponse(response);
     			}
     			case "GET_RENAME_FOLDER_PATH" -> {
-    				String id = (String) receiveRequest();
-    				String response = getFolderRenamePath(Integer.parseInt(id));
+    				int folderId = Integer.parseInt((String) receiveRequest());
+    				String response = FolderService.getFolderPath(folderId);
     				sendResponse(response);
     			}
     			case "RENAME_FILE" -> {
-    				String fileId = (String) receiveRequest();
-    				String fileName = (String) receiveRequest();
-    				String fileSize = (String) receiveRequest();
-    				String filePath = getFileChanged(Integer.parseInt(fileId), fileName);
-    				boolean response = renameFile(Integer.parseInt(fileId), fileName, filePath, Integer.parseInt(fileSize));
+                    int fileId = Integer.parseInt((String) receiveRequest());
+                    String fileName = (String) receiveRequest();
+                    int userId = Integer.parseInt((String) receiveRequest());
+
+    				boolean response = new FileService().renameFile(userId, fileId, fileName);
     				sendResponse(response);
     			}
     			case "RENAME_FOLDER" -> {
-    				String folderId = (String) receiveRequest();
-    				String folderName = (String) receiveRequest();
-//    				String ownerID = (String) receiveRequest();
-//    				String folderPath = getFolderPathChanged(Integer.parseInt(folderId), folderName);
-    				boolean response = renameFolder(Integer.parseInt(folderId), folderName);
+                    int userId = Integer.parseInt((String) receiveRequest());
+                    int folderId = Integer.parseInt((String) receiveRequest());
+                    String folderName = (String) receiveRequest();
+    				boolean response = new FolderService().renameFolder(userId, folderId, folderName);
     				sendResponse(response);
     			}
                 case "UPLOAD_FILE" -> {
-                    String type = (String) receiveRequest();
-                    if(type.equals("file")){
-                        String fileName = (String) receiveRequest();
-                        int ownerId = Integer.parseInt((String) receiveRequest());
-                        int currentFolderId = Integer.parseInt((String) receiveRequest());
-                        int fileSize = Integer.parseInt((String) receiveRequest());
-                        boolean response = uploadFile(fileName, ownerId, currentFolderId, fileSize);
-                        sendResponse(response);
-                    } else {
-                        System.out.println("Unknown request: " + type);
+                    int userId = Integer.parseInt((String) receiveRequest());
+                    String fileName = (String) receiveRequest();
+                    int folderId = Integer.parseInt((String) receiveRequest());
+                    int fileSize = Integer.parseInt((String) receiveRequest());
+                    int checkBeforeUpload = checkUploadFileStatus(fileName, folderId, false);
+                    if(checkBeforeUpload != UploadStatus.SUCCESS.getValue()){
+                        sendResponse(checkBeforeUpload);
+                        break;
                     }
+                    int permission = new PermissionService().checkUserPermission(userId, folderId, true);
+                    if (permission <= PermissionType.READ.getValue()) {
+                        sendResponse(UploadStatus.PERMISSION_DENIED.getValue());
+                        break;
+                    }
+                    sendResponse(UploadStatus.PERMISSION_ACCEPTED.getValue());
+                    int response = uploadFile(fileName, userId, folderId, fileSize);
+                    sendResponse(response);
+                }
+                case "UPLOAD_FILE_AND_REPLACE" -> {
+                    int userId = Integer.parseInt((String) receiveRequest());
+                    String fileName = (String) receiveRequest();
+                    int folderId = Integer.parseInt((String) receiveRequest());
+                    int fileSize = Integer.parseInt((String) receiveRequest());
+                    int checkBeforeUpload = checkUploadFileStatus(fileName, folderId, true);
+                    if(checkBeforeUpload != UploadStatus.SUCCESS.getValue()){
+                        sendResponse(checkBeforeUpload);
+                        break;
+                    }
+                    int permission = new PermissionService().checkUserPermission(userId, folderId, true);
+                    if (permission <= PermissionType.READ.getValue()) {
+                        sendResponse(UploadStatus.PERMISSION_DENIED.getValue());
+                        break;
+                    }
+                    sendResponse(UploadStatus.PERMISSION_ACCEPTED.getValue());
+                    int response = uploadFile(fileName, userId, folderId, fileSize);
+                    sendResponse(response);
                 }
                 case "UPLOAD_FOLDER" -> {
-                    String type_request = (String) receiveRequest();
-                    if(type_request.equals("folder")){
-                        String folderName = (String) receiveRequest();
-                        int ownerId = Integer.parseInt((String) receiveRequest());
-                        int currentFolderId = Integer.parseInt((String) receiveRequest());
-
-                        PermissionService permissionService = new PermissionService();
-                        int permission_type = permissionService.getPermission(PermissionService.FOLDER_TYPE, currentFolderId);
-                        boolean response = uploadFolder(folderName, ownerId, currentFolderId, permission_type);
-                        sendResponse(response);
-                    } else {
-                        System.out.println("Unknown request: " + type_request);
+                    int userId = Integer.parseInt((String) receiveRequest());
+                    String folderName = (String) receiveRequest();
+                    int parentId = Integer.parseInt((String) receiveRequest());
+                    int checkBeforeUpload = checkUploadFolderStatus(folderName, parentId, false);
+                    if(checkBeforeUpload != UploadStatus.SUCCESS.getValue()){
+                        sendResponse(checkBeforeUpload);
+                        break;
                     }
+                    int permission = new PermissionService().checkUserPermission(userId, parentId, true);
+                    if (permission <= PermissionType.READ.getValue()) {
+                        sendResponse(UploadStatus.PERMISSION_DENIED.getValue());
+                        break;
+                    }
+                    sendResponse(UploadStatus.PERMISSION_ACCEPTED.getValue());
+                    int publicPermission = new PermissionService().getPublicPermission(parentId, true);
+                    int response = uploadFolder(folderName, userId, parentId, publicPermission);
+                    sendResponse(response);
+                }
+                case "UPLOAD_FOLDER_AND_REPLACE" -> {
+                    int userId = Integer.parseInt((String) receiveRequest());
+                    String folderName = (String) receiveRequest();
+                    int parentId = Integer.parseInt((String) receiveRequest());
+                    int checkBeforeUpload = checkUploadFolderStatus(folderName, parentId, true);
+                    if(checkBeforeUpload != UploadStatus.SUCCESS.getValue()){
+                        sendResponse(checkBeforeUpload);
+                        break;
+                    }
+                    int permission = new PermissionService().checkUserPermission(userId, parentId, true);
+                    if (permission <= PermissionType.READ.getValue()) {
+                        sendResponse(UploadStatus.PERMISSION_DENIED.getValue());
+                        break;
+                    }
+                    sendResponse(UploadStatus.PERMISSION_ACCEPTED.getValue());
+                    int publicPermission = new PermissionService().getPublicPermission(parentId, true);
+                    int response = uploadFolder(folderName, userId, parentId, publicPermission);
+                    sendResponse(response);
                 }
                 case "DOWNLOAD_FILE" -> {
                     int fileId = Integer.parseInt((String) receiveRequest());
@@ -208,48 +236,32 @@ public class ClientHandler implements Runnable{
 
                     sendResponse(response);
                 }
-                case "SYNCHRONIZE_FOLDER" -> {
-                    int userId = Integer.parseInt((String) receiveRequest());
-                    int folderId = Integer.parseInt((String) receiveRequest());
-
-                    services.server.user.UserService userService = new services.server.user.UserService();
-                    String userPath = userService.getUserPath(userId);
-
-                    services.server.user.FolderService folderService = new services.server.user.FolderService();
-                    String path = folderService.getPath(folderId);
-                    sendResponse(userPath + java.io.File.separator + path);
-
-                    boolean response = syncFolder(userId, folderId, folderService.getFolderPath(folderId));
-
-                    sendResponse(response);
-                }
                 case "SYNCHRONIZE_FILE" -> {
                     int userId = Integer.parseInt((String) receiveRequest());
                     int fileId = Integer.parseInt((String) receiveRequest());
 
-                    services.server.user.UserService userService = new services.server.user.UserService();
-                    String userPath = userService.getUserPath(userId);
-
-                    services.server.user.FileService fileService = new services.server.user.FileService();
+                    String userPath = new UserService().getUserPath(userId);
+                    FileService fileService = new FileService();
                     String path = fileService.getPath(fileId);
                     sendResponse(userPath + java.io.File.separator + path);
 
-                    String filePath = fileService.getFilePath(fileId);
+                    String filePath = FileService.getFilePath(fileId);
                     int size = fileService.getSize(fileId);
                     sendResponse(String.valueOf(size));
 
                     syncFile(filePath, size);
                     sendResponse(true);
                 }
-                case "OPEN_FOLDER" -> {
+                case "SYNCHRONIZE_FOLDER" -> {
                     int userId = Integer.parseInt((String) receiveRequest());
                     int folderId = Integer.parseInt((String) receiveRequest());
 
-                    String userPath = new services.server.user.UserService().getUserPath(userId);
-                    String folderPath = new services.server.user.FolderService().getFolderPath(folderId);
-                    sendResponse(userPath + java.io.File.separator + folderPath);
+                    String userPath = new UserService().getUserPath(userId);
 
-                    boolean response = syncFolder(userId, folderId, new services.server.user.FolderService().getFolderPath(folderId));
+                    String path = FolderService.getPath(folderId);
+                    sendResponse(userPath + java.io.File.separator + path);
+
+                    boolean response = syncFolder(userId, folderId, FolderService.getFolderPath(folderId));
 
                     sendResponse(response);
                 }
@@ -257,29 +269,71 @@ public class ClientHandler implements Runnable{
                     int userId = Integer.parseInt((String) receiveRequest());
                     int fileId = Integer.parseInt((String) receiveRequest());
 
-                    String userPath = new services.server.user.UserService().getUserPath(userId);
-                    String filePath = new services.server.user.FileService().getPath(fileId);
+                    String userPath = new UserService().getUserPath(userId);
+                    String filePath = new FileService().getPath(fileId);
                     sendResponse(userPath + java.io.File.separator + filePath);
 
-                    int size = new services.server.user.FileService().getSize(fileId);
+                    int size = new FileService().getSize(fileId);
                     sendResponse(String.valueOf(size));
 
-                    syncFile(new FileService().getFilePath(fileId), size);
+                    syncFile(FileService.getFilePath(fileId), size);
 
                     boolean response = new RecentFileService().addRecentFile(userId, fileId);
                     sendResponse(response);
                 }
-                case "SEARCH_UNSHARED_USER" -> {
-                    int itemTypeId = Integer.parseInt((String) receiveRequest());
+                case "OPEN_FOLDER" -> {
+                    int userId = Integer.parseInt((String) receiveRequest());
+                    int folderId = Integer.parseInt((String) receiveRequest());
+
+                    String userPath = new UserService().getUserPath(userId);
+                    String folderPath = FolderService.getFolderPath(folderId);
+                    sendResponse(userPath + java.io.File.separator + folderPath);
+
+                    boolean response = syncFolder(userId, folderId, FolderService.getFolderPath(folderId));
+                    sendResponse(response);
+                }
+                case "GET_SHARED_USER" -> {
                     int itemId = Integer.parseInt((String) receiveRequest());
+                    boolean isFolder = Boolean.parseBoolean((String) receiveRequest());
+                    List<UserToShareDTO> response = new PermissionService().getSharedUser(itemId, isFolder);
+                    sendResponse(response);
+                }
+                case "DELETE_SHARED_USER" -> {
+                    int itemId = Integer.parseInt((String) receiveRequest());
+                    boolean isFolder = Boolean.parseBoolean((String) receiveRequest());
+                    int userId = Integer.parseInt((String) receiveRequest());
+                    boolean response = new PermissionService().deleteSharedUser(itemId, isFolder, userId);
+                    sendResponse(response);
+                }
+                case "UPDATE_SHARE_PERMISSION" -> {
+                    int itemId = Integer.parseInt((String) receiveRequest());
+                    boolean isFolder = Boolean.parseBoolean((String) receiveRequest());
+                    int permissionType = Integer.parseInt((String) receiveRequest());
+                    int ownerId = Integer.parseInt((String) receiveRequest());
+                    PermissionService permissionService = new PermissionService();
+                    if(!(permissionType == PermissionType.READ.getValue() || permissionType == PermissionType.PUBLIC.getValue())){
+                        sendResponse(false);
+                        break;
+                    }
+                    int permissionOfUser = permissionService.checkUserPermission(ownerId, itemId, isFolder);
+                    if(permissionOfUser != PermissionType.OWNER.getValue()){
+                        sendResponse(false);
+                        break;
+                    }
+                    boolean response = permissionService.updateSharePermission(itemId, isFolder, permissionType);
+                    sendResponse(response);
+                }
+                case "SEARCH_UNSHARED_USER" -> {
+                    int itemId = Integer.parseInt((String) receiveRequest());
+                    boolean isFolder = Boolean.parseBoolean((String) receiveRequest());
                     String searchText = (String) receiveRequest();
                     PermissionService permissionService = new PermissionService();
-                    List<User> response = permissionService.searchUnsharedUser(itemTypeId, itemId, searchText);
+                    List<UserToShareDTO> response = permissionService.searchUnsharedUser(itemId, isFolder, searchText);
                     sendResponse(response);
                 }
                 case "SHARE" -> {
-                    int itemTypeId = Integer.parseInt((String) receiveRequest());
                     int itemId = Integer.parseInt((String) receiveRequest());
+                    boolean isFolder = Boolean.parseBoolean((String) receiveRequest());
                     int permissionType = Integer.parseInt((String) receiveRequest());
                     int sharedBy = Integer.parseInt((String) receiveRequest());
                     int userListSize = Integer.parseInt((String) receiveRequest());
@@ -287,85 +341,160 @@ public class ClientHandler implements Runnable{
                     for(int i = 0; i < userListSize; i++){
                         userList.add(Integer.parseInt((String) receiveRequest()));
                     }
+                    if(!(permissionType == PermissionType.READ.getValue() || permissionType == PermissionType.PUBLIC.getValue())){
+                        sendResponse(false);
+                        break;
+                    }
                     PermissionService permissionService = new PermissionService();
-                    boolean response = permissionService.share(itemTypeId, itemId, permissionType, sharedBy, userList);
+                    int sharedPermission = permissionService.checkSharedPermission(itemId, isFolder);
+                    if(!(permissionType == sharedPermission || sharedPermission == -1)){
+                        sendResponse(false);
+                        break;
+                    }
+                    boolean response = permissionService.share(itemId, isFolder, permissionType, sharedBy, userList);
                     sendResponse(response);
                 }
-                case "GET_SHARED_USER" -> {
-                    int itemTypeId = Integer.parseInt((String) receiveRequest());
-                    int itemId = Integer.parseInt((String) receiveRequest());
-                    PermissionService permissionService = new PermissionService();
-                    List<User> response = permissionService.getSharedUser(itemTypeId, itemId);
-                    sendResponse(response);
-                }
-                case "CHECK_PERMISSION" -> {
+                case "CHECK_USER_PERMISSION" -> {
                     int userId = Integer.parseInt((String) receiveRequest());
-                    int typeId = Integer.parseInt((String) receiveRequest());
-                    int id = Integer.parseInt((String) receiveRequest());
+                    int itemId = Integer.parseInt((String) receiveRequest());
+                    boolean isFolder = Boolean.parseBoolean((String) receiveRequest());
                     PermissionService permissionService = new PermissionService();
-                    int response = permissionService.checkPermission(userId, typeId, id);
+                    int response = permissionService.checkUserPermission(userId, itemId, isFolder);
                     sendResponse(response);
                 }
-                case "GET_PERMISSION" -> {
-                    int itemTypeId = Integer.parseInt((String) receiveRequest());
+                case "GET_PUBLIC_PERMISSION" -> {
                     int itemId = Integer.parseInt((String) receiveRequest());
+                    boolean isFolder = Boolean.parseBoolean((String) receiveRequest());
                     PermissionService permissionService = new PermissionService();
-                    int response = permissionService.getPermission(itemTypeId, itemId);
-                    System.out.println("Server get permission: " + response);
+                    int response = permissionService.getPublicPermission(itemId, isFolder);
                     sendResponse(response);
                 }
                 case "GET_OWNER_ID" -> {
-                    int itemTypeId = Integer.parseInt((String) receiveRequest());
                     int itemId = Integer.parseInt((String) receiveRequest());
-                    int response = new PermissionService().getOwnerId(itemTypeId, itemId);
-                    System.out.println("Owner id: " + response);
+                    boolean isFolder = Boolean.parseBoolean((String) receiveRequest());
+                    int response = new PermissionService().getOwnerId(itemId, isFolder);
                     sendResponse(response);
                 }
-                case "UPDATE_PERMISSION" -> {
-                    int itemTypeId = Integer.parseInt((String) receiveRequest());
+                case "UPDATE_PUBLIC_PERMISSION" -> {
                     int itemId = Integer.parseInt((String) receiveRequest());
+                    boolean isFolder = Boolean.parseBoolean((String) receiveRequest());
                     int finalPermissionId = Integer.parseInt((String) receiveRequest());
-                    PermissionService permissionService = new PermissionService();
-                    boolean response = permissionService.updatePermission(itemTypeId, itemId, finalPermissionId);
+                    boolean response = new PermissionService().updatePublicPermission(itemId, isFolder, finalPermissionId);
                     sendResponse(response);
                 }
                 case "DELETE" -> {
-                    int itemTypeId = Integer.parseInt((String) receiveRequest());
                     int itemId = Integer.parseInt((String) receiveRequest());
+                    boolean isFolder = Boolean.parseBoolean((String) receiveRequest());
                     int userId = Integer.parseInt((String) receiveRequest());
+                    int permission = new PermissionService().checkUserPermission(userId, itemId, isFolder);
+                    if (permission < PermissionType.PUBLIC.getValue()) {
+                        sendResponse(false);
+                        break;
+                    }
                     boolean response = false;
-                    if(itemTypeId == 1){
-                        FolderService folderService = new FolderService();
-                        response = folderService.deleteFolder(itemId, userId);
+                    if(isFolder){
+                        boolean isDeletedInDB = new FolderService().deleteFolder(itemId, userId);
+                        if(isDeletedInDB){
+                            FolderService.moveToTrash(itemId);
+                            response = true;
+                        }
                     } else {
-                        FileService fileService = new FileService();
-                        response = fileService.deleteFile(itemId, userId);
+                        boolean isDeletedInDB = new FileService().deleteFile(itemId, userId);
+                        if(isDeletedInDB){
+                            FileService.moveToTrash(itemId);
+                            response = true;
+                        }
                     }
                     sendResponse(response);
                 }
                 case "DELETE_PERMANENTLY" -> {
-                    int itemTypeId = Integer.parseInt((String) receiveRequest());
                     int itemId = Integer.parseInt((String) receiveRequest());
+                    boolean isFolder = Boolean.parseBoolean((String) receiveRequest());
                     boolean response = false;
-                    if(itemTypeId == 1){
-                        FolderService folderService = new FolderService();
-                        response = folderService.deleteFolderPermanently(itemId);
+                    if(isFolder){
+                        boolean isDeletedInDB =  new FolderService().deleteFolderPermanently(itemId);
+                        if(isDeletedInDB){
+                            FolderService.deleteFolderInPath(itemId);
+                            response = true;
+                        }
                     } else {
-                        FileService fileService = new FileService();
-                        response = fileService.deleteFilePermanently(itemId);
+                        boolean isDeletedInDB = FileService.deleteFilePermanently(itemId);
+                        if(isDeletedInDB){
+                            FileService.deleteFileInPath(itemId);
+                            response = true;
+                        }
                     }
                     sendResponse(response);
                 }
                 case "RESTORE" -> {
-                    int itemTypeId = Integer.parseInt((String) receiveRequest());
                     int itemId = Integer.parseInt((String) receiveRequest());
-                    boolean response = false;
-                    if(itemTypeId == 1){
+                    boolean isFolder = Boolean.parseBoolean((String) receiveRequest());
+                    int response = UploadStatus.FAILED.getValue();
+                    if(isFolder){
                         FolderService folderService = new FolderService();
-                        response = folderService.restoreFolder(itemId);
+                        String finalPath = folderService.getFinalPath(itemId);
+                        if(new java.io.File(ServerApp.SERVER_PATH + File.separator + finalPath + File.separator + FolderService.getFolderNameById(itemId)).exists()){
+                            sendResponse(UploadStatus.EXISTED.getValue());
+                            break;
+                        }
+                        String folderPath = FolderService.getFolderPath(itemId);
+                        if(finalPath == null || finalPath.isEmpty() || !new java.io.File(folderPath).exists()){
+                            sendResponse(false);
+                            break;
+                        }
+                        boolean isRestoredInDB = folderService.restoreFolder(itemId);
+                        if(isRestoredInDB){
+                            FolderService.restoreFolderInPath(itemId, finalPath);
+                            response = UploadStatus.SUCCESS.getValue();
+                        }
                     } else {
                         FileService fileService = new FileService();
-                        response = fileService.restoreFile(itemId);
+                        String finalPath = fileService.getFinalPath(itemId);
+                        if(new java.io.File(ServerApp.SERVER_PATH + File.separator + finalPath + File.separator + fileService.getFullNameById(itemId)).exists()){
+                            sendResponse(UploadStatus.EXISTED.getValue());
+                            break;
+                        }
+                        if(finalPath == null || finalPath.isEmpty() || !new java.io.File(finalPath).exists()){
+                            sendResponse(false);
+                            break;
+                        }
+                        boolean isRestoredInDB = fileService.restoreFile(itemId);
+                        if(isRestoredInDB){
+                            FileService.restoreFileInPath(itemId, finalPath);
+                            response = UploadStatus.SUCCESS.getValue();
+                        }
+                    }
+                    sendResponse(response);
+                }
+                case "RESTORE_AND_REPLACE" -> {
+                    int itemId = Integer.parseInt((String) receiveRequest());
+                    boolean isFolder = Boolean.parseBoolean((String) receiveRequest());
+                    int response = UploadStatus.FAILED.getValue();
+                    if(isFolder){
+                        FolderService folderService = new FolderService();
+                        String finalPath = folderService.getFinalPath(itemId);
+                        String folderPath = FolderService.getFolderPath(itemId);
+                        if(finalPath == null || finalPath.isEmpty() || !new java.io.File(folderPath).exists()){
+                            sendResponse(UploadStatus.FAILED.getValue());
+                            break;
+                        }
+                        boolean isRestoredInDB = folderService.restoreFolder(itemId);
+                        if(isRestoredInDB){
+                            FolderService.restoreFolderInPath(itemId, finalPath);
+                            response = UploadStatus.SUCCESS.getValue();
+                        }
+                    } else {
+                        FileService fileService = new FileService();
+                        String finalPath = fileService.getFinalPath(itemId);
+                        if(finalPath == null || finalPath.isEmpty() || !new java.io.File(finalPath).exists()){
+                            sendResponse(UploadStatus.FAILED.getValue());
+                            break;
+                        }
+                        boolean isRestoredInDB = fileService.restoreFile(itemId);
+                        if(isRestoredInDB){
+                            FileService.restoreFileInPath(itemId, finalPath);
+                            response = UploadStatus.SUCCESS.getValue();
+                        }
                     }
                     sendResponse(response);
                 }
@@ -388,7 +517,7 @@ public class ClientHandler implements Runnable{
         }
     }
 
-    private List<File> getDeletedItemList(int userId, String searchText) {
+    private List<ItemDeletedDTO> getDeletedItemList(int userId, String searchText) {
         ItemService itemService = new ItemService();
         return itemService.getAllDeletedItem(userId, searchText);
     }
@@ -403,7 +532,7 @@ public class ClientHandler implements Runnable{
             int size = fileService.getSize(fileId);
             sendResponse(String.valueOf(size));
 
-            syncFile(fileService.getFilePath(fileId), size);
+            syncFile(FileService.getFilePath(fileId), size);
             return true;
         } catch (Exception e) {
             e.printStackTrace();
@@ -438,78 +567,42 @@ public class ClientHandler implements Runnable{
     }
 
     private void sendZipFolder(String zipFilePath, int size) {
-//        byte[] buffer = new byte[1024];
-//
-//        try(FileInputStream fileInputStream = new FileInputStream(zipFilePath)) {
-//            OutputStream fileOutputStream = clientSocket.getOutputStream();
-//            int bytesRead;
-//            while(size > 0 && (bytesRead = fileInputStream.read(buffer, 0, Math.min(buffer.length, size))) != -1) {
-//                fileOutputStream.write(buffer, 0, bytesRead);
-//                size -= bytesRead;
-//            }
-//            fileOutputStream.flush();
-//            System.out.println("File sent: " + zipFilePath);
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
         syncFile(zipFilePath, size);
     }
 
-    private List<User> getUserList() {
-        UserService userService = new UserService();
-        return userService.getAllUser();
+    private List<UserDTO> getUserList() {
+        return new UserService().getAllUser();
     }
 
-    private User getUserByUsername(String username) {
-        UserService userService = new UserService();
-        return userService.getUserByUserName(username);
-    }
 
-    private boolean updateUser(String username, String name, String email, String phone, Date birth, boolean gender) {
-        UserService userService = new UserService();
-        return userService.updateUser(username, name, email, phone, birth, gender);
-    }
-
-    private boolean changePassUser(String username, String newPass) {
-        UserService userService = new UserService();
-        return userService.changePassUser(username, newPass);
-    }
-
-    private List<File> getItemList(int userId, int folderId){
+    private List<ItemDTO> getItemList(int userId, int folderId){
         return getItemList(userId, folderId, "");
     }
-    private List<File> getItemList(int userId, int folderId, String searchText) {
+    private List<ItemDTO> getItemList(int userId, int folderId, String searchText) {
         ItemService itemService = new ItemService();
         return itemService.getAllItem(userId, folderId, searchText);
     }
     
-    private boolean uploadFile(String fileName, int ownerId, int folderId, int size){
+    private int uploadFile(String fileName, int userId, int folderId, int size){
         try{
             int indexOfDot = fileName.indexOf(".");
             String nameOfFile = fileName.substring(0, indexOfDot);
             String typeOfFile = fileName.substring(indexOfDot + 1);
 
-            TypeService typeService = new TypeService();
-            int fileTypeId = typeService.getTypeId(typeOfFile);
+            int fileTypeId = new TypeService().getTypeId(typeOfFile);
 
-            FileService fileService = new FileService();
-            String rs = fileService.uploadFile(nameOfFile, fileTypeId, folderId, ownerId, size);
-            boolean response = false;
-            if(!rs.equals("")){
-                receiveFile(rs, size);
+            boolean isUploaded = new FileService().uploadFile(nameOfFile, fileTypeId, folderId, userId, size);
+            if(isUploaded){
+                String filePath = FolderService.getFolderPath(folderId) + java.io.File.separator + fileName;
+                receiveFile(filePath, size);
                 System.out.println("Thêm file " + fileName + " thành công");
-                response = true;
-//                Thread receiveFileThread = new Thread(() -> {
-//                    receiveFile(rs, size);
-//                });
-//                receiveFileThread.start();
+                return UploadStatus.SUCCESS.getValue();
             } else {
-                System.out.println("Thêm file " + fileName + " thất bại");
+                return UploadStatus.FAILED.getValue();
             }
-            return response;
         } catch (Exception e) {
             e.printStackTrace();
-            return false;
+            return UploadStatus.FAILED.getValue();
         }
     }
 
@@ -544,7 +637,6 @@ public class ClientHandler implements Runnable{
         } catch (IOException e) {
             e.printStackTrace();
         }
-
     }
     
     private String getFileChanged(int fileId, String fileName) {
@@ -552,53 +644,29 @@ public class ClientHandler implements Runnable{
 		String rs = fileService.getFilePathChanged(fileId, fileName);
 		return rs;
 	}
-    
-    private boolean renameFile(int fileId, String fileName, String filePath, int size) {
-		FileService fileService = new FileService(); // Ensure FileService is initialized correctly
-		boolean response = fileService.renameFile(fileId, fileName);
-		if (response) {
-			System.out.println("Đổi tên file thành công");
-			receiveFile(filePath, size);
-		} else {
-			System.out.println("Không thể đổi tên file");
-		}
-		return response;
-	}
-    
-    private boolean renameFolder(int folderId, String folderName) throws ClassNotFoundException, IOException {
-		FolderService folderService = new FolderService(); // Ensure FileService is initialized correctly
-		boolean response = folderService.renameFolder(folderId, folderName);
-	
-		if (response) {
-			System.out.println("Upload folder " + folderName + " thành công");
-		} else {
-			System.out.println("Upload folder " + folderName + " thất bại");
-		}
-		return response;
-	}
 
     public boolean syncFolder(int userId, int folderId, String folderPath){
-        List<File> fileList = getItemList(userId, folderId);
+        List<ItemDTO> fileList = getItemList(userId, folderId);
         try {
             if(fileList != null){
-                for (File file : fileList) {
+                for (ItemDTO file : fileList) {
                     if (file.getTypeId() == 1) {
                         String folderName = file.getName();
-                        sendResponse("folder");
+                        sendResponse(String.valueOf(TypeEnum.FOLDER.getValue()));
                         sendResponse(folderName);
                         syncFolder(userId, file.getId(), folderPath + java.io.File.separator + folderName);
                     } else {
-                        String fileName = file.getName() + "." + file.getTypesByTypeId().getName();
+                        String fileName = file.getName() + "." + file.getTypeName();
                         String filePath = folderPath + java.io.File.separator + fileName;
-                        int size = file.getSize() == null ? 0 : file.getSize();
-                        sendResponse("file");
+                        int size = file.getSize();
+                        sendResponse(String.valueOf(TypeEnum.FILE.getValue()));
                         sendResponse(fileName);
                         sendResponse(String.valueOf(size));
                         syncFile(filePath, size);
                     }
                 }
             }
-            sendResponse("END_FOLDER");
+            sendResponse(String.valueOf(TypeEnum.EOF.getValue()));
             return true;
         } catch (Exception e) {
             e.printStackTrace();
@@ -620,17 +688,16 @@ public class ClientHandler implements Runnable{
         String folderPath = newFolderPath + java.io.File.separator + folderName;
         folderService.createFolderIfNotExist(folderPath);
 
-        List<File> fileList = getItemList(userId, folderId);
+        List<ItemDTO> fileList = getItemList(userId, folderId);
         try{
             if(fileList != null){
-                for (File file : fileList) {
-                    if (file.getTypeId() == 1) {
+                for (ItemDTO file : fileList) {
+                    if (file.getTypeId() == TypeEnum.FOLDER.getValue()) {
                         createCopyFolderTemp(userId, file.getId(), folderPath);
                     } else {
-                        String fileName = file.getName() + "." + file.getTypesByTypeId().getName();
+                        String fileName = file.getName() + "." + file.getTypeName();
                         String newFilePath = folderPath + java.io.File.separator + fileName;
-                        FileService fileService = new FileService();
-                        String realFilePath = fileService.getFilePath(file.getId());
+                        String realFilePath = FileService.getFilePath(file.getId());
                         createCopyFileTemp(realFilePath, newFilePath);
                     }
                 }
@@ -639,77 +706,105 @@ public class ClientHandler implements Runnable{
             e.printStackTrace();
         }
     }
-    
-    private boolean uploadFolder(String folderName, int ownerId, int parentId, int permission_type) throws IOException, ClassNotFoundException {
-        FolderService folderService = new FolderService();
-        int rs = folderService.uploadFolder(folderName, ownerId, parentId, permission_type);
-        sendResponse(String.valueOf(rs));
 
-        boolean response = true;
-        boolean check = true;
-
-        if(rs != -1){
-            System.out.println("Tạo folder "+ folderName + " thành công");
+    int checkUploadFileStatus(String fileName, int folderId, boolean isReplace) {
+        boolean isExist = FileService.checkFileExist(fileName, folderId);
+        if(isExist){
+            if(isReplace){
+                boolean isDeletedInDB = FileService.deleteFilePermanently(new FileService().getFileIdByFileNameAndFolderId(fileName, folderId));
+                if(!isDeletedInDB){
+                    return UploadStatus.FAILED.getValue();
+                } else {
+                    if(FileService.checkFileExistInPath(fileName, folderId)){
+                        FileService.deleteFileInPath(fileName, folderId);
+                    }
+                }
+            } else {
+                return UploadStatus.EXISTED.getValue();
+            }
         } else {
-            System.out.println("Tạo folder "+ folderName + " thất bại");
-            return false;
+            if(FileService.checkFileExistInPath(fileName, folderId)){
+                FileService.deleteFileInPath(fileName, folderId);
+            }
+        }
+        return UploadStatus.SUCCESS.getValue();
+    }
+
+    int checkUploadFolderStatus(String folderName, int parentId, boolean isReplace) {
+        boolean isExist = FolderService.checkFolderExist(folderName, parentId);
+        if(isExist){
+            if(isReplace){
+                FolderService folderService = new FolderService();
+                boolean isDeletedInDB = folderService.deleteFolderPermanently(folderService.getFolderIdByFolderNameAndParentId(folderName, parentId));
+                if(!isDeletedInDB){
+                    return UploadStatus.FAILED.getValue();
+                } else {
+                    if(FolderService.checkFolderExistInPath(folderName, parentId)){
+                        FolderService.deleteFolderInPath(folderName, parentId);
+                    }
+                }
+            } else {
+                return UploadStatus.EXISTED.getValue();
+            }
+        } else {
+            if(FolderService.checkFolderExistInPath(folderName, parentId)){
+                FolderService.deleteFolderInPath(folderName, parentId);
+            }
+        }
+        return UploadStatus.SUCCESS.getValue();
+    }
+
+    private int uploadFolder(String folderName, int userId, int parentId, int publicPermission) throws IOException, ClassNotFoundException {
+        FolderService folderService = new FolderService();
+        int folderId = folderService.uploadFolder(userId, folderName, userId, parentId, publicPermission);
+        sendResponse(String.valueOf(folderId));
+
+        if(folderId == -1){
+            return UploadStatus.FAILED.getValue();
         }
 
+        int isSuccess = UploadStatus.SUCCESS.getValue();
+
         // receive file and folder
-        String child_type = (String) receiveRequest();
-        while(!child_type.equals("END_FOLDER")){
-            if(child_type.equals("folder")){
+        int itemType = Integer.parseInt((String) receiveRequest());
+        while(itemType != TypeEnum.EOF.getValue()){
+            if(itemType == TypeEnum.FOLDER.getValue()){
                 String folderNameOfChild = (String) receiveRequest();
-                int ownerIdOfChild = Integer.parseInt((String) receiveRequest());
                 int parentIdOfChild = Integer.parseInt((String) receiveRequest());
-                response = uploadFolder(folderNameOfChild, ownerIdOfChild, parentIdOfChild, permission_type);
-                if(!response) check = false;
-            } else if(child_type.equals("file")){
+                if(uploadFolder(folderNameOfChild, userId, parentIdOfChild, publicPermission) != UploadStatus.SUCCESS.getValue()){
+                    isSuccess = UploadStatus.FAILED.getValue();
+                }
+            } else if(itemType == TypeEnum.FILE.getValue()){
                 String fileName = (String) receiveRequest();
-                int ownerIdOfFile = Integer.parseInt((String) receiveRequest());
                 int parentIdOfFile = Integer.parseInt((String) receiveRequest());
                 int sizeOfFile = Integer.parseInt((String) receiveRequest());
 
-                response = uploadFile(fileName, ownerIdOfFile, parentIdOfFile, sizeOfFile);
-                if(!response) check = false;
+                if(uploadFile(fileName, userId, parentIdOfFile, sizeOfFile) != UploadStatus.SUCCESS.getValue()){
+                    isSuccess = UploadStatus.FAILED.getValue();
+                }
             }
-            child_type = (String) receiveRequest();
+            itemType = Integer.parseInt((String) receiveRequest());
         }
 
-        if(check){
-            System.out.println("Upload folder "+ folderName + " thành công");
-        } else {
-            System.out.println("Upload folder "+ folderName + " thất bại");
-        }
-        return check;
+        return isSuccess;
     }
-    
-    private String getFileRenamePath(int fileId) {
-		FileService fileService = new FileService(); // Ensure FileService is initialized correctly
-		return fileService.getFilePath(fileId);
-	}
-    
-    private String getFolderRenamePath(int folderID) {
-		FolderService folderService = new FolderService();
-		return folderService.getFolderPath(folderID);
-	}
     
     private User getUserById(int id) {
         UserService userService = new UserService();
         System.out.println("Get user by id");
         return userService.getUserById(id);
     }
-    private List<File> getPrivateItemList(int ownerId, String searchText) {
+    private List<ItemDTO> getPrivateItemList(int ownerId, String searchText) {
         ItemService itemService = new ItemService();
         System.out.println("Get all private item");
         return itemService.getAllItemPrivateOwnerId(ownerId, searchText);
     }
-    private List<File> getOtherShareItemList(int ownerId, String searchText) {
+    private List<ItemDTO> getOtherShareItemList(int ownerId, String searchText) {
         ItemService itemService = new ItemService();
         System.out.println("Get all other share item");
         return itemService.getAllOtherShareItem(ownerId, searchText);
     }
-    private List<File> getSharedItemList(int ownerId, String searchText) {
+    private List<ItemDTO> getSharedItemList(int ownerId, String searchText) {
         ItemService itemService = new ItemService();
         System.out.println("Get all shared item");
         return itemService.getAllSharedItem(ownerId, searchText);
@@ -718,6 +813,7 @@ public class ClientHandler implements Runnable{
     public void sendResponse(Object response) {
         try{
             out.writeObject(response);
+            System.out.println("Server response: " + response);
             out.flush();
         } catch (IOException e) {
             e.printStackTrace();

@@ -13,14 +13,8 @@ import services.client.AccountService;
 import services.client.admin.UserService;
 import services.client.auth.LoginService;
 
-import javax.crypto.BadPaddingException;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
 import java.io.IOException;
 import java.net.URL;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 import java.time.LocalDate;
 import java.util.Calendar;
 import java.util.Date;
@@ -146,7 +140,7 @@ public class ManagementController implements Initializable {
 
     // Phương thức được gọi khi nhấp vào nút "Lưu" trong Tab "Đổi mật khẩu"
     @FXML
-    private void submitFormPass(ActionEvent event) throws InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, NoSuchAlgorithmException, BadPaddingException, InvalidKeyException {
+    private void submitFormPass(ActionEvent event)  {
         boolean oldPassError = textFieldIsNull(tfOldPass, oldPassErr, "Mật khẩu cũ không được để trống!");
         boolean newPassError = textFieldIsNull(tfNewPass, newPassErr, "Mật khẩu mới không được để trống!");
         boolean confirmPassError = textFieldIsNull(tfConfirmPass, confirmPassErr, "Xác nhận mật khẩu không được để trống!");
