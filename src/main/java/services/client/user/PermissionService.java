@@ -103,4 +103,20 @@ public class PermissionService {
             return false;
         }
     }
+
+    public int getSharedPermission(int itemId, boolean isFolder) {
+        try{
+            SocketClientHelper socketClientHelper = new SocketClientHelper();
+            socketClientHelper.sendRequest("GET_SHARED_PERMISSION");
+            socketClientHelper.sendRequest(String.valueOf(itemId));
+            socketClientHelper.sendRequest(String.valueOf(isFolder));
+
+            int response = (int) socketClientHelper.receiveResponse();
+            socketClientHelper.close();
+            return response;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return -1;
+        }
+    }
 }

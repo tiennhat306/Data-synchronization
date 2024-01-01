@@ -278,8 +278,10 @@ public class ClientHandler implements Runnable{
                 }
                 case "GET_ALL_ITEM_POPS_UP" -> {
                     int userId = Integer.parseInt((String) receiveRequest());
+                    int itemId = Integer.parseInt((String) receiveRequest());
+                    boolean isFolder = Boolean.parseBoolean((String) receiveRequest());
                     int folderId = Integer.parseInt((String) receiveRequest());
-                    List<MoveCopyFolderDTO> response = new ItemService().getAllFolderPopups(userId, folderId);
+                    List<MoveCopyFolderDTO> response = new ItemService().getAllFolderPopups(userId, itemId, isFolder, folderId);
                     sendResponse(response);
                 }
                 case "MOVE" -> {
@@ -312,17 +314,19 @@ public class ClientHandler implements Runnable{
                     }
                     int response;
                     if(isFolder){
+                        String beforePath = FolderService.getFolderPath(itemId);
                         boolean isMoveInDB = new FolderService().moveFolder(itemId, targetId);
                         if(isMoveInDB){
-                            FolderService.moveFolderInPath(itemId, targetId);
+                            FolderService.moveFolderInPath(beforePath, targetId);
                             response = UploadStatus.SUCCESS.getValue();
                         } else {
                             response = UploadStatus.FAILED.getValue();
                         }
                     } else {
+                        String beforePath = FileService.getFilePath(itemId);
                         boolean isMoveInDB = new FileService().moveFile(itemId, targetId);
                         if(isMoveInDB){
-                            FileService.moveFileInPath(itemId, targetId);
+                            FileService.moveFileInPath(beforePath, targetId);
                             response = UploadStatus.SUCCESS.getValue();
                         } else {
                             response = UploadStatus.FAILED.getValue();
@@ -348,17 +352,19 @@ public class ClientHandler implements Runnable{
 
                     int response;
                     if(isFolder){
+                        String beforePath = FolderService.getFolderPath(itemId);
                         boolean isMoveInDB = new FolderService().moveFolder(itemId, targetId);
                         if(isMoveInDB){
-                            FolderService.moveFolderInPath(itemId, targetId);
+                            FolderService.moveFolderInPath(beforePath, targetId);
                             response = UploadStatus.SUCCESS.getValue();
                         } else {
                             response = UploadStatus.FAILED.getValue();
                         }
                     } else {
+                        String beforePath = FileService.getFilePath(itemId);
                         boolean isMoveInDB = new FileService().moveFile(itemId, targetId);
                         if(isMoveInDB){
-                            FileService.moveFileInPath(itemId, targetId);
+                            FileService.moveFileInPath(beforePath, targetId);
                             response = UploadStatus.SUCCESS.getValue();
                         } else {
                             response = UploadStatus.FAILED.getValue();
@@ -399,17 +405,19 @@ public class ClientHandler implements Runnable{
 
                     int response;
                     if(isFolder){
+                        String beforePath = FolderService.getFolderPath(itemId);
                         boolean isCopyInDB = new FolderService().copyFolder(itemId, targetId);
                         if(isCopyInDB){
-                            FolderService.copyFolderInPath(itemId, targetId);
+                            FolderService.copyFolderInPath(beforePath, targetId);
                             response = UploadStatus.SUCCESS.getValue();
                         } else {
                             response = UploadStatus.FAILED.getValue();
                         }
                     } else {
+                        String beforePath = FileService.getFilePath(itemId);
                         boolean isCopyInDB = new FileService().copyFile(itemId, targetId);
                         if(isCopyInDB){
-                            FileService.copyFileInPath(itemId, targetId);
+                            FileService.copyFileInPath(beforePath, targetId);
                             response = UploadStatus.SUCCESS.getValue();
                         } else {
                             response = UploadStatus.FAILED.getValue();
@@ -436,17 +444,19 @@ public class ClientHandler implements Runnable{
 
                     int response;
                     if(isFolder){
+                        String beforePath = FolderService.getFolderPath(itemId);
                         boolean isCopyInDB = new FolderService().copyFolder(itemId, targetId);
                         if(isCopyInDB){
-                            FolderService.copyFolderInPath(itemId, targetId);
+                            FolderService.copyFolderInPath(beforePath, targetId);
                             response = UploadStatus.SUCCESS.getValue();
                         } else {
                             response = UploadStatus.FAILED.getValue();
                         }
                     } else {
+                        String beforePath = FileService.getFilePath(itemId);
                         boolean isCopyInDB = new FileService().copyFile(itemId, targetId);
                         if(isCopyInDB){
-                            FileService.copyFileInPath(itemId, targetId);
+                            FileService.copyFileInPath(beforePath, targetId);
                             response = UploadStatus.SUCCESS.getValue();
                         } else {
                             response = UploadStatus.FAILED.getValue();
@@ -463,6 +473,12 @@ public class ClientHandler implements Runnable{
                     sendResponse(userPath + java.io.File.separator + folderPath);
 
                     boolean response = syncFolder(userId, folderId, FolderService.getFolderPath(folderId));
+                    sendResponse(response);
+                }
+                case "GET_SHARED_PERMISSION" -> {
+                    int itemId = Integer.parseInt((String) receiveRequest());
+                    boolean isFolder = Boolean.parseBoolean((String) receiveRequest());
+                    int response = new PermissionService().getSharedPermission(itemId, isFolder);
                     sendResponse(response);
                 }
                 case "GET_SHARED_USER" -> {
@@ -484,7 +500,7 @@ public class ClientHandler implements Runnable{
                     int permissionType = Integer.parseInt((String) receiveRequest());
                     int ownerId = Integer.parseInt((String) receiveRequest());
                     PermissionService permissionService = new PermissionService();
-                    if(!(permissionType == PermissionType.READ.getValue() || permissionType == PermissionType.WRITE.getValue())){
+                    if(!(permissionType <= PermissionType.WRITE.getValue())){
                         sendResponse(false);
                         break;
                     }
@@ -585,15 +601,17 @@ public class ClientHandler implements Runnable{
                     boolean isFolder = Boolean.parseBoolean((String) receiveRequest());
                     boolean response = false;
                     if(isFolder){
+                        String pathInTrash = FolderService.getFolderPath(itemId);
                         boolean isDeletedInDB =  new FolderService().deleteFolderPermanently(itemId);
                         if(isDeletedInDB){
-                            FolderService.deleteFolderInPath(itemId);
+                            FolderService.deleteFolderIfExist(pathInTrash);
                             response = true;
                         }
                     } else {
+                        String pathInTrash = FileService.getFilePath(itemId);
                         boolean isDeletedInDB = FileService.deleteFilePermanently(itemId);
                         if(isDeletedInDB){
-                            FileService.deleteFileInPath(itemId);
+                            FileService.deleteFileIfExist(pathInTrash);
                             response = true;
                         }
                     }

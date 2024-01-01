@@ -2,6 +2,7 @@ package services.server.user;
 
 import DTO.UserToShareDTO;
 import enums.PermissionType;
+import enums.Role;
 import jakarta.persistence.NoResultException;
 import models.Permission;
 import org.hibernate.Session;
@@ -207,15 +208,12 @@ public class PermissionService {
 
     public List<UserToShareDTO> getSharedUser(int itemId, boolean isFolder) {
         try(Session session = HibernateUtil.getSessionFactory().openSession()) {
-//            String query = "select u from User u where u.id in (select per.userId from Permission per where per." + (isFolder ? "folderId" : "fileId") + " = :itemId AND per.userId is not null AND per.permissionType > :permissionType)";
-//            List<User> userList = session.createQuery(query, User.class)
-//                    .setParameter("itemId", itemId)
-//                    .setParameter("permissionType", PermissionType.PRIVATE.getValue())
-//                    .list();
-
+            int ownerId = getOwnerId(itemId, isFolder);
             return session.createQuery("select new DTO.UserToShareDTO(u.id, u.name, u.email) from User u" +
-                            " where u.id in (select per.userId from Permission per where per." + (isFolder ? "folderId" : "fileId") + " = :itemId" +
+                            " where u.role <> :adminRole AND u.id <> :ownerId AND u.id in (select per.userId from Permission per where per." + (isFolder ? "folderId" : "fileId") + " = :itemId" +
                             " AND per.userId is not null)", UserToShareDTO.class)
+                    .setParameter("adminRole", Role.ADMIN.getValue())
+                    .setParameter("ownerId", ownerId)
                     .setParameter("itemId", itemId)
                     .list();
         } catch (Exception e) {
@@ -268,16 +266,13 @@ public class PermissionService {
 
     public List<UserToShareDTO> searchUnsharedUser(int itemId, boolean isFolder, String searchText) {
         try(Session session = HibernateUtil.getSessionFactory().openSession()) {
-//            String query = "select u from User u where u.id " +
-//                    "not in (select per.userId from Permission per where per." + (itemTypeId == 1 ? "folderId" : "fileId") + " = :itemId AND per.userId is not null)" +
-//                    " AND u.username like :searchText";
-//            return session.createQuery(query, User.class)
-//                    .setParameter("itemId", itemId)
-//                    .setParameter("searchText", "%" + searchText + "%")
-//                    .list();
+            int ownerId = getOwnerId(itemId, isFolder);
+
             return session.createQuery("select new DTO.UserToShareDTO(u.id, u.name, u.email) from User u" +
-                            " where u.id not in (select per.userId from Permission per where per." + (isFolder? "folderId" : "fileId") + " = :itemId AND per.userId is not null)" +
+                            " where u.role <> :adminRole AND u.id <> :ownerId AND u.id not in (select per.userId from Permission per where per." + (isFolder? "folderId" : "fileId") + " = :itemId AND per.userId is not null)" +
                             " AND u.username like :searchText", UserToShareDTO.class)
+                    .setParameter("adminRole", Role.ADMIN.getValue())
+                    .setParameter("ownerId", ownerId)
                     .setParameter("itemId", itemId)
                     .setParameter("searchText", "%" + searchText + "%")
                     .list();
@@ -352,6 +347,30 @@ public class PermissionService {
                 return permission.getPermissionType();
             } catch (NoResultException e) {
                 return -1;
+            } catch (Exception e) {
+                e.printStackTrace();
+                return -1;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return -1;
+        }
+    }
+
+    public int getSharedPermission(int itemId, boolean isFolder) {
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
+            Permission permission;
+            try {
+                permission = session.createQuery("select per from Permission per where per." + (isFolder ? "folderId" : "fileId") + " = :itemId AND per.userId is not null", Permission.class)
+                        .setParameter("itemId", itemId)
+                        .setMaxResults(1)
+                        .uniqueResult();
+                if(permission == null) {
+                    throw new NoResultException();
+                }
+                return permission.getPermissionType();
+            } catch (NoResultException e) {
+                return getPublicPermission(itemId, isFolder);
             } catch (Exception e) {
                 e.printStackTrace();
                 return -1;

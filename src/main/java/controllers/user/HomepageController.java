@@ -438,8 +438,9 @@ public class HomepageController implements Initializable {
 			// Move file
 			int itemTypeId = selectedItem.getTypeId();
 			int itemId = selectedItem.getId();
+			int parentId = selectedItem.getParentId();
 
-			showMoveCopyPopup(itemId, itemTypeId, false);
+			showMoveCopyPopup(itemId, itemTypeId, parentId, false);
 			popup.hide();
 		});
 
@@ -447,7 +448,8 @@ public class HomepageController implements Initializable {
 			// Copy file
 			int itemTypeId = selectedItem.getTypeId();
 			int itemId = selectedItem.getId();
-			showMoveCopyPopup(itemId, itemTypeId, true);
+			int parentId = selectedItem.getParentId();
+			showMoveCopyPopup(itemId, itemTypeId, parentId, true);
 			popup.hide();
 		});
 
@@ -657,7 +659,7 @@ public class HomepageController implements Initializable {
 				if(rs == UploadStatus.SUCCESS.getValue()) return UploadStatus.SUCCESS.getValue();
 				else if(rs == UploadStatus.EXISTED.getValue()) {
 					Platform.runLater(() -> {
-						if(AlertConfirm("Xác nhận", "Tập tin đã tồn tại, bạn có muốn thay thế không?")) {
+						if(AlertConfirm((Stage) dataTable.getScene().getWindow(), "Xác nhận", "Tập tin đã tồn tại, bạn có muốn thay thế không?")) {
 							int success = itemService.restoreAndReplace(itemId, isFolder);
 							if(success == UploadStatus.SUCCESS.getValue()) {
 								fillData();
@@ -666,8 +668,7 @@ public class HomepageController implements Initializable {
 							else Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Khôi phục thất bại");
 						}
 					});
-				} else {
-					return UploadStatus.FAILED.getValue();
+					return UploadStatus.EXISTED.getValue();
 				}
 				return UploadStatus.FAILED.getValue();
 			}
@@ -679,7 +680,7 @@ public class HomepageController implements Initializable {
 				fillDeletedData();
 				Toast.showToast((Stage) dataTable.getScene().getWindow(), 1, "Khôi phục thành công");
 			}
-			else Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Khôi phục thất bại");
+			else if(response == UploadStatus.FAILED.getValue()) Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Khôi phục thất bại");
 		});
 
 		restoreTask.setOnFailed(e -> {
@@ -768,11 +769,13 @@ public class HomepageController implements Initializable {
 		sortedList.comparatorProperty().bind(dataTable.comparatorProperty());
     }
 
-	public boolean AlertConfirm(String title, String content) {
+	public boolean AlertConfirm(Stage initStage, String title, String content) {
 		Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
 		alert.setTitle(title);
 		alert.setHeaderText(null);
 		alert.setContentText(content);
+
+		alert.initOwner(initStage);
 
 		Optional<ButtonType> result = alert.showAndWait();
 		return result.isPresent() && result.get() == ButtonType.OK;
@@ -798,7 +801,7 @@ public class HomepageController implements Initializable {
 						if(rs == UploadStatus.SUCCESS.getValue()) return UploadStatus.SUCCESS.getValue();
 						else if(rs == UploadStatus.EXISTED.getValue()) {
 							Platform.runLater(() -> {
-								if(AlertConfirm("Xác nhận", "File đã tồn tại, bạn có muốn thay thế không?")) {
+								if(AlertConfirm((Stage) dataTable.getScene().getWindow(), "Xác nhận", "File đã tồn tại, bạn có muốn thay thế không?")) {
 									int success = itemService.uploadFileAndReplace(userId, fileName, currentFolderId, (int) file.length(), filePath);
 									if(success == UploadStatus.SUCCESS.getValue()) {
 										fillData();
@@ -807,6 +810,7 @@ public class HomepageController implements Initializable {
 									else Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Upload file thất bại");
 								}
 							});
+							return UploadStatus.EXISTED.getValue();
 						}
 						return UploadStatus.FAILED.getValue();
                     }
@@ -818,7 +822,7 @@ public class HomepageController implements Initializable {
 						fillData();
 						Toast.showToast((Stage) dataTable.getScene().getWindow(), 1, "Upload file thành công");
 					}
-					else Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Upload file thất bại");
+					else if(response == UploadStatus.FAILED.getValue()) Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Upload file thất bại");
 				});
 
 				uploadFileTask.setOnFailed(e -> {
@@ -852,7 +856,7 @@ public class HomepageController implements Initializable {
 					if(rs == UploadStatus.SUCCESS.getValue()) return UploadStatus.SUCCESS.getValue();
 					else if(rs == UploadStatus.EXISTED.getValue()) {
 						Platform.runLater(() -> {
-							if(AlertConfirm("Xác nhận", "Thư mục đã tồn tại, bạn có muốn thay thế không?")) {
+							if(AlertConfirm((Stage) dataTable.getScene().getWindow(), "Xác nhận", "Thư mục đã tồn tại, bạn có muốn thay thế không?")) {
 								int success = itemService.uploadFolderAndReplace(userId, folderName, currentFolderId, folderPath);
 								if(success == UploadStatus.SUCCESS.getValue()) {
 									fillData();
@@ -861,19 +865,20 @@ public class HomepageController implements Initializable {
 								else Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Upload folder thất bại");
 							}
 						});
+						return UploadStatus.EXISTED.getValue();
 					}
 
-                    return null;
+                    return UploadStatus.FAILED.getValue();
                 }
 			};
 
 			uploadFolderTask.setOnSucceeded(e -> {
-				if(uploadFolderTask.getValue() == null) return;
-				if(uploadFolderTask.getValue()  == UploadStatus.SUCCESS.getValue()) {
+				int response = uploadFolderTask.getValue();
+				if(response  == UploadStatus.SUCCESS.getValue()) {
 					fillData();
 					Toast.showToast((Stage) dataTable.getScene().getWindow(), 1, "Upload folder thành công");
 				}
-				else Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Upload folder thất bại");
+				else if(response == UploadStatus.FAILED.getValue()) Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Upload folder thất bại");
 			});
 
 			uploadFolderTask.setOnFailed(e -> {
@@ -894,7 +899,9 @@ public class HomepageController implements Initializable {
 	VBox moveCopyContainer;
 	List<HBox> breadList;
 	
-	public void showMoveCopyPopup(int itemID, int itemTypeID, boolean isCopy) {
+	public void showMoveCopyPopup(int itemID, int itemTypeID, int parentId, boolean isCopy) {
+		moveCopyFolderId = GENERAL;
+
 	    Stage moveCopyStage = new Stage();
 	    moveCopyStage.initModality(Modality.APPLICATION_MODAL);
 	    moveCopyStage.setTitle(isCopy ? "Sao chép" : "Di chuyển");
@@ -939,7 +946,7 @@ public class HomepageController implements Initializable {
 	        @Override
 	        protected List<MoveCopyFolderDTO> call() throws Exception {
 	            ItemService itemService = new ItemService();
-	            return itemService.getAllFolderPopUps(userId, moveCopyFolderId);
+	            return itemService.getAllFolderPopUps(userId, itemID, itemTypeID == TypeEnum.FOLDER.getValue(), moveCopyFolderId);
 	        }
 	    };
 
@@ -966,6 +973,11 @@ public class HomepageController implements Initializable {
 	    moveCopyBtn.setStyle("-fx-border-width: 1px");
 	    
 	    moveCopyBtn.setOnAction(e -> {
+			if(moveCopyFolderId == parentId) {
+				Toast.showToast(moveCopyStage, 0, "Hãy chọn thư mục mới");
+				return;
+			}
+
 			moveCopyStage.close();
 	        Task<Integer> moveCopyTask = new Task<Integer>() {
 	            @Override
@@ -981,7 +993,7 @@ public class HomepageController implements Initializable {
 						if(response == UploadStatus.SUCCESS.getValue()) return UploadStatus.SUCCESS.getValue();
 						else if(response == UploadStatus.EXISTED.getValue()) {
 							Platform.runLater(() -> {
-								if(AlertConfirm("Xác nhận", "Tập tin đã tồn tại, bạn có muốn thay thế không?")) {
+								if(AlertConfirm(moveCopyStage, "Xác nhận", "Tập tin đã tồn tại, bạn có muốn thay thế không?")) {
 									int success;
 									try {
 										if(isCopy) {
@@ -1000,6 +1012,7 @@ public class HomepageController implements Initializable {
 									else Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, (isCopy ? "Sao chép" : "Di chuyển" ) +  " thất bại");
 								}
 							});
+							return UploadStatus.EXISTED.getValue();
 						}
 						return UploadStatus.FAILED.getValue();
 	                } catch (Exception e) {
@@ -1012,7 +1025,7 @@ public class HomepageController implements Initializable {
 	            int response = moveCopyTask.getValue();
 	            if (response == UploadStatus.SUCCESS.getValue()) {
 					Toast.showToast((Stage) dataTable.getScene().getWindow(), 1, (isCopy ? "Sao chép" : "Di chuyển" ) +  " thành công");
-	            } else {
+	            } else if(response == UploadStatus.FAILED.getValue()) {
 					Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, (isCopy ? "Sao chép" : "Di chuyển" ) +  " thất bại");
 	            }
 	            if(!isCopy) fillData();
@@ -1114,13 +1127,15 @@ public class HomepageController implements Initializable {
 	        System.out.println("Selected File ID: " + selectedFile.getId());
 	        System.out.println("Selected File Name: " + selectedFile.getName());
 
+			moveCopyFolderId = selectedFile.getId();
+
 			HBox _breadcumb = createBreadcrumbForm(selectedFile.getId(), selectedFile.getName());
 			breadList.add(_breadcumb);
 
 			// Update the UI on the JavaFX Application Thread
 			Platform.runLater(() -> {
 				moveCopyContainer.getChildren().setAll(breadList);
-				updateFolderList(breadList, moveCopyContainer);
+				updateFolderList(breadList, file.getId(), moveCopyContainer);
 			});
 	    });
 
@@ -1128,12 +1143,12 @@ public class HomepageController implements Initializable {
 	}
 
 
-	private void updateFolderList(List<HBox> breadList, VBox moveCopyContainer) {
+	private void updateFolderList(List<HBox> breadList, int itemId, VBox moveCopyContainer) {
 		Task<List<MoveCopyFolderDTO>> nextTask = new Task<List<MoveCopyFolderDTO>>() {
 	        @Override
 	        protected List<MoveCopyFolderDTO> call() throws Exception {
 	            ItemService itemService = new ItemService();
-	            return itemService.getAllFolderPopUps(userId, moveCopyFolderId);
+	            return itemService.getAllFolderPopUps(userId, itemId, true, moveCopyFolderId);
 	        }
 	    };
 	    
@@ -1167,8 +1182,6 @@ public class HomepageController implements Initializable {
 	    // Change the order here
 	    breadcrumb.getChildren().addAll(folderText, angleRightIcon, spacer1, spacer2);
 
-	    currentFolderId = folderId;
-
 	    breadcrumb.setOnMouseClicked(event -> {
 	        System.out.println("Clicked on Breadcrumb with ID: " + folderId);
 	        int clickedIndex = breadList.indexOf(breadcrumb);
@@ -1178,7 +1191,7 @@ public class HomepageController implements Initializable {
 	            breadList.clear();
 	            breadList.addAll(keepBreadcrumbs);
 	            moveCopyFolderId = folderId;
-	            updateFolderList(breadList, moveCopyContainer);
+	            updateFolderList(breadList, moveCopyFolderId, moveCopyContainer);
 	        }
 	    });
 
@@ -1214,7 +1227,7 @@ public class HomepageController implements Initializable {
 			@Override
 			protected Integer call() throws Exception {
 				PermissionService permissionService = new PermissionService();
-				int permission = permissionService.getPublicPermission(itemId, isFolder);
+				int permission = permissionService.getSharedPermission(itemId, isFolder);
 				ownerId[0] = permissionService.getOwnerId(itemId, isFolder);
 				return permission;
 			}
@@ -1254,7 +1267,11 @@ public class HomepageController implements Initializable {
 		// on combobox click change permission
 		permissionCbb.setOnAction(event -> {
 			if(!initCbb[0]) return;
-			int permission = permissionCbb.getSelectionModel().getSelectedIndex() == 0 ? PermissionType.READ.getValue() : PermissionType.WRITE.getValue();
+			int permission = permissionCbb.getSelectionModel().getSelectedIndex() == 0
+					? PermissionType.PRIVATE.getValue()
+					: permissionCbb.getSelectionModel().getSelectedIndex() == 1
+						? PermissionType.READ.getValue()
+						: PermissionType.WRITE.getValue();
 			Task<Boolean> changePermissionTask = new Task<Boolean>() {
 				@Override
 				protected Boolean call() throws Exception {
@@ -1472,32 +1489,9 @@ public class HomepageController implements Initializable {
 					try {
 						int userId = Integer.parseInt(userBox.getId());
 
-						// task to remove permission of user in server
-						Task<Boolean> removePermissionTask = new Task<Boolean>() {
-							@Override
-							protected Boolean call() throws Exception {
-								PermissionService permissionService = new PermissionService();
-								return permissionService.removeSharedPermission(itemId, isFolder, userId);
-							}
-						};
+						userIds.remove((Integer) userId);
+						userSelectedContainer.getChildren().remove(userBox);
 
-						removePermissionTask.setOnSucceeded(event1 -> {
-							boolean response = removePermissionTask.getValue();
-							if(response) {
-								Toast.showToast(shareStage, 1, "Xóa quyền chia sẻ thành công");
-
-								userIds.remove((Integer) userId);
-								userSelectedContainer.getChildren().remove(userBox);
-							}
-							else Toast.showToast(shareStage, 0, "Xóa quyền chia sẻ thất bại");
-						});
-
-						removePermissionTask.setOnFailed(event1 -> {
-							Toast.showToast(shareStage, 0, "Xóa quyền chia sẻ thất bại");
-						});
-
-						Thread thread = new Thread(removePermissionTask);
-						thread.start();
 					} catch (NumberFormatException exc) {
 						Toast.showToast(shareStage, 0, "Lỗi định dạng ID người dùng");
 					} catch (Exception exc) {

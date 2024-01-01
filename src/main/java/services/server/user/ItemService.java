@@ -56,7 +56,7 @@ public class ItemService {
         }
     }
     
-    public List<MoveCopyFolderDTO> getAllFolderPopups(int userId, int folderId){
+    public List<MoveCopyFolderDTO> getAllFolderPopups(int userId, int itemId, boolean isFolder, int folderId){
         PermissionService permissionService = new PermissionService();
         int permission = permissionService.checkUserPermission(userId, folderId, true);
         if (permission < PermissionType.READ.getValue()) {
@@ -68,7 +68,7 @@ public class ItemService {
 
             String folderPermissionConditions = "(per.permissionType IN (2, 3) AND (per.userId is null OR per.userId = :userId)) OR fd.ownerId = :userId";
             String folderQuery = "select distinct fd from Folder fd Join Permission per on fd.id = per.folderId" +
-                    " where fd.parentId = :folderId AND fd.isDeleted = false" +
+                    " where fd.parentId = :folderId AND fd.isDeleted = false" + (isFolder ? " AND fd.id <> " + itemId : "") +
                     " AND (" + folderPermissionConditions + ")";
             List<Folder> folderList = session.createQuery(folderQuery, Folder.class)
                     .setParameter("folderId", folderId)
@@ -129,6 +129,7 @@ public class ItemService {
                 folderToItemDTO.setName(folder.getFolderName());
                 folderToItemDTO.setTypeId(TypeEnum.FOLDER.getValue());
                 folderToItemDTO.setTypeName("");
+                folderToItemDTO.setParentId(folder.getParentId());
                 folderToItemDTO.setOwnerId(folder.getOwnerId());
                 folderToItemDTO.setOwnerName(folder.getUsersByOwnerId().getName());
 
@@ -160,6 +161,7 @@ public class ItemService {
                 fileToItemDTO.setName(file.getName());
                 fileToItemDTO.setTypeId(file.getTypeId());
                 fileToItemDTO.setTypeName(file.getTypesByTypeId().getName());
+                fileToItemDTO.setParentId(file.getFolderId());
                 fileToItemDTO.setOwnerId(file.getOwnerId());
                 fileToItemDTO.setOwnerName(file.getUsersByOwnerId().getName());
                 fileToItemDTO.setUpdatedDate(file.getUpdatedAt());

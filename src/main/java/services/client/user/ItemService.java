@@ -33,12 +33,14 @@ public class ItemService {
             return null;
         }
     }
-    public List<MoveCopyFolderDTO> getAllFolderPopUps(int userId, int folderId){
+    public List<MoveCopyFolderDTO> getAllFolderPopUps(int userId, int itemId, boolean isFolder, int folderId){
         try {
             SocketClientHelper socketClientHelper = new SocketClientHelper();
             // send request to server
             socketClientHelper.sendRequest("GET_ALL_ITEM_POPS_UP");
             socketClientHelper.sendRequest(String.valueOf(userId));
+            socketClientHelper.sendRequest(String.valueOf(itemId));
+            socketClientHelper.sendRequest(String.valueOf(isFolder));
             socketClientHelper.sendRequest(String.valueOf(folderId));
 
             Object obj = socketClientHelper.receiveResponse();
