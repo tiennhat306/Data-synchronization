@@ -9,6 +9,7 @@ public class ItemDTO implements Serializable {
     private int typeId;
     private String name;
     private String typeName;
+    private int parentId;
     private int ownerId;
     private String ownerName;
     private Date updatedDate;
@@ -51,6 +52,14 @@ public class ItemDTO implements Serializable {
 
     public void setTypeName(String typeName) {
         this.typeName = typeName;
+    }
+
+    public int getParentId() {
+        return parentId;
+    }
+
+    public void setParentId(int parentId) {
+        this.parentId = parentId;
     }
 
     public int getOwnerId() {

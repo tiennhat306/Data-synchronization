@@ -15,6 +15,16 @@ import java.sql.Timestamp;
 import java.util.List;
 import java.util.ResourceBundle;
 
+import org.hibernate.HibernateException;
+import org.hibernate.NonUniqueResultException;
+import org.hibernate.Session;
+import org.hibernate.Transaction;
+
+import applications.ServerApp;
+import jakarta.persistence.NoResultException;
+import models.File;
+import utils.HibernateUtil;
+
 public class FileService {
     public FileService() {
     }
@@ -58,6 +68,8 @@ public class FileService {
         }
     }
 
+
+
     public static void moveToTrash(int itemId) {
         try(Session session = HibernateUtil.getSessionFactory().openSession()) {
             File file = session.find(File.class, itemId);
@@ -94,6 +106,82 @@ public class FileService {
         }
     }
 
+    public static void moveFileInPath(String beforePath, int targetId) {
+        try {
+            String fileName = beforePath.substring(beforePath.lastIndexOf(java.io.File.separator) + 1);
+            String targetPath = FolderService.getFolderPath(targetId) + java.io.File.separator + fileName;
+            java.io.File fileToMove = new java.io.File(beforePath);
+            java.io.File targetFile = new java.io.File(targetPath);
+            if (!targetFile.getParentFile().exists()) {
+                try {
+                    Files.createDirectories(targetFile.getParentFile().toPath());
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
+            if(beforePath.equals(targetPath)) return;
+            System.err.println("Move file from: " + beforePath);
+            System.err.println("Move file to: " + targetPath);
+            Files.move(fileToMove.toPath(), targetFile.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void renameFileInPath(int itemId, String newName) {
+        try {
+            String filePath = getFilePath(itemId);
+            String targetPath = filePath.substring(0, filePath.lastIndexOf(java.io.File.separator) + 1) + newName;
+            java.io.File fileToMove = new java.io.File(filePath);
+            java.io.File targetFile = new java.io.File(targetPath);
+            if (!targetFile.getParentFile().exists()) {
+                try {
+                    Files.createDirectories(targetFile.getParentFile().toPath());
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
+            Files.move(fileToMove.toPath(), targetFile.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void copyFileInPath(String beforePath, int targetId) {
+        try {
+            String fileName = beforePath.substring(beforePath.lastIndexOf(java.io.File.separator) + 1);
+            String targetPath = FolderService.getFolderPath(targetId) + java.io.File.separator + fileName;
+            java.io.File fileToMove = new java.io.File(beforePath);
+            java.io.File targetFile = new java.io.File(targetPath);
+            if (!targetFile.getParentFile().exists()) {
+                try {
+                    Files.createDirectories(targetFile.getParentFile().toPath());
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
+            if(beforePath.equals(targetPath)) return;
+            System.err.println("Copy file from: " + beforePath);
+            System.err.println("Copy file to: " + targetPath);
+            Files.copy(fileToMove.toPath(), targetFile.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void deleteFileIfExist(String pathInTrash) {
+        java.io.File file = new java.io.File(pathInTrash);
+        try {
+            Files.deleteIfExists(file.toPath());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+
     public List<File> getAllFile() {
         try(Session session = HibernateUtil.getSessionFactory().openSession()) {
             return session.createQuery("select f from File f", File.class).list();
@@ -119,6 +207,56 @@ public class FileService {
         } catch (Exception e) {
             e.printStackTrace();
             return null;
+        }
+    }
+    
+    public int getFileIDByName(String name, int parentID) {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            Integer fileId = session.createQuery("select f.id from File f where f.name = :name and f.folderId = :parentID", Integer.class)
+                    .setParameter("name", name)
+                    .setParameter("parentID", parentID)
+                    .uniqueResult();
+
+            return (fileId != null) ? fileId : -1; // If fileId is null, return -1 (file not found)
+        } catch (NoResultException e) {
+            // Handle the case where no result is found
+            System.err.println("Warning: No file found with the specified name.");
+            return -1;
+        } catch (NonUniqueResultException e) {
+            // Handle the case where there are multiple files with the same name
+            System.err.println("Warning: Multiple files found with the same name.");
+            return -1;
+        } catch (HibernateException e) {
+            e.printStackTrace(); // Log the exception or handle it appropriately
+            return -1; // Handle the exception appropriately
+        }
+    }
+
+
+
+
+    public boolean addFile(File file) {
+        Transaction transaction = null;
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
+            transaction = session.beginTransaction();
+            session.persist(file);
+            transaction.commit();
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+    public boolean updateFile(File file) {
+        Transaction transaction = null;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()){
+            transaction = session.beginTransaction();
+            session.merge(file);
+            transaction.commit();
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
         }
     }
     
@@ -238,6 +376,115 @@ public class FileService {
         }
     }
 
+    public boolean deleteSameFileIfExist(String name, int typeId, int folderId) {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()){
+            Transaction transaction = session.beginTransaction();
+            try {
+                File file = session.createQuery("select f from File f where f.name = :name AND f.typeId = :typeId AND f.folderId = :folderId", File.class)
+                        .setParameter("name", name)
+                        .setParameter("typeId", typeId)
+                        .setParameter("folderId", folderId)
+                        .getSingleResult();
+
+                if(file != null) {
+                    String pathSameFile = FileService.getFilePath(file.getId());
+                    boolean isDeletedInDB = FileService.deleteFilePermanently(file.getId());
+                    if(isDeletedInDB){
+                        FileService.deleteFileIfExist(pathSameFile);
+                        transaction.commit();
+                        return true;
+                    } else {
+                        transaction.rollback();
+                        return false;
+                    }
+                }
+                return true;
+            } catch (NoResultException e) {
+                return true;
+            } catch (Exception e) {
+                e.printStackTrace();
+                transaction.rollback();
+                return false;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean copyFile(int id, int folderId) {
+    	try(Session session = HibernateUtil.getSessionFactory().openSession()){
+    		Transaction transaction = session.beginTransaction();
+            try {
+                File file = session.find(File.class, id);
+
+                boolean isDeletedSameFile = deleteSameFileIfExist(file.getName(), file.getTypeId(), folderId);
+                if(!isDeletedSameFile) {
+                	return false;
+                }
+
+                File newfile = new File();
+                // Set the properties of the File entity
+                newfile.setName(file.getName());
+                newfile.setTypeId(file.getTypeId());
+                newfile.setFolderId(folderId);
+                newfile.setOwnerId(file.getOwnerId());
+                newfile.setSize(file.getSize());
+                newfile.setCreatedAt(file.getCreatedAt());
+                newfile.setUpdatedAt(file.getUpdatedAt());
+                newfile.setUpdatedBy(file.getUpdatedBy());
+
+                // Persist the File entity
+                session.persist(newfile);
+                session.getTransaction().commit();
+                return true;
+            } catch (Exception e) {
+                e.printStackTrace();
+                transaction.rollback();
+                return false;
+            }
+    	} catch (Exception e) {
+    		e.printStackTrace();
+    		return false;
+		}
+    }
+    
+    public boolean moveFile(int id, int folder_id) {
+        Transaction transaction = null;
+        
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            transaction = session.beginTransaction();
+
+            File file = session.find(File.class, id);
+
+            boolean isDeletedSameFile = deleteSameFileIfExist(file.getName(), file.getTypeId(), folder_id);
+            if(!isDeletedSameFile) {
+                return false;
+            }
+
+            session.createQuery("delete from File f where f.name = :name AND f.typeId = :typeId AND f.folderId = :folderId")
+                    .setParameter("name", file.getName())
+                    .setParameter("typeId", file.getTypeId())
+                    .setParameter("folderId", folder_id)
+                    .executeUpdate();
+
+            if (file != null) {
+                // Update the file's name
+                file.setFolderId(folder_id);
+                transaction.commit();
+                return true;
+            } else {
+                return false;
+            }
+        } catch (Exception e) {
+            if (transaction != null && transaction.isActive()) {
+                transaction.rollback();
+            }
+            e.printStackTrace(); // Handle the exception appropriately
+            return false;
+        }
+    }
+
     public boolean uploadFile(String fileName, int fileType, int folderId, int ownerId, int size) {
         try(Session session = HibernateUtil.getSessionFactory().openSession()){
             Transaction transaction = session.beginTransaction();
@@ -314,7 +561,7 @@ public class FileService {
                     .setParameter("fileId", fileId)
                     .getSingleResult();
 
-            String path = ServerApp.SERVER_PATH + java.io.File.separator + FolderService.getPath(folderId);
+            String path = FolderService.getFolderPath(folderId);
 
             String fileName = session.createQuery("select f.name from File f where f.id = :fileId", String.class)
                     .setParameter("fileId", fileId)
@@ -324,6 +571,7 @@ public class FileService {
                     .setParameter("fileId", fileId)
                     .getSingleResult());
 
+            System.err.println("Full file path: " + path + java.io.File.separator + fileName + "." + type);
             return path + java.io.File.separator + fileName + "." + type;
         } catch (Exception e){
             e.printStackTrace();
