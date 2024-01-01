@@ -1,12 +1,7 @@
 package services.client.user;
 
-import DTO.ItemDTO;
-import DTO.ItemDeletedDTO;
-import DTO.RecentFileDTO;
-import DTO.UserToShareDTO;
-import enums.TypeEnum;
+import DTO.*;
 import enums.UploadStatus;
-import models.RecentFile;
 import services.client.SocketClientHelper;
 
 import java.io.IOException;
@@ -21,38 +16,55 @@ public class ItemService {
 
     public List<ItemDTO> getAllItem(int userId, int folderId, String searchText){
         try {
-            while(true){
-                SocketClientHelper socketClientHelper = new SocketClientHelper();
-                // send request to server
-                socketClientHelper.sendRequest("GET_ALL_ITEM");
-                socketClientHelper.sendRequest(String.valueOf(userId));
-                socketClientHelper.sendRequest(String.valueOf(folderId));
-                socketClientHelper.sendRequest(searchText);
+            SocketClientHelper socketClientHelper = new SocketClientHelper();
+            // send request to server
+            socketClientHelper.sendRequest("GET_ALL_ITEM");
+            socketClientHelper.sendRequest(String.valueOf(userId));
+            socketClientHelper.sendRequest(String.valueOf(folderId));
+            socketClientHelper.sendRequest(searchText);
 
-                Object obj = socketClientHelper.receiveResponse();
-                List<ItemDTO> itemList = (List<ItemDTO>) obj;
+            Object obj = socketClientHelper.receiveResponse();
+            List<ItemDTO> itemList = (List<ItemDTO>) obj;
 
-                socketClientHelper.close();
-                return itemList;
-            }
+            socketClientHelper.close();
+            return itemList;
         } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
     }
+    public List<MoveCopyFolderDTO> getAllFolderPopUps(int userId, int itemId, boolean isFolder, int folderId){
+        try {
+            SocketClientHelper socketClientHelper = new SocketClientHelper();
+            // send request to server
+            socketClientHelper.sendRequest("GET_ALL_ITEM_POPS_UP");
+            socketClientHelper.sendRequest(String.valueOf(userId));
+            socketClientHelper.sendRequest(String.valueOf(itemId));
+            socketClientHelper.sendRequest(String.valueOf(isFolder));
+            socketClientHelper.sendRequest(String.valueOf(folderId));
+
+            Object obj = socketClientHelper.receiveResponse();
+            List<MoveCopyFolderDTO> itemList = (List<MoveCopyFolderDTO>) obj;
+
+            socketClientHelper.close();
+            return itemList;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
     public List<ItemDTO> getAllItemPrivateOwnerId(int ownerId, String searchText) {
         try {
-            while (true) {
-                SocketClientHelper socketClientHelper = new SocketClientHelper();
-                // send request to server
-                socketClientHelper.sendRequest("GET_ALL_ITEM_PRIVATE");
-                socketClientHelper.sendRequest(String.valueOf(ownerId));
-                socketClientHelper.sendRequest(searchText);
+            SocketClientHelper socketClientHelper = new SocketClientHelper();
+            // send request to server
+            socketClientHelper.sendRequest("GET_ALL_ITEM_PRIVATE");
+            socketClientHelper.sendRequest(String.valueOf(ownerId));
+            socketClientHelper.sendRequest(searchText);
 
-                Object obj = socketClientHelper.receiveResponse();
-                List<ItemDTO> itemList = (List<ItemDTO>) obj;
-                return itemList;
-            }
+            Object obj = socketClientHelper.receiveResponse();
+            List<ItemDTO> itemList = (List<ItemDTO>) obj;
+            return itemList;
         } catch (Exception e) {
             e.printStackTrace();
             return null;
@@ -60,19 +72,17 @@ public class ItemService {
     }
     public List<ItemDTO> getAllOtherShareItem(int ownerId, String searchText){
         try {
-            while (true) {
-                SocketClientHelper socketClientHelper = new SocketClientHelper();
-                // send request to server
-                socketClientHelper.sendRequest("GET_ALL_ITEM_OSHARE");
-                socketClientHelper.sendRequest(String.valueOf(ownerId));
-                socketClientHelper.sendRequest(searchText);
+            SocketClientHelper socketClientHelper = new SocketClientHelper();
+            // send request to server
+            socketClientHelper.sendRequest("GET_ALL_ITEM_OSHARE");
+            socketClientHelper.sendRequest(String.valueOf(ownerId));
+            socketClientHelper.sendRequest(searchText);
 
-                Object obj = socketClientHelper.receiveResponse();
-                List<ItemDTO> itemList = (List<ItemDTO>) obj;
+            Object obj = socketClientHelper.receiveResponse();
+            List<ItemDTO> itemList = (List<ItemDTO>) obj;
 
-                socketClientHelper.close();
-                return itemList;
-            }
+            socketClientHelper.close();
+            return itemList;
         } catch (Exception e) {
             e.printStackTrace();
             return null;
@@ -80,19 +90,17 @@ public class ItemService {
     }
     public List<ItemDTO> getAllSharedItem(int ownerId, String searchText){
         try {
-            while (true) {
-                SocketClientHelper socketClientHelper = new SocketClientHelper();
-                // send request to server
-                socketClientHelper.sendRequest("GET_ALL_ITEM_SHARED");
-                socketClientHelper.sendRequest(String.valueOf(ownerId));
-                socketClientHelper.sendRequest(searchText);
+            SocketClientHelper socketClientHelper = new SocketClientHelper();
+            // send request to server
+            socketClientHelper.sendRequest("GET_ALL_ITEM_SHARED");
+            socketClientHelper.sendRequest(String.valueOf(ownerId));
+            socketClientHelper.sendRequest(searchText);
 
-                Object obj = socketClientHelper.receiveResponse();
-                List<ItemDTO> itemList = (List<ItemDTO>) obj;
+            Object obj = socketClientHelper.receiveResponse();
+            List<ItemDTO> itemList = (List<ItemDTO>) obj;
 
-                socketClientHelper.close();
-                return itemList;
-            }
+            socketClientHelper.close();
+            return itemList;
         } catch (Exception e) {
             e.printStackTrace();
             return null;
@@ -100,19 +108,17 @@ public class ItemService {
     }
     public List<RecentFileDTO> getAllRecentOpenedItem(int userId, String searchText) {
         try {
-            while (true) {
-                SocketClientHelper socketClientHelper = new SocketClientHelper();
-                // send request to server
-                socketClientHelper.sendRequest("GET_ALL_RECENT_OPENED_ITEM");
-                socketClientHelper.sendRequest(String.valueOf(userId));
-                socketClientHelper.sendRequest(searchText);
+            SocketClientHelper socketClientHelper = new SocketClientHelper();
+            // send request to server
+            socketClientHelper.sendRequest("GET_ALL_RECENT_OPENED_ITEM");
+            socketClientHelper.sendRequest(String.valueOf(userId));
+            socketClientHelper.sendRequest(searchText);
 
-                Object obj = socketClientHelper.receiveResponse();
-                List<RecentFileDTO> itemList = (List<RecentFileDTO>) obj;
+            Object obj = socketClientHelper.receiveResponse();
+            List<RecentFileDTO> itemList = (List<RecentFileDTO>) obj;
 
-                socketClientHelper.close();
-                return itemList;
-            }
+            socketClientHelper.close();
+            return itemList;
         } catch (Exception e) {
             e.printStackTrace();
             return null;
@@ -480,68 +486,70 @@ public class ItemService {
             return false;
         }
     }
-    
-    public String getRenameFolderPath(int folderID) {
+
+    public boolean rename(int userId, int itemID, boolean isFolder, String fileName) {
 		try {
-			SocketClientHelper socketClientHelper = new SocketClientHelper();
-			// send request to server
-			socketClientHelper.sendRequest("GET_RENAME_FOLDER_PATH");
-			socketClientHelper.sendRequest(String.valueOf(folderID));
+            SocketClientHelper socketClientHelper = new SocketClientHelper();
+            socketClientHelper.sendRequest("RENAME");
 
-			Object obj = socketClientHelper.receiveResponse();
-			String result = (String) obj;
+            socketClientHelper.sendRequest(String.valueOf(userId));
+            socketClientHelper.sendRequest(String.valueOf(itemID));
+            socketClientHelper.sendRequest(String.valueOf(isFolder));
+            socketClientHelper.sendRequest(fileName);
 
-			socketClientHelper.close();
-			return result;
-		} catch (Exception e) {
-			e.printStackTrace();
-			return null;
-		}
+            boolean response = (boolean) socketClientHelper.receiveResponse();
+            socketClientHelper.close();
+            return response;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
 	}
-    
-    public String getRenameFilePath(int fileID) {
-		try {
-			SocketClientHelper socketClientHelper = new SocketClientHelper();
-			// send request to server
-			socketClientHelper.sendRequest("GET_RENAME_FILE_PATH");
-			socketClientHelper.sendRequest(String.valueOf(fileID));
 
-			Object obj = socketClientHelper.receiveResponse();
-			String result = (String) obj;
+	public int move(int userId, int itemId, boolean isFolder, int targetFolderId, boolean isReplace) {
+    	try {
+            SocketClientHelper socketClientHelper = new SocketClientHelper();
+            if(isReplace){
+                socketClientHelper.sendRequest("MOVE_AND_REPLACE");
+            } else {
+                socketClientHelper.sendRequest("MOVE");
+            }
+            socketClientHelper.sendRequest(String.valueOf(userId));
+            socketClientHelper.sendRequest(String.valueOf(itemId));
+            socketClientHelper.sendRequest(String.valueOf(isFolder));
+            socketClientHelper.sendRequest(String.valueOf(targetFolderId));
 
-			socketClientHelper.close();
-			return result;
-		} catch (Exception e) {
-			e.printStackTrace();
-			return null;
-		}
-	}
-    
-    public boolean renameFile(int fileID, String fileName, int userId) throws IOException {
-		SocketClientHelper socketClientHelper = new SocketClientHelper();
-		socketClientHelper.sendRequest("RENAME_FILE");
-		socketClientHelper.sendRequest(String.valueOf(fileID));
-		socketClientHelper.sendRequest(fileName);
-		socketClientHelper.sendRequest(String.valueOf(userId));
+            int response = (int) socketClientHelper.receiveResponse();
 
-		boolean response = (boolean) socketClientHelper.receiveResponse();
-		socketClientHelper.close();
-		return response;
-	}
-	
-	public boolean renameFolder(int folderID, String folderName,int ownerId, String folderPath) throws IOException {
-    	SocketClientHelper socketClientHelper = new SocketClientHelper();
-    	socketClientHelper.sendRequest("RENAME_FOLDER");
-        socketClientHelper.sendRequest(String.valueOf(folderID));
-        socketClientHelper.sendRequest(String.valueOf(folderName));
-        
-        socketClientHelper.renameFolder(folderPath, folderName);
+            socketClientHelper.close();
+            return response;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return UploadStatus.FAILED.getValue();
+        }
+    }
 
-		boolean response = (boolean) socketClientHelper.receiveResponse();
-		System.out.println("Response: " + response);
+    public int copy(int userId, int itemID, boolean isFolder, int targetFolderId, boolean isReplace){
+    	try {
+            SocketClientHelper socketClientHelper = new SocketClientHelper();
+            if(isReplace){
+                socketClientHelper.sendRequest("COPY_AND_REPLACE");
+            } else {
+                socketClientHelper.sendRequest("COPY");
+            }
+            socketClientHelper.sendRequest(String.valueOf(userId));
+            socketClientHelper.sendRequest(String.valueOf(itemID));
+            socketClientHelper.sendRequest(String.valueOf(isFolder));
+            socketClientHelper.sendRequest(String.valueOf(targetFolderId));
 
-		socketClientHelper.close();
-		return response;
+            int response = (int) socketClientHelper.receiveResponse();
+
+            socketClientHelper.close();
+            return response;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return UploadStatus.FAILED.getValue();
+        }
     }
 
     public int restore(int itemId, boolean isFolder) {

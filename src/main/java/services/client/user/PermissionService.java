@@ -68,4 +68,55 @@ public class PermissionService {
             return -1;
         }
     }
+
+    public boolean updateSharedPermission(int itemId, boolean isFolder, int permission, int userId) {
+        try{
+            SocketClientHelper socketClientHelper = new SocketClientHelper();
+            socketClientHelper.sendRequest("UPDATE_SHARED_PERMISSION");
+            socketClientHelper.sendRequest(String.valueOf(itemId));
+            socketClientHelper.sendRequest(String.valueOf(isFolder));
+            socketClientHelper.sendRequest(String.valueOf(permission));
+            socketClientHelper.sendRequest(String.valueOf(userId));
+
+            boolean response = (boolean) socketClientHelper.receiveResponse();
+            socketClientHelper.close();
+            return response;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public Boolean removeSharedPermission(int itemId, boolean isFolder, int userId) {
+        try{
+            SocketClientHelper socketClientHelper = new SocketClientHelper();
+            socketClientHelper.sendRequest("DELETE_SHARED_PERMISSION");
+            socketClientHelper.sendRequest(String.valueOf(itemId));
+            socketClientHelper.sendRequest(String.valueOf(isFolder));
+            socketClientHelper.sendRequest(String.valueOf(userId));
+
+            boolean response = (boolean) socketClientHelper.receiveResponse();
+            socketClientHelper.close();
+            return response;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public int getSharedPermission(int itemId, boolean isFolder) {
+        try{
+            SocketClientHelper socketClientHelper = new SocketClientHelper();
+            socketClientHelper.sendRequest("GET_SHARED_PERMISSION");
+            socketClientHelper.sendRequest(String.valueOf(itemId));
+            socketClientHelper.sendRequest(String.valueOf(isFolder));
+
+            int response = (int) socketClientHelper.receiveResponse();
+            socketClientHelper.close();
+            return response;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return -1;
+        }
+    }
 }
