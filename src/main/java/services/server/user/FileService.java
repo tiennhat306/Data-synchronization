@@ -31,10 +31,19 @@ public class FileService {
 
     public static boolean checkFileExist(String fileName, int folderId) {
         try(Session session = HibernateUtil.getSessionFactory().openSession()) {
-            return session.createQuery("select f from File f where f.name = :fileName AND f.folderId = :folderId", File.class)
-                    .setParameter("fileName", fileName)
+            int indexOfDot = fileName.indexOf(".");
+            String nameOfFile = fileName.substring(0, indexOfDot);
+            String typeOfFile = fileName.substring(indexOfDot + 1);
+
+            int typeId = new TypeService().getTypeId(typeOfFile);
+
+            return session.createQuery("select f from File f where f.name = :nameOfFile AND f.typeId = :typeId AND f.folderId = :folderId", File.class)
+                    .setParameter("nameOfFile", nameOfFile)
+                    .setParameter("typeId", typeId)
                     .setParameter("folderId", folderId)
                     .getSingleResult() != null;
+        } catch (NoResultException e) {
+            return true;
         } catch (Exception e) {
             e.printStackTrace();
             return false;
