@@ -138,11 +138,10 @@ public class FileService {
         }
     }
 
-    public static void renameFileInPath(int itemId, String newName) {
+    public static void renameFileInPath(int itemId, String beforePath) {
         try {
-            String filePath = getFilePath(itemId);
-            String targetPath = filePath.substring(0, filePath.lastIndexOf(java.io.File.separator) + 1) + newName;
-            java.io.File fileToMove = new java.io.File(filePath);
+            String targetPath = getFilePath(itemId);
+            java.io.File fileToMove = new java.io.File(beforePath);
             java.io.File targetFile = new java.io.File(targetPath);
             if (!targetFile.getParentFile().exists()) {
                 try {
