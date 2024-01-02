@@ -126,15 +126,17 @@ public class ClientHandler implements Runnable{
                     String newName = (String) receiveRequest();
                     boolean response = false;
                     if(isFolder){
+                        String pathBefore = FolderService.getFolderPath(itemId);
                         boolean isRenameInDB = new FolderService().renameFolder(userId, itemId, newName);
                         if(isRenameInDB){
-                            FolderService.renameFolderInPath(itemId, newName);
+                            FolderService.renameFolderInPath(itemId, pathBefore);
                             response = true;
                         }
                     } else {
+                        String beforePath = FileService.getFilePath(itemId);
                         boolean isRenameInDB = new FileService().renameFile(userId, itemId, newName);
                         if(isRenameInDB){
-                            FileService.renameFileInPath(itemId, newName);
+                            FileService.renameFileInPath(itemId, beforePath);
                             response = true;
                         }
                     }

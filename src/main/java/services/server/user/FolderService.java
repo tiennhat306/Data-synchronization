@@ -96,11 +96,10 @@ public class FolderService {
         }
     }
 
-    public static void renameFolderInPath(int itemId, String folderName) {
+    public static void renameFolderInPath(int itemId, String beforePath) {
         try {
-            String folderPath = getFolderPath(itemId);
-            String targetPath = folderPath.substring(0, folderPath.lastIndexOf(File.separator) + 1) + folderName;
-            File file = new File(folderPath);
+            String targetPath = getFolderPath(itemId);
+            File file = new File(beforePath);
             file.renameTo(new File(targetPath));
         } catch (Exception e) {
             e.printStackTrace();
