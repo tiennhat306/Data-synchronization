@@ -1671,22 +1671,43 @@ public class HomepageController implements Initializable {
 			String foldername = folderNameTxt.getText();
 			popupStage.close();
 
-			Task<Boolean> createFolderTask = new Task<Boolean>() {
+			Task<Integer> createFolderTask = new Task<Integer>() {
 				@Override
-				protected Boolean call() throws Exception {
+				protected Integer call() throws Exception {
 					ItemService itemService = new ItemService();
-					boolean rs = itemService.createFolder(foldername, userId, currentFolderId);
-					return rs;
+					int rs = itemService.createFolder(foldername, userId, currentFolderId, false);
+					if(rs == UploadStatus.SUCCESS.getValue()) {
+						return UploadStatus.SUCCESS.getValue();
+					} else if(rs == UploadStatus.EXISTED.getValue()) {
+						Platform.runLater(() -> {
+							if(AlertConfirm(popupStage, "Xác nhận", "Thư mục đã tồn tại, bạn có muốn thay thế không?")) {
+								int success;
+								try {
+									success = itemService.createFolder(foldername, userId, currentFolderId, true);
+								} catch (Exception e) {
+									success = UploadStatus.FAILED.getValue();
+								}
+
+								if(success == UploadStatus.SUCCESS.getValue()) {
+									fillData();
+									Toast.showToast((Stage) dataTable.getScene().getWindow(), 1, "Tạo thư mục thành công");
+								}
+								else Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Tạo thư mục thất bại");
+							}
+						});
+						return UploadStatus.EXISTED.getValue();
+					}
+					return UploadStatus.FAILED.getValue();
 				}
 			};
 
 			createFolderTask.setOnSucceeded(event1 -> {
-				boolean response = createFolderTask.getValue();
-				if(response){
+				int response = createFolderTask.getValue();
+				if(response == UploadStatus.SUCCESS.getValue()){
 					fillData();
 					Toast.showToast((Stage) dataTable.getScene().getWindow(), 1, "Tạo thư mục thành công");
 				}
-				else Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Tạo thư mục thất bại");
+				else if(response == UploadStatus.FAILED.getValue()) Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Tạo thư mục thất bại");
 			});
 
 			createFolderTask.setOnFailed(event1 -> {

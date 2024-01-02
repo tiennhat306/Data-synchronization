@@ -116,7 +116,14 @@ public class ClientHandler implements Runnable{
                     String folderName = (String) receiveRequest();
                     int ownerId = Integer.parseInt((String) receiveRequest());
                     int currentFolderId = Integer.parseInt((String) receiveRequest());
-                    int response = new FolderService().createFolder(folderName, ownerId, currentFolderId);
+                    int response = new FolderService().createFolder(folderName, ownerId, currentFolderId, false);
+                    sendResponse(response);
+                }
+                case "CREATE_FOLDER_AND_REPLACE" -> {
+                    String folderName = (String) receiveRequest();
+                    int ownerId = Integer.parseInt((String) receiveRequest());
+                    int currentFolderId = Integer.parseInt((String) receiveRequest());
+                    int response = new FolderService().createFolder(folderName, ownerId, currentFolderId, true);
                     sendResponse(response);
                 }
     			case "RENAME" -> {

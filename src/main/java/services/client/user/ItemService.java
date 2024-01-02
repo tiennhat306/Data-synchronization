@@ -125,22 +125,26 @@ public class ItemService {
         }
     }
 
-    public boolean createFolder(String folderName, int ownerId, int folderId){
+    public int createFolder(String folderName, int ownerId, int folderId, boolean isReplace){
         try {
             SocketClientHelper socketClientHelper = new SocketClientHelper();
-            socketClientHelper.sendRequest("CREATE_FOLDER");
+            if(isReplace){
+                socketClientHelper.sendRequest("CREATE_FOLDER_AND_REPLACE");
+            } else {
+                socketClientHelper.sendRequest("CREATE_FOLDER");
+            }
             socketClientHelper.sendRequest(folderName);
             socketClientHelper.sendRequest(String.valueOf(ownerId));
             socketClientHelper.sendRequest(String.valueOf(folderId));
 
             Object obj = socketClientHelper.receiveResponse();
-            boolean response = (boolean) obj;
+            int response = (int) obj;
 
             socketClientHelper.close();
             return response;
         } catch (Exception e) {
             e.printStackTrace();
-            return false;
+            return UploadStatus.FAILED.getValue();
         }
     }
 

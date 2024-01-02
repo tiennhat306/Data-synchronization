@@ -370,6 +370,10 @@ public class FileService {
                     return false;
                 }
 
+                if(!RecentFileService.deleteRecentFileByFileId(id)) {
+                    return false;
+                }
+
                 session.remove(file);
                 transaction.commit();
                 return true;
