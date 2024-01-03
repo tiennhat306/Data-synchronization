@@ -61,14 +61,17 @@ public class FolderService {
         }
     }
 
-    public static void restoreFolderInPath(int itemId, String finalPath) {
-        String trashPath = getFolderPath(itemId);
-        String trashToFolder = trashPath.substring(ServerApp.SERVER_PATH.length() + 1);
-        trashToFolder = trashToFolder.replaceFirst("general", "trash");
-        trashToFolder = ServerApp.SERVER_PATH + File.separator + trashToFolder;
-        String folderName = trashPath.substring(trashPath.lastIndexOf(File.separator) + 1);
-        finalPath = ServerApp.SERVER_PATH + File.separator + finalPath + File.separator + folderName;
-        moveFolder(trashToFolder, finalPath);
+    public static void restoreFolderInPath(int itemId, String trashPath) {
+//        String trashPath = getFolderPath(itemId);
+//        String trashToFolder = trashPath.substring(ServerApp.SERVER_PATH.length() + 1);
+//        trashToFolder = trashToFolder.replaceFirst("general", "trash");
+//        trashToFolder = ServerApp.SERVER_PATH + File.separator + trashToFolder;
+//        String folderName = trashPath.substring(trashPath.lastIndexOf(File.separator) + 1);
+//        finalPath = ServerApp.SERVER_PATH + File.separator + finalPath + File.separator + folderName;
+//        moveFolder(trashToFolder, finalPath);
+
+        String trashToFolder = getFolderPath(itemId);
+        moveFolder(trashPath, trashToFolder);
     }
 
     public static String getFolderNameById(int itemId) {

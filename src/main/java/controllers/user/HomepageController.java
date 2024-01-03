@@ -832,8 +832,6 @@ public class HomepageController implements Initializable {
 				Thread thread = new Thread(uploadFileTask);
 				thread.start();
 			}
-		} else {
-			Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Hãy chọn file cần upload");
 		}
 	}
 
@@ -887,8 +885,6 @@ public class HomepageController implements Initializable {
 
 			Thread thread = new Thread(uploadFolderTask);
 			thread.start();
-		} else {
-			Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Hãy chọn thư mục cần tải lên");
 		}
 	}
 

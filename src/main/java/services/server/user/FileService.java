@@ -106,12 +106,20 @@ public class FileService {
         }
     }
 
-    public static void restoreFileInPath(int itemId, String finalPath) {
+    public static void restoreFileInPath(int itemId, String trashPath) {
         try(Session session = HibernateUtil.getSessionFactory().openSession()) {
-            File file = session.find(File.class, itemId);
-            finalPath = ServerApp.SERVER_PATH + java.io.File.separator + finalPath + java.io.File.separator + file.getName() + "." + TypeService.getTypeName(file.getTypeId());
-            java.io.File fileToRestore = new java.io.File(getFilePath(itemId));
-            java.io.File restoreFile = new java.io.File(finalPath);
+//            File file = session.find(File.class, itemId);
+//            finalPath = ServerApp.SERVER_PATH + java.io.File.separator + finalPath + java.io.File.separator + file.getName() + "." + TypeService.getTypeName(file.getTypeId());
+//            java.io.File fileToRestore = new java.io.File(getFilePath(itemId));
+//            java.io.File restoreFile = new java.io.File(finalPath);
+//            if (!restoreFile.getParentFile().exists()) {
+//                Files.createDirectories(fileToRestore.getParentFile().toPath());
+//            }
+//            Files.move(fileToRestore.toPath(), restoreFile.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+
+            String filePath = getFilePath(itemId);
+            java.io.File fileToRestore = new java.io.File(filePath);
+            java.io.File restoreFile = new java.io.File(trashPath);
             if (!fileToRestore.getParentFile().exists()) {
                 Files.createDirectories(fileToRestore.getParentFile().toPath());
             }
