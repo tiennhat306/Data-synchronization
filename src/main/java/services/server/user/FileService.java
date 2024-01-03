@@ -327,14 +327,17 @@ public class FileService {
             Transaction transaction = session.beginTransaction();
             try {
                 File file = session.find(File.class, fileId);
-                int typeId = file.getTypeId();
-                int parentFolderId = file.getFolderId();
-                boolean isDeletedSameFile = deleteSameFileIfExist(newName, typeId, parentFolderId);
-                if(!isDeletedSameFile) {
-                    return false;
-                }
 
                 if (file != null) {
+                    if(newName == null || newName.isEmpty()) return false;
+                    if(file.getName().equalsIgnoreCase(newName)) return true;
+                    int typeId = file.getTypeId();
+                    int parentFolderId = file.getFolderId();
+                    boolean isDeletedSameFile = deleteSameFileIfExist(newName, typeId, parentFolderId);
+                    if(!isDeletedSameFile) {
+                        return false;
+                    }
+
                     file.setName(newName);
                     transaction.commit();
                     return true;

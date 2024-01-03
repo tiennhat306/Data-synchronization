@@ -423,7 +423,10 @@ public class HomepageController implements Initializable {
 
 		    dialog.showAndWait().ifPresent(newName -> {
 		        if (!newName.trim().isEmpty()) {
-					if(newName.matches(".*[/\\\\:*?\"<>|].*")) {
+					if(newName.equalsIgnoreCase(selectedItem.getName())) {
+						Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Tên mới trùng với tên cũ");
+						return;
+					} else if(newName.matches(".*[/\\\\:*?\"<>|].*")) {
 						Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Tên chứa kí tự không hợp lệ");
 						return;
 					} else if(newName.length() > 255) {

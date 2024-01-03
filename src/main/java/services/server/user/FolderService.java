@@ -328,12 +328,14 @@ public class FolderService {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             Transaction transaction = session.beginTransaction();
             try {
-                boolean isDeletedSameFolder = deleteSameFolderIfExist(newName, FolderService.getParentId(folderId));
-                if(!isDeletedSameFolder) return false;
-
                 Folder folder = session.find(Folder.class, folderId);
 
                 if (folder != null) {
+                    if(newName == null || newName.isEmpty()) return false;
+                    if(newName.equalsIgnoreCase(folder.getFolderName())) return true;
+                    boolean isDeletedSameFolder = deleteSameFolderIfExist(newName, folder.getParentId());
+                    if(!isDeletedSameFolder) return false;
+
                     folder.setFolderName(newName);
                     transaction.commit();
                     return true;
@@ -963,7 +965,7 @@ public class FolderService {
         try(Session session = HibernateUtil.getSessionFactory().openSession()){
             Transaction transaction = session.beginTransaction();
             try {
-                Folder folder = session.createQuery("select fd from Folder fd where fd.folderName = :folderName AND fd.parentId = :parentId", Folder.class)
+                Folder folder = session.createQuery("select fd from Folder fd where fd.folderName LIKE :folderName AND fd.parentId = :parentId", Folder.class)
                         .setParameter("folderName", folderName)
                         .setParameter("parentId", targetId)
                         .getSingleResult();
