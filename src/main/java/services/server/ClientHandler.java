@@ -10,6 +10,7 @@ import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.nio.file.Files;
+import java.sql.Date;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -48,7 +49,7 @@ public class ClientHandler implements Runnable{
                 request = (String) obj;
                 System.out.println("Client request: " + request);
             } else {
-                System.out.println("Unknown request 1: " + obj);
+                System.err.println("Unknown request: " + obj);
             }
             addConnection(request);
 
@@ -73,6 +74,18 @@ public class ClientHandler implements Runnable{
                     int userId = Integer.parseInt((String) receiveRequest());
                     String text = (String) receiveRequest();
                     boolean response = new UserService().updateUserPath(userId, text);
+                    sendResponse(response);
+                }
+                case "UPDATE_USER" -> {
+                    int userId = Integer.parseInt((String) receiveRequest());
+                    String username = (String) receiveRequest();
+                    String name = (String) receiveRequest();
+                    String email = (String) receiveRequest();
+                    String phone = (String) receiveRequest();
+                    Date birthday =  (Date) receiveRequest();
+                    boolean gender = (boolean) receiveRequest();
+
+                    boolean response = new AccountService().updateUserInfo(userId, username, name, email, phone, birthday, gender);
                     sendResponse(response);
                 }
                 case "UPDATE_PASSWORD" -> {
@@ -759,7 +772,7 @@ public class ClientHandler implements Runnable{
                     sendResponse(response);
                 }
                 default -> {
-                    System.out.println("Unknown request: " + request);
+                    System.err.println("Unknown request: " + request);
                 }
             }
         } catch (IOException | ClassNotFoundException e) {

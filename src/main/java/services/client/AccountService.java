@@ -37,11 +37,12 @@ public class AccountService {
         }
     }
 
-    public boolean updateUserInfo(String username, String name, String email, String phone, Date birth, boolean gender) {
+    public boolean updateUserInfo(int userId, String username, String name, String email, String phone, Date birth, boolean gender) {
         try {
             SocketClientHelper socketClientHelper = new SocketClientHelper();
             // send request to server
             socketClientHelper.sendRequest("UPDATE_USER");
+            socketClientHelper.sendRequest(String.valueOf(userId));
             socketClientHelper.sendRequest(username);
             socketClientHelper.sendRequest(name);
             socketClientHelper.sendRequest(email);
