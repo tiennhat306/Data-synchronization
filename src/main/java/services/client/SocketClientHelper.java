@@ -87,13 +87,13 @@ public class SocketClientHelper {
         }
     }
 
-    public void sendFile(int size, String filePath) throws IOException {
+    public void sendFile(long size, String filePath) throws IOException {
         byte[] buffer = new byte[1024];
         try(FileInputStream fileInputStream = new FileInputStream(filePath)) {
             OutputStream fileOutputStream = socket.getOutputStream();
-            int bytesRead;
-            while(size > 0 && (bytesRead = fileInputStream.read(buffer, 0, Math.min(buffer.length, size))) != -1) {
-                fileOutputStream.write(buffer, 0, bytesRead);
+            long bytesRead;
+            while(size > 0 && (bytesRead = fileInputStream.read(buffer, 0, (int) Math.min(buffer.length, size))) != -1) {
+                fileOutputStream.write(buffer, 0, (int) bytesRead);
                 size -= bytesRead;
             }
             fileOutputStream.flush();
@@ -121,7 +121,7 @@ public class SocketClientHelper {
                     sendRequest(String.valueOf(TypeEnum.FILE.getValue()));
                     sendRequest(file.getName());
                     sendRequest(String.valueOf(folderId));
-                    int size = (int) file.length();
+                    long size = (int) file.length();
                     sendRequest(String.valueOf(size));
                     sendFile(size ,file.getAbsolutePath());
                 }
@@ -130,14 +130,14 @@ public class SocketClientHelper {
         }
     }
 
-    public void syncFile(String filePath, int size) {
+    public void syncFile(String filePath, long size) {
         byte[] buffer = new byte[1024];
 
         try(FileOutputStream fileOutputStream = new FileOutputStream(filePath)) {
             InputStream fileInputStream = socket.getInputStream();
-            int bytesRead;
-            while(size > 0 && (bytesRead = fileInputStream.read(buffer, 0, Math.min(buffer.length, size))) != -1) {
-                fileOutputStream.write(buffer, 0, bytesRead);
+            long bytesRead;
+            while(size > 0 && (bytesRead = fileInputStream.read(buffer, 0, (int) Math.min(buffer.length, size))) != -1) {
+                fileOutputStream.write(buffer, 0, (int) bytesRead);
                 size -= bytesRead;
             }
         } catch (IOException e) {
@@ -159,14 +159,14 @@ public class SocketClientHelper {
                 syncFolder(newFolderPath);
             } else if (typeEnum == TypeEnum.FILE.getValue()) {
                 String fileName = (String) receiveResponse();
-                int size = Integer.parseInt((String) receiveResponse());
+                long size = Integer.parseInt((String) receiveResponse());
                 syncFile(folderPath + java.io.File.separator + fileName, size);
             }
             typeEnum = Integer.parseInt((String) receiveResponse());
         }
     }
 
-    public void downloadFolder(String folderPath, int size) {
+    public void downloadFolder(String folderPath, long size) {
         String FolderZipPath = folderPath + ".zip";
         try{
             syncFile(FolderZipPath, size);
@@ -175,7 +175,7 @@ public class SocketClientHelper {
         }
     }
 
-    public void downloadFile(String filePath, int size) {
+    public void downloadFile(String filePath, long size) {
         try{
             syncFile(filePath, size);
         } catch (Exception e) {

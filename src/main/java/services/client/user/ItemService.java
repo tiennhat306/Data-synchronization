@@ -125,26 +125,30 @@ public class ItemService {
         }
     }
 
-    public boolean createFolder(String folderName, int ownerId, int folderId){
+    public int createFolder(String folderName, int ownerId, int folderId, boolean isReplace){
         try {
             SocketClientHelper socketClientHelper = new SocketClientHelper();
-            socketClientHelper.sendRequest("CREATE_FOLDER");
+            if(isReplace){
+                socketClientHelper.sendRequest("CREATE_FOLDER_AND_REPLACE");
+            } else {
+                socketClientHelper.sendRequest("CREATE_FOLDER");
+            }
             socketClientHelper.sendRequest(folderName);
             socketClientHelper.sendRequest(String.valueOf(ownerId));
             socketClientHelper.sendRequest(String.valueOf(folderId));
 
             Object obj = socketClientHelper.receiveResponse();
-            boolean response = (boolean) obj;
+            int response = (int) obj;
 
             socketClientHelper.close();
             return response;
         } catch (Exception e) {
             e.printStackTrace();
-            return false;
+            return UploadStatus.FAILED.getValue();
         }
     }
 
-    public int uploadFile(int userId, String fileName, int folderId, int size, String filePath){
+    public int uploadFile(int userId, String fileName, int folderId, long size, String filePath){
         try {
             SocketClientHelper socketClientHelper = new SocketClientHelper();
             socketClientHelper.sendRequest("UPLOAD_FILE");
@@ -254,7 +258,7 @@ public class ItemService {
             socketClientHelper.sendRequest(String.valueOf(fileId));
 
             String filePath = (String) socketClientHelper.receiveResponse();
-            int size = Integer.parseInt((String)socketClientHelper.receiveResponse());
+            long size = Integer.parseInt((String)socketClientHelper.receiveResponse());
 
             Files.deleteIfExists(Paths.get(filePath));
             java.io.File file = new java.io.File(filePath);
@@ -324,7 +328,7 @@ public class ItemService {
             socketClientHelper.sendRequest(String.valueOf(itemId));
 
             String fileName = (String) socketClientHelper.receiveResponse();
-            int size = Integer.parseInt((String)socketClientHelper.receiveResponse());
+            long size = Integer.parseInt((String)socketClientHelper.receiveResponse());
 
             socketClientHelper.downloadFile(path + java.io.File.separator + fileName, size);
 
@@ -345,7 +349,7 @@ public class ItemService {
             socketClientHelper.sendRequest(String.valueOf(currentFolderId));
 
             String folderName = (String) socketClientHelper.receiveResponse();
-            int size = Integer.parseInt((String)socketClientHelper.receiveResponse());
+            long size = Integer.parseInt((String)socketClientHelper.receiveResponse());
 
             socketClientHelper.downloadFolder(absolutePath + java.io.File.separator + folderName, size);
 
@@ -487,22 +491,26 @@ public class ItemService {
         }
     }
 
-    public boolean rename(int userId, int itemID, boolean isFolder, String fileName) {
+    public int rename(int userId, int itemID, boolean isFolder, String fileName, boolean isReplace) {
 		try {
             SocketClientHelper socketClientHelper = new SocketClientHelper();
-            socketClientHelper.sendRequest("RENAME");
+            if (isReplace) {
+                socketClientHelper.sendRequest("RENAME_AND_REPLACE");
+            } else {
+                socketClientHelper.sendRequest("RENAME");
+            }
 
             socketClientHelper.sendRequest(String.valueOf(userId));
             socketClientHelper.sendRequest(String.valueOf(itemID));
             socketClientHelper.sendRequest(String.valueOf(isFolder));
             socketClientHelper.sendRequest(fileName);
 
-            boolean response = (boolean) socketClientHelper.receiveResponse();
+            int response = (int) socketClientHelper.receiveResponse();
             socketClientHelper.close();
             return response;
         } catch (Exception e) {
             e.printStackTrace();
-            return false;
+            return UploadStatus.FAILED.getValue();
         }
 	}
 
@@ -610,7 +618,7 @@ public class ItemService {
             socketClientHelper.sendRequest(String.valueOf(fileId));
 
             String filePath = (String) socketClientHelper.receiveResponse();
-            int size = Integer.parseInt((String)socketClientHelper.receiveResponse());
+            long size = Integer.parseInt((String)socketClientHelper.receiveResponse());
 
             Files.deleteIfExists(Paths.get(filePath));
             java.io.File file = new java.io.File(filePath);

@@ -14,7 +14,7 @@ public class ItemDTO implements Serializable {
     private String ownerName;
     private Date updatedDate;
     private String updatedPersonName;
-    private int size;
+    private long size;
     private String sizeName;
 
     private LinkedList<PathItem> path;
@@ -94,11 +94,11 @@ public class ItemDTO implements Serializable {
         this.updatedPersonName = updatedPersonName;
     }
 
-    public int getSize() {
+    public long getSize() {
         return size;
     }
 
-    public void setSize(int size) {
+    public void setSize(long size) {
         this.size = size;
     }
 

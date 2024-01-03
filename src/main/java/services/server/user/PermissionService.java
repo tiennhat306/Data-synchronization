@@ -54,9 +54,10 @@ public class PermissionService {
             }
 
             int defaultPermission = getPublicPermission(itemId, isFolder);
-
+            System.err.println("defaultPermission: " + defaultPermission);
             Permission userPermission = null;
-            while (currentId != 1) {
+
+            while (currentId > 1) {
                 try{
                     userPermission = session.createQuery("select per from Permission per where per." + (isFolder ? "folderId" : "fileId") + " = :id AND (per.userId = :userId)", Permission.class)
                             .setParameter("id", currentId)
@@ -69,16 +70,15 @@ public class PermissionService {
                         break;
                     }
                 } catch (NoResultException e) {
-                    Integer parentId = session.createQuery("select " + (isFolder ? "fd.parentId" : "f.folderId") + " from " + (isFolder ? "Folder fd" : "File f") + " where " + (isFolder ? "fd.id" : "f.id") + " = :id", Integer.class)
-                            .setParameter("id", currentId)
-                            .uniqueResult();
-                    if(parentId != null && parentId > 1){
+                    int parentId = isFolder ? FolderService.getParentId(currentId) : FileService.getParentId(currentId);
+                    if(parentId > 1){
                         currentId = parentId;
                     } else {
                         break;
                     }
                 }
             }
+            System.err.println("userPermission: " + (userPermission == null ? "null" : userPermission.getPermissionType()));
             if (userPermission == null) {
                 return defaultPermission;
             } else {
@@ -192,10 +192,12 @@ public class PermissionService {
                 }
             } catch (NoResultException e) {
                 try {
-                    int parentId = session.createQuery("select " + (isFolder ? "fd.parentId" : "f.folderId") + " from " + (isFolder ? "Folder fd" : "File f") + " where " + (isFolder ? "fd.id" : "f.id") + " = :id", Integer.class)
-                            .setParameter("id", itemId)
-                            .uniqueResult();
-                    return getPublicPermission(parentId, isFolder);
+                    int parentId = isFolder ? FolderService.getParentId(itemId) : FileService.getParentId(itemId);
+                    if(parentId == -1){
+                        return PermissionType.PRIVATE.getValue();
+                    } else {
+                        return getPublicPermission(parentId, true);
+                    }
                 } catch (NoResultException ex) {
                     return PermissionType.PRIVATE.getValue();
                 }

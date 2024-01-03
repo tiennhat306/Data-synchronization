@@ -31,7 +31,7 @@ public class File implements Serializable {
     private int ownerId;
     @Basic
     @Column(name = "size")
-    private Integer size;
+    private Long size;
     @Basic
     @Column(name = "created_at", nullable = false)
     private Timestamp createdAt;
@@ -113,11 +113,11 @@ public class File implements Serializable {
         this.ownerId = ownerId;
     }
 
-    public Integer getSize() {
+    public Long getSize() {
         return size;
     }
 
-    public void setSize(Integer size) {
+    public void setSize(Long size) {
         this.size = size;
     }
 

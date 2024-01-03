@@ -11,7 +11,7 @@ public class ItemDeletedDTO implements Serializable {
     private String typeName;
     private Date deletedDate;
     private String deletedPersonName;
-    private int size;
+    private long size;
     private String sizeName;
     private String beforeDeletedPath;
     private LinkedList<PathItem> path;
@@ -66,11 +66,11 @@ public class ItemDeletedDTO implements Serializable {
         this.deletedPersonName = deletedPersonName;
     }
 
-    public int getSize() {
+    public long getSize() {
         return size;
     }
 
-    public void setSize(int size) {
+    public void setSize(long size) {
         this.size = size;
     }
 

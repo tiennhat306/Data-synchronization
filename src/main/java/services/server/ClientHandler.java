@@ -116,7 +116,14 @@ public class ClientHandler implements Runnable{
                     String folderName = (String) receiveRequest();
                     int ownerId = Integer.parseInt((String) receiveRequest());
                     int currentFolderId = Integer.parseInt((String) receiveRequest());
-                    int response = new FolderService().createFolder(folderName, ownerId, currentFolderId);
+                    int response = new FolderService().createFolder(folderName, ownerId, currentFolderId, false);
+                    sendResponse(response);
+                }
+                case "CREATE_FOLDER_AND_REPLACE" -> {
+                    String folderName = (String) receiveRequest();
+                    int ownerId = Integer.parseInt((String) receiveRequest());
+                    int currentFolderId = Integer.parseInt((String) receiveRequest());
+                    int response = new FolderService().createFolder(folderName, ownerId, currentFolderId, true);
                     sendResponse(response);
                 }
     			case "RENAME" -> {
@@ -124,24 +131,68 @@ public class ClientHandler implements Runnable{
                     int itemId = Integer.parseInt((String) receiveRequest());
                     boolean isFolder = Boolean.parseBoolean((String) receiveRequest());
                     String newName = (String) receiveRequest();
-                    boolean response = false;
+                    int permission = new PermissionService().checkUserPermission(userId, itemId, isFolder);
+                    if (permission <= PermissionType.READ.getValue()) {
+                        sendResponse(UploadStatus.PERMISSION_DENIED.getValue());
+                        break;
+                    }
+                    if (isFolder) {
+                        if (FolderService.checkFolderNameExist(newName, itemId)) {
+                            sendResponse(UploadStatus.EXISTED.getValue());
+                            break;
+                        }
+                    } else {
+                        if (FileService.checkFileNameExist(newName, itemId)) {
+                            sendResponse(UploadStatus.EXISTED.getValue());
+                            break;
+                        }
+                    }
+                    int response = UploadStatus.FAILED.getValue();
                     if(isFolder){
                         String pathBefore = FolderService.getFolderPath(itemId);
-                        boolean isRenameInDB = new FolderService().renameFolder(userId, itemId, newName);
+                        boolean isRenameInDB = new FolderService().renameFolder(itemId, newName);
                         if(isRenameInDB){
                             FolderService.renameFolderInPath(itemId, pathBefore);
-                            response = true;
+                            response = UploadStatus.SUCCESS.getValue();
                         }
                     } else {
                         String beforePath = FileService.getFilePath(itemId);
-                        boolean isRenameInDB = new FileService().renameFile(userId, itemId, newName);
+                        boolean isRenameInDB = new FileService().renameFile(itemId, newName);
                         if(isRenameInDB){
                             FileService.renameFileInPath(itemId, beforePath);
-                            response = true;
+                            response = UploadStatus.SUCCESS.getValue();
                         }
                     }
     				sendResponse(response);
     			}
+                case "RENAME_AND_REPLACE" -> {
+                    int userId = Integer.parseInt((String) receiveRequest());
+                    int itemId = Integer.parseInt((String) receiveRequest());
+                    boolean isFolder = Boolean.parseBoolean((String) receiveRequest());
+                    String newName = (String) receiveRequest();
+                    int permission = new PermissionService().checkUserPermission(userId, itemId, isFolder);
+                    if (permission <= PermissionType.READ.getValue()) {
+                        sendResponse(UploadStatus.PERMISSION_DENIED.getValue());
+                        break;
+                    }
+                    int response = UploadStatus.FAILED.getValue();
+                    if(isFolder){
+                        String pathBefore = FolderService.getFolderPath(itemId);
+                        boolean isRenameInDB = new FolderService().renameFolder(itemId, newName);
+                        if(isRenameInDB){
+                            FolderService.renameFolderInPath(itemId, pathBefore);
+                            response = UploadStatus.SUCCESS.getValue();
+                        }
+                    } else {
+                        String beforePath = FileService.getFilePath(itemId);
+                        boolean isRenameInDB = new FileService().renameFile(itemId, newName);
+                        if(isRenameInDB){
+                            FileService.renameFileInPath(itemId, beforePath);
+                            response = UploadStatus.SUCCESS.getValue();
+                        }
+                    }
+                    sendResponse(response);
+                }
                 case "UPLOAD_FILE" -> {
                     int userId = Integer.parseInt((String) receiveRequest());
                     String fileName = (String) receiveRequest();
@@ -243,7 +294,7 @@ public class ClientHandler implements Runnable{
                     sendResponse(userPath + java.io.File.separator + path);
 
                     String filePath = FileService.getFilePath(fileId);
-                    int size = fileService.getSize(fileId);
+                    long size = fileService.getSize(fileId);
                     sendResponse(String.valueOf(size));
 
                     syncFile(filePath, size);
@@ -260,22 +311,6 @@ public class ClientHandler implements Runnable{
 
                     boolean response = syncFolder(userId, folderId, FolderService.getFolderPath(folderId));
 
-                    sendResponse(response);
-                }
-                case "OPEN_FILE" -> {
-                    int userId = Integer.parseInt((String) receiveRequest());
-                    int fileId = Integer.parseInt((String) receiveRequest());
-
-                    String userPath = new UserService().getUserPath(userId);
-                    String filePath = new FileService().getPath(fileId);
-                    sendResponse(userPath + java.io.File.separator + filePath);
-
-                    int size = new FileService().getSize(fileId);
-                    sendResponse(String.valueOf(size));
-
-                    syncFile(FileService.getFilePath(fileId), size);
-
-                    boolean response = new RecentFileService().addRecentFile(userId, fileId);
                     sendResponse(response);
                 }
                 case "GET_ALL_ITEM_POPS_UP" -> {
@@ -296,20 +331,21 @@ public class ClientHandler implements Runnable{
                         sendResponse(UploadStatus.PERMISSION_DENIED.getValue());
                         break;
                     }
-                    int targetPermission = new PermissionService().checkUserPermission(userId, targetId, isFolder);
+                    int targetPermission = new PermissionService().checkUserPermission(userId, targetId, true);
                     if (targetPermission <= PermissionType.READ.getValue()) {
                         sendResponse(UploadStatus.PERMISSION_DENIED.getValue());
                         break;
                     }
                     if (isFolder) {
                         String folderName = FolderService.getFolderNameById(itemId);
-                        if (FolderService.checkFolderExist(folderName, targetId) || FolderService.checkFolderExistInPath(folderName, targetId)) {
+                        if (FolderService.checkFolderExist(folderName, targetId)) {
                             sendResponse(UploadStatus.EXISTED.getValue());
                             break;
                         }
                     } else {
                         String fileName = new FileService().getFullNameById(itemId);
-                        if (FileService.checkFileExist(fileName, targetId) || FileService.checkFileExistInPath(fileName, targetId)) {
+                        System.err.println("fileName: " + fileName);
+                        if (FileService.checkFileExist(fileName, targetId)) {
                             sendResponse(UploadStatus.EXISTED.getValue());
                             break;
                         }
@@ -346,7 +382,7 @@ public class ClientHandler implements Runnable{
                         sendResponse(UploadStatus.PERMISSION_DENIED.getValue());
                         break;
                     }
-                    int targetPermission = new PermissionService().checkUserPermission(userId, targetId, isFolder);
+                    int targetPermission = new PermissionService().checkUserPermission(userId, targetId, true);
                     if (targetPermission <= PermissionType.READ.getValue()) {
                         sendResponse(UploadStatus.PERMISSION_DENIED.getValue());
                         break;
@@ -385,7 +421,7 @@ public class ClientHandler implements Runnable{
                         sendResponse(UploadStatus.PERMISSION_DENIED.getValue());
                         break;
                     }
-                    int targetPermission = new PermissionService().checkUserPermission(userId, targetId, isFolder);
+                    int targetPermission = new PermissionService().checkUserPermission(userId, targetId, true);
                     if (targetPermission <= PermissionType.READ.getValue()) {
                         sendResponse(UploadStatus.PERMISSION_DENIED.getValue());
                         break;
@@ -393,13 +429,13 @@ public class ClientHandler implements Runnable{
 
                     if (isFolder) {
                         String folderName = FolderService.getFolderNameById(itemId);
-                        if (FolderService.checkFolderExist(folderName, targetId) || FolderService.checkFolderExistInPath(folderName, targetId)) {
+                        if (FolderService.checkFolderExist(folderName, targetId)) {
                             sendResponse(UploadStatus.EXISTED.getValue());
                             break;
                         }
                     } else {
                         String fileName = new FileService().getFullNameById(itemId);
-                        if (FileService.checkFileExist(fileName, targetId) || FileService.checkFileExistInPath(fileName, targetId)) {
+                        if (FileService.checkFileExist(fileName, targetId)) {
                             sendResponse(UploadStatus.EXISTED.getValue());
                             break;
                         }
@@ -438,7 +474,7 @@ public class ClientHandler implements Runnable{
                         sendResponse(UploadStatus.PERMISSION_DENIED.getValue());
                         break;
                     }
-                    int targetPermission = new PermissionService().checkUserPermission(userId, targetId, isFolder);
+                    int targetPermission = new PermissionService().checkUserPermission(userId, targetId, true);
                     if (targetPermission <= PermissionType.READ.getValue()) {
                         sendResponse(UploadStatus.PERMISSION_DENIED.getValue());
                         break;
@@ -466,12 +502,28 @@ public class ClientHandler implements Runnable{
                     }
                     sendResponse(response);
                 }
+                case "OPEN_FILE" -> {
+                    int userId = Integer.parseInt((String) receiveRequest());
+                    int fileId = Integer.parseInt((String) receiveRequest());
+
+                    String userPath = new UserService().getUserPath(userId);
+                    String filePath = new FileService().getPath(fileId);
+                    sendResponse(userPath + java.io.File.separator + filePath);
+
+                    long size = new FileService().getSize(fileId);
+                    sendResponse(String.valueOf(size));
+
+                    syncFile(FileService.getFilePath(fileId), size);
+
+                    boolean response = new RecentFileService().addRecentFile(userId, fileId);
+                    sendResponse(response);
+                }
                 case "OPEN_FOLDER" -> {
                     int userId = Integer.parseInt((String) receiveRequest());
                     int folderId = Integer.parseInt((String) receiveRequest());
 
                     String userPath = new UserService().getUserPath(userId);
-                    String folderPath = FolderService.getFolderPath(folderId);
+                    String folderPath = FolderService.getPath(folderId);
                     sendResponse(userPath + java.io.File.separator + folderPath);
 
                     boolean response = syncFolder(userId, folderId, FolderService.getFolderPath(folderId));
@@ -721,7 +773,7 @@ public class ClientHandler implements Runnable{
             String fileName = fileService.getFullFileName(fileId);
             sendResponse(fileName);
 
-            int size = fileService.getSize(fileId);
+            long size = fileService.getSize(fileId);
             sendResponse(String.valueOf(size));
 
             syncFile(FileService.getFilePath(fileId), size);
@@ -745,7 +797,7 @@ public class ClientHandler implements Runnable{
             ZipFolder zipFolder = new ZipFolder(folderName, folderPath);
             String zipFilePath = zipFolder.zip();
 
-            int size = (int) zipFolder.size();
+            long size = (int) zipFolder.size();
             sendResponse(String.valueOf(size));
 
             sendZipFolder(zipFilePath, size);
@@ -758,7 +810,7 @@ public class ClientHandler implements Runnable{
         }
     }
 
-    private void sendZipFolder(String zipFilePath, int size) {
+    private void sendZipFolder(String zipFilePath, long size) {
         syncFile(zipFilePath, size);
     }
 
@@ -775,7 +827,7 @@ public class ClientHandler implements Runnable{
         return itemService.getAllItem(userId, folderId, searchText);
     }
     
-    private int uploadFile(String fileName, int userId, int folderId, int size){
+    private int uploadFile(String fileName, int userId, int folderId, long size){
         try{
             int indexOfDot = fileName.indexOf(".");
             String nameOfFile = fileName.substring(0, indexOfDot);
@@ -798,15 +850,19 @@ public class ClientHandler implements Runnable{
         }
     }
 
-    private void receiveFile(String filePath, int size){
+    private void receiveFile(String filePath, long size){
         byte[] buffer = new byte[1024];
 
         try(FileOutputStream fileOutputStream = new FileOutputStream(filePath)) {
             InputStream fileInputStream = clientSocket.getInputStream();
-            int bytesRead;
+            long bytesRead;
             //while ((bytesRead = fileInputStream.read(buffer)) != -1) {
-            while(size > 0 && (bytesRead = fileInputStream.read(buffer, 0, Math.min(buffer.length, size))) != -1) {
-                fileOutputStream.write(buffer, 0, bytesRead);
+//            while(size > 0 && (bytesRead = fileInputStream.read(buffer, 0, Math.min(buffer.length, size))) != -1) {
+//                fileOutputStream.write(buffer, 0, bytesRead);
+//                size -= bytesRead;
+//            }
+            while(size > 0 && (bytesRead = fileInputStream.read(buffer, 0, (int) Math.min(buffer.length, size))) != -1) {
+                fileOutputStream.write(buffer, 0, (int) bytesRead);
                 size -= bytesRead;
             }
 
@@ -815,14 +871,14 @@ public class ClientHandler implements Runnable{
         }
     }
 
-    public void syncFile(String filePath, int size){
+    public void syncFile(String filePath, long size){
         byte[] buffer = new byte[1024];
 
         try(FileInputStream fileInputStream = new FileInputStream(filePath)) {
             OutputStream fileOutputStream = clientSocket.getOutputStream();
-            int bytesRead;
-            while(size > 0 && (bytesRead = fileInputStream.read(buffer, 0, Math.min(buffer.length, size))) != -1) {
-                fileOutputStream.write(buffer, 0, bytesRead);
+            long bytesRead;
+            while(size > 0 && (bytesRead = fileInputStream.read(buffer, 0, (int) Math.min(buffer.length, size))) != -1) {
+                fileOutputStream.write(buffer, 0, (int) bytesRead);
                 size -= bytesRead;
             }
             fileOutputStream.flush();
@@ -844,7 +900,7 @@ public class ClientHandler implements Runnable{
                     } else {
                         String fileName = file.getName() + "." + file.getTypeName();
                         String filePath = folderPath + java.io.File.separator + fileName;
-                        int size = file.getSize();
+                        long size = file.getSize();
                         sendResponse(String.valueOf(TypeEnum.FILE.getValue()));
                         sendResponse(fileName);
                         sendResponse(String.valueOf(size));
@@ -963,7 +1019,7 @@ public class ClientHandler implements Runnable{
             } else if(itemType == TypeEnum.FILE.getValue()){
                 String fileName = (String) receiveRequest();
                 int parentIdOfFile = Integer.parseInt((String) receiveRequest());
-                int sizeOfFile = Integer.parseInt((String) receiveRequest());
+                long sizeOfFile = Integer.parseInt((String) receiveRequest());
 
                 if(uploadFile(fileName, userId, parentIdOfFile, sizeOfFile) != UploadStatus.SUCCESS.getValue()){
                     isSuccess = UploadStatus.FAILED.getValue();

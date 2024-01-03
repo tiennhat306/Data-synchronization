@@ -206,7 +206,7 @@ public class HomepageController implements Initializable {
             return new SimpleStringProperty(((ItemDTO)column.getValue()).getUpdatedPersonName() == null ? "" : ((ItemDTO)column.getValue()).getUpdatedPersonName());
         });
         sizeColumn.setCellValueFactory(column -> {
-            int size = ((ItemDTO)column.getValue()).getSize();
+            long size = ((ItemDTO)column.getValue()).getSize();
             String sizeStr = ((ItemDTO)column.getValue()).getSizeName();
 			return new SimpleStringProperty(sizeStr);
         });
@@ -1671,22 +1671,43 @@ public class HomepageController implements Initializable {
 			String foldername = folderNameTxt.getText();
 			popupStage.close();
 
-			Task<Boolean> createFolderTask = new Task<Boolean>() {
+			Task<Integer> createFolderTask = new Task<Integer>() {
 				@Override
-				protected Boolean call() throws Exception {
+				protected Integer call() throws Exception {
 					ItemService itemService = new ItemService();
-					boolean rs = itemService.createFolder(foldername, userId, currentFolderId);
-					return rs;
+					int rs = itemService.createFolder(foldername, userId, currentFolderId, false);
+					if(rs == UploadStatus.SUCCESS.getValue()) {
+						return UploadStatus.SUCCESS.getValue();
+					} else if(rs == UploadStatus.EXISTED.getValue()) {
+						Platform.runLater(() -> {
+							if(AlertConfirm(popupStage, "Xác nhận", "Thư mục đã tồn tại, bạn có muốn thay thế không?")) {
+								int success;
+								try {
+									success = itemService.createFolder(foldername, userId, currentFolderId, true);
+								} catch (Exception e) {
+									success = UploadStatus.FAILED.getValue();
+								}
+
+								if(success == UploadStatus.SUCCESS.getValue()) {
+									fillData();
+									Toast.showToast((Stage) dataTable.getScene().getWindow(), 1, "Tạo thư mục thành công");
+								}
+								else Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Tạo thư mục thất bại");
+							}
+						});
+						return UploadStatus.EXISTED.getValue();
+					}
+					return UploadStatus.FAILED.getValue();
 				}
 			};
 
 			createFolderTask.setOnSucceeded(event1 -> {
-				boolean response = createFolderTask.getValue();
-				if(response){
+				int response = createFolderTask.getValue();
+				if(response == UploadStatus.SUCCESS.getValue()){
 					fillData();
 					Toast.showToast((Stage) dataTable.getScene().getWindow(), 1, "Tạo thư mục thành công");
 				}
-				else Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Tạo thư mục thất bại");
+				else if(response == UploadStatus.FAILED.getValue()) Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Tạo thư mục thất bại");
 			});
 
 			createFolderTask.setOnFailed(event1 -> {
@@ -2176,7 +2197,7 @@ public class HomepageController implements Initializable {
 			return new SimpleStringProperty(((ItemDTO)column.getValue()).getUpdatedPersonName() == null ? "" : ((ItemDTO)column.getValue()).getUpdatedPersonName());
 		});
 		sizeColumn.setCellValueFactory(column -> {
-			int size = ((ItemDTO)column.getValue()).getSize();
+			long size = ((ItemDTO)column.getValue()).getSize();
 			String sizeStr = ((ItemDTO)column.getValue()).getSizeName();
 			return new SimpleStringProperty(sizeStr);
 		});
@@ -2294,7 +2315,7 @@ public class HomepageController implements Initializable {
 			return new SimpleStringProperty(((ItemDeletedDTO)column.getValue()).getDeletedPersonName() == null ? "" : ((ItemDeletedDTO)column.getValue()).getDeletedPersonName());
 		});
 		sizeColumn.setCellValueFactory(column -> {
-			int size = ((ItemDeletedDTO)column.getValue()).getSize();
+			long size = ((ItemDeletedDTO)column.getValue()).getSize();
 			String sizeStr = ((ItemDeletedDTO)column.getValue()).getSizeName();
 			return new SimpleStringProperty(sizeStr);
 		});
@@ -2370,26 +2391,41 @@ public class HomepageController implements Initializable {
 	}
 	
 	public void renameFile(int fileID, String fileName) {
-	    Task<Boolean> renameFileTask = new Task<Boolean>() {
+	    Task<Integer> renameFileTask = new Task<Integer>() {
 	        @Override
-	        protected Boolean call() throws Exception {
+	        protected Integer call() throws Exception {
 	            try {
 	                ItemService itemService = new ItemService();
-	                return itemService.rename(userId, fileID, false, fileName);
+	               	int rs = itemService.rename(userId, fileID, false, fileName, false);
+					if(rs == UploadStatus.SUCCESS.getValue()) return UploadStatus.SUCCESS.getValue();
+					else if(rs == UploadStatus.EXISTED.getValue()) {
+						Platform.runLater(() -> {
+							if(AlertConfirm((Stage) dataTable.getScene().getWindow(), "Xác nhận", "Tập tin đã tồn tại, bạn có muốn thay thế không?")) {
+								int success = itemService.rename(userId, fileID, false, fileName, true);
+								if(success == UploadStatus.SUCCESS.getValue()) {
+									fillData();
+									Toast.showToast((Stage) dataTable.getScene().getWindow(), 1, "Đổi tên thành công");
+								}
+								else Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Đổi tên thất bại");
+							}
+						});
+						return UploadStatus.EXISTED.getValue();
+					}
+					return UploadStatus.FAILED.getValue();
 	            } catch (Exception e) {
 	                e.printStackTrace();
-	                return false;
+	                return UploadStatus.FAILED.getValue();
 	            }
 	        }
 	    };
 
 	    renameFileTask.setOnSucceeded(e -> {
-	        boolean response = renameFileTask.getValue();
-			if(response){
+	        int response = renameFileTask.getValue();
+			if(response == UploadStatus.SUCCESS.getValue()){
 				fillData();
 				Toast.showToast((Stage) dataTable.getScene().getWindow(), 1, "Đổi tên file thành công");
 			}
-			else Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Đổi tên file thất bại");
+			else if(response == UploadStatus.FAILED.getValue()) Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Đổi tên file thất bại");
 	    });
 
 	    renameFileTask.setOnFailed(e -> {
@@ -2402,26 +2438,41 @@ public class HomepageController implements Initializable {
 	}
 	
 	public void renameFolder(int folderID, String folderName) {
-	    Task<Boolean> renameFolderTask = new Task<Boolean>() {
+	    Task<Integer> renameFolderTask = new Task<Integer>() {
 	        @Override
-	        protected Boolean call() throws Exception {
+	        protected Integer call() throws Exception {
 	            try {
 	                ItemService itemService = new ItemService();
-	                return itemService.rename(userId, folderID, true, folderName);
+	                int rs = itemService.rename(userId, folderID, true, folderName, false);
+					if (rs == UploadStatus.SUCCESS.getValue()) return UploadStatus.SUCCESS.getValue();
+					else if(rs == UploadStatus.EXISTED.getValue()) {
+						Platform.runLater(() -> {
+							if(AlertConfirm((Stage) dataTable.getScene().getWindow(), "Xác nhận", "Thư mục đã tồn tại, bạn có muốn thay thế không?")) {
+								int success = itemService.rename(userId, folderID, true, folderName, true);
+								if(success == UploadStatus.SUCCESS.getValue()) {
+									fillData();
+									Toast.showToast((Stage) dataTable.getScene().getWindow(), 1, "Đổi tên thành công");
+								}
+								else Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Đổi tên thất bại");
+							}
+						});
+						return UploadStatus.EXISTED.getValue();
+					}
+					return UploadStatus.FAILED.getValue();
 	            } catch (Exception e) {
-	                e.printStackTrace();
-	                return false;
-	            }
+					e.printStackTrace();
+					return UploadStatus.FAILED.getValue();
+				}
 	        }
 	    };
 
 	    renameFolderTask.setOnSucceeded(e -> {
-	        boolean response = renameFolderTask.getValue();
-			if(response) {
+	        int response = renameFolderTask.getValue();
+			if(response == UploadStatus.SUCCESS.getValue()){
 				fillData();
 				Toast.showToast((Stage) dataTable.getScene().getWindow(), 1, "Đổi tên thư mục thành công");
 			}
-			else Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Đổi tên thư mục thất bại");
+			else if (response == UploadStatus.FAILED.getValue()) Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Đổi tên thư mục thất bại");
 	    });
 
 	    renameFolderTask.setOnFailed(e -> {

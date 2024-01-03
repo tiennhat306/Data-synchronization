@@ -15,6 +15,34 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class RecentFileService {
+    public static boolean deleteRecentFileByFileId(int id) {
+        try(Session session = HibernateUtil.getSessionFactory().openSession()){
+            Transaction transaction = session.beginTransaction();
+
+            try{
+                RecentFile recentFile = session.createQuery("select rf from RecentFile rf where rf.fileId = :id", RecentFile.class)
+                        .setParameter("id", id)
+                        .uniqueResult();
+                if(recentFile != null){
+                    session.remove(recentFile);
+                    transaction.commit();
+                    return true;
+                } else {
+                    throw new NoResultException();
+                }
+            } catch (NoResultException e) {
+                return true;
+            } catch (Exception e){
+                e.printStackTrace();
+                transaction.rollback();
+                return false;
+            }
+        } catch (Exception e){
+            e.printStackTrace();
+            return false;
+        }
+    }
+
     public boolean addRecentFile(int userId, int fileId) {
         try(Session session = HibernateUtil.getSessionFactory().openSession()){
             Transaction transaction = session.beginTransaction();
