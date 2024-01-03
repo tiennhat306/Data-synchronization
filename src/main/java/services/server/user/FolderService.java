@@ -61,14 +61,17 @@ public class FolderService {
         }
     }
 
-    public static void restoreFolderInPath(int itemId, String finalPath) {
-        String trashPath = getFolderPath(itemId);
-        String trashToFolder = trashPath.substring(ServerApp.SERVER_PATH.length() + 1);
-        trashToFolder = trashToFolder.replaceFirst("general", "trash");
-        trashToFolder = ServerApp.SERVER_PATH + File.separator + trashToFolder;
-        String folderName = trashPath.substring(trashPath.lastIndexOf(File.separator) + 1);
-        finalPath = ServerApp.SERVER_PATH + File.separator + finalPath + File.separator + folderName;
-        moveFolder(trashToFolder, finalPath);
+    public static void restoreFolderInPath(int itemId, String trashPath) {
+//        String trashPath = getFolderPath(itemId);
+//        String trashToFolder = trashPath.substring(ServerApp.SERVER_PATH.length() + 1);
+//        trashToFolder = trashToFolder.replaceFirst("general", "trash");
+//        trashToFolder = ServerApp.SERVER_PATH + File.separator + trashToFolder;
+//        String folderName = trashPath.substring(trashPath.lastIndexOf(File.separator) + 1);
+//        finalPath = ServerApp.SERVER_PATH + File.separator + finalPath + File.separator + folderName;
+//        moveFolder(trashToFolder, finalPath);
+
+        String trashToFolder = getFolderPath(itemId);
+        moveFolder(trashPath, trashToFolder);
     }
 
     public static String getFolderNameById(int itemId) {
@@ -325,12 +328,14 @@ public class FolderService {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             Transaction transaction = session.beginTransaction();
             try {
-                boolean isDeletedSameFolder = deleteSameFolderIfExist(newName, FolderService.getParentId(folderId));
-                if(!isDeletedSameFolder) return false;
-
                 Folder folder = session.find(Folder.class, folderId);
 
                 if (folder != null) {
+                    if(newName == null || newName.isEmpty()) return false;
+                    if(newName.equalsIgnoreCase(folder.getFolderName())) return true;
+                    boolean isDeletedSameFolder = deleteSameFolderIfExist(newName, folder.getParentId());
+                    if(!isDeletedSameFolder) return false;
+
                     folder.setFolderName(newName);
                     transaction.commit();
                     return true;
@@ -960,7 +965,7 @@ public class FolderService {
         try(Session session = HibernateUtil.getSessionFactory().openSession()){
             Transaction transaction = session.beginTransaction();
             try {
-                Folder folder = session.createQuery("select fd from Folder fd where fd.folderName = :folderName AND fd.parentId = :parentId", Folder.class)
+                Folder folder = session.createQuery("select fd from Folder fd where fd.folderName LIKE :folderName AND fd.parentId = :parentId", Folder.class)
                         .setParameter("folderName", folderName)
                         .setParameter("parentId", targetId)
                         .getSingleResult();

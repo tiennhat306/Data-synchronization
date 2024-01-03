@@ -20,11 +20,24 @@ public class RecentFileService {
             Transaction transaction = session.beginTransaction();
 
             try{
-                RecentFile recentFile = session.createQuery("select rf from RecentFile rf where rf.fileId = :id", RecentFile.class)
+//                RecentFile recentFile = session.createQuery("select rf from RecentFile rf where rf.fileId = :id", RecentFile.class)
+//                        .setParameter("id", id)
+//                        .uniqueResult();
+//                if(recentFile != null){
+//                    session.remove(recentFile);
+//                    transaction.commit();
+//                    return true;
+//                } else {
+//                    throw new NoResultException();
+//                }
+                // delete list have this id
+                List<RecentFile> recentFiles = session.createQuery("select rf from RecentFile rf where rf.fileId = :id", RecentFile.class)
                         .setParameter("id", id)
-                        .uniqueResult();
-                if(recentFile != null){
-                    session.remove(recentFile);
+                        .getResultList();
+                if(recentFiles != null){
+                    for(RecentFile rf : recentFiles){
+                        session.remove(rf);
+                    }
                     transaction.commit();
                     return true;
                 } else {

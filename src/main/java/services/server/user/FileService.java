@@ -106,12 +106,20 @@ public class FileService {
         }
     }
 
-    public static void restoreFileInPath(int itemId, String finalPath) {
+    public static void restoreFileInPath(int itemId, String trashPath) {
         try(Session session = HibernateUtil.getSessionFactory().openSession()) {
-            File file = session.find(File.class, itemId);
-            finalPath = ServerApp.SERVER_PATH + java.io.File.separator + finalPath + java.io.File.separator + file.getName() + "." + TypeService.getTypeName(file.getTypeId());
-            java.io.File fileToRestore = new java.io.File(getFilePath(itemId));
-            java.io.File restoreFile = new java.io.File(finalPath);
+//            File file = session.find(File.class, itemId);
+//            finalPath = ServerApp.SERVER_PATH + java.io.File.separator + finalPath + java.io.File.separator + file.getName() + "." + TypeService.getTypeName(file.getTypeId());
+//            java.io.File fileToRestore = new java.io.File(getFilePath(itemId));
+//            java.io.File restoreFile = new java.io.File(finalPath);
+//            if (!restoreFile.getParentFile().exists()) {
+//                Files.createDirectories(fileToRestore.getParentFile().toPath());
+//            }
+//            Files.move(fileToRestore.toPath(), restoreFile.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+
+            String filePath = getFilePath(itemId);
+            java.io.File fileToRestore = new java.io.File(filePath);
+            java.io.File restoreFile = new java.io.File(trashPath);
             if (!fileToRestore.getParentFile().exists()) {
                 Files.createDirectories(fileToRestore.getParentFile().toPath());
             }
@@ -319,14 +327,17 @@ public class FileService {
             Transaction transaction = session.beginTransaction();
             try {
                 File file = session.find(File.class, fileId);
-                int typeId = file.getTypeId();
-                int parentFolderId = file.getFolderId();
-                boolean isDeletedSameFile = deleteSameFileIfExist(newName, typeId, parentFolderId);
-                if(!isDeletedSameFile) {
-                    return false;
-                }
 
                 if (file != null) {
+                    if(newName == null || newName.isEmpty()) return false;
+                    if(file.getName().equalsIgnoreCase(newName)) return true;
+                    int typeId = file.getTypeId();
+                    int parentFolderId = file.getFolderId();
+                    boolean isDeletedSameFile = deleteSameFileIfExist(newName, typeId, parentFolderId);
+                    if(!isDeletedSameFile) {
+                        return false;
+                    }
+
                     file.setName(newName);
                     transaction.commit();
                     return true;
@@ -687,7 +698,7 @@ public class FileService {
 
     public int getFileIdByFileNameAndFolderId(String fileName, int folderId) {
         try(Session session = HibernateUtil.getSessionFactory().openSession()) {
-            int indexOfDot = fileName.indexOf(".");
+            int indexOfDot = fileName.lastIndexOf(".");
             String nameOfFile = fileName.substring(0, indexOfDot);
             String typeOfFile = fileName.substring(indexOfDot + 1);
 

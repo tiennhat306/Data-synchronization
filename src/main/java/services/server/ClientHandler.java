@@ -64,6 +64,17 @@ public class ClientHandler implements Runnable{
                     UserAccountDTO response = new AccountService().getUserAccountInfo(userId);
                     sendResponse(response);
                 }
+                case "GET_USER_PATH" -> {
+                    int userId = Integer.parseInt((String) receiveRequest());
+                    String response = new UserService().getUserPath(userId);
+                    sendResponse(response);
+                }
+                case "UPDATE_USER_PATH" -> {
+                    int userId = Integer.parseInt((String) receiveRequest());
+                    String text = (String) receiveRequest();
+                    boolean response = new UserService().updateUserPath(userId, text);
+                    sendResponse(response);
+                }
                 case "UPDATE_PASSWORD" -> {
                     int userId = Integer.parseInt((String) receiveRequest());
                     String oldPassword = (String) receiveRequest();
@@ -678,34 +689,37 @@ public class ClientHandler implements Runnable{
                     if(isFolder){
                         FolderService folderService = new FolderService();
                         String finalPath = folderService.getFinalPath(itemId);
-                        if(new java.io.File(ServerApp.SERVER_PATH + File.separator + finalPath + File.separator + FolderService.getFolderNameById(itemId)).exists()){
-                            sendResponse(UploadStatus.EXISTED.getValue());
+//                        if(new java.io.File(ServerApp.SERVER_PATH + File.separator + finalPath + File.separator + FolderService.getFolderNameById(itemId)).exists()){
+//                            sendResponse(UploadStatus.EXISTED.getValue());
+//                            break;
+//                        }
+//                        String folderPath = FolderService.getFolderPath(itemId);
+                        if(finalPath == null || finalPath.isEmpty()){ //  || !new java.io.File(folderPath).exists()
+                            sendResponse(UploadStatus.FAILED.getValue());
                             break;
                         }
-                        String folderPath = FolderService.getFolderPath(itemId);
-                        if(finalPath == null || finalPath.isEmpty() || !new java.io.File(folderPath).exists()){
-                            sendResponse(false);
-                            break;
-                        }
+                        String trashPath = FolderService.getFolderPath(itemId);
                         boolean isRestoredInDB = folderService.restoreFolder(itemId);
                         if(isRestoredInDB){
-                            FolderService.restoreFolderInPath(itemId, finalPath);
+                            FolderService.restoreFolderInPath(itemId, trashPath);
                             response = UploadStatus.SUCCESS.getValue();
                         }
                     } else {
                         FileService fileService = new FileService();
                         String finalPath = fileService.getFinalPath(itemId);
-                        if(new java.io.File(ServerApp.SERVER_PATH + File.separator + finalPath + File.separator + fileService.getFullNameById(itemId)).exists()){
-                            sendResponse(UploadStatus.EXISTED.getValue());
-                            break;
-                        }
-                        if(finalPath == null || finalPath.isEmpty() || !new java.io.File(finalPath).exists()){
+//                        if(new java.io.File(ServerApp.SERVER_PATH + File.separator + finalPath + File.separator + fileService.getFullNameById(itemId)).exists()){
+//                            sendResponse(UploadStatus.EXISTED.getValue());
+//                            break;
+//                        }
+//                        String filePath = FileService.getFilePath(itemId);
+                        if(finalPath == null || finalPath.isEmpty() ){ // || !new java.io.File(filePath).exists()
                             sendResponse(false);
                             break;
                         }
+                        String trashPath = FileService.getFilePath(itemId);
                         boolean isRestoredInDB = fileService.restoreFile(itemId);
                         if(isRestoredInDB){
-                            FileService.restoreFileInPath(itemId, finalPath);
+                            FileService.restoreFileInPath(itemId, trashPath);
                             response = UploadStatus.SUCCESS.getValue();
                         }
                     }
@@ -718,8 +732,8 @@ public class ClientHandler implements Runnable{
                     if(isFolder){
                         FolderService folderService = new FolderService();
                         String finalPath = folderService.getFinalPath(itemId);
-                        String folderPath = FolderService.getFolderPath(itemId);
-                        if(finalPath == null || finalPath.isEmpty() || !new java.io.File(folderPath).exists()){
+//                        String folderPath = FolderService.getFolderPath(itemId);
+                        if(finalPath == null || finalPath.isEmpty()){ //  || !new java.io.File(folderPath).exists()
                             sendResponse(UploadStatus.FAILED.getValue());
                             break;
                         }
@@ -731,7 +745,8 @@ public class ClientHandler implements Runnable{
                     } else {
                         FileService fileService = new FileService();
                         String finalPath = fileService.getFinalPath(itemId);
-                        if(finalPath == null || finalPath.isEmpty() || !new java.io.File(finalPath).exists()){
+//                        String filePath = FileService.getFilePath(itemId);
+                        if(finalPath == null || finalPath.isEmpty()){ //  || !new java.io.File(finalPath).exists()
                             sendResponse(UploadStatus.FAILED.getValue());
                             break;
                         }
@@ -829,7 +844,7 @@ public class ClientHandler implements Runnable{
     
     private int uploadFile(String fileName, int userId, int folderId, long size){
         try{
-            int indexOfDot = fileName.indexOf(".");
+            int indexOfDot = fileName.lastIndexOf(".");
             String nameOfFile = fileName.substring(0, indexOfDot);
             String typeOfFile = fileName.substring(indexOfDot + 1);
 
