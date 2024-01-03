@@ -1,8 +1,10 @@
 package services.server.user;
 
 import DTO.UserDTO;
+import jakarta.persistence.NoResultException;
 import models.User;
 import org.hibernate.Session;
+import org.hibernate.Transaction;
 import utils.HibernateUtil;
 
 import java.util.ArrayList;
@@ -45,8 +47,12 @@ public class UserService {
 
     public String getUserPath(int id) {
         try(Session session = HibernateUtil.getSessionFactory().openSession()) {
-            User user = session.find(User.class, id);
-            return user.getUserPath();
+            try {
+                User user = session.find(User.class, id);
+                return user.getUserPath();
+            } catch (NoResultException e) {
+                return null;
+            }
         } catch (Exception e) {
             e.printStackTrace();
             return null;
@@ -60,6 +66,26 @@ public class UserService {
         } catch (Exception e) {
             e.printStackTrace();
             return null;
+        }
+    }
+
+    public boolean updateUserPath(int userId, String text) {
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
+            Transaction transaction = session.beginTransaction();
+            try {
+                User user = session.find(User.class, userId);
+                user.setUserPath(text);
+                session.merge(user);
+                session.getTransaction().commit();
+                return true;
+            } catch (Exception e) {
+                transaction.rollback();
+                e.printStackTrace();
+                return false;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
         }
     }
 }
