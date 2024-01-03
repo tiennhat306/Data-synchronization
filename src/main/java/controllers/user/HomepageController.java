@@ -42,6 +42,7 @@ import javafx.stage.Window;
 import services.client.auth.LoginService;
 import services.client.user.ItemService;
 import services.client.user.PermissionService;
+import services.client.user.UserService;
 
 import java.awt.*;
 import java.io.*;
@@ -422,6 +423,13 @@ public class HomepageController implements Initializable {
 
 		    dialog.showAndWait().ifPresent(newName -> {
 		        if (!newName.trim().isEmpty()) {
+					if(newName.matches(".*[/\\\\:*?\"<>|].*")) {
+						Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Tên chứa kí tự không hợp lệ");
+						return;
+					} else if(newName.length() > 255) {
+						Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Tên quá dài");
+						return;
+					}
 		            if (selectedItem.getTypeId() == TypeEnum.FOLDER.getValue()) {
 		            	renameFolder(selectedItem.getId(), newName);
 		            } else {
@@ -2888,6 +2896,12 @@ public class HomepageController implements Initializable {
 		updateIcon.setStyleClass("icon");
 		Button updateBtn = new Button("Cập nhật", updateIcon);
 
+		FontAwesomeIconView userPathIcon = new FontAwesomeIconView();
+		userPathIcon.setGlyphName("FOLDER");
+		userPathIcon.setSize("20");
+		userPathIcon.setStyleClass("icon");
+		Button userPathBtn = new Button("Đường dẫn người dùng", userPathIcon);
+
 		FontAwesomeIconView socketConfigIcon = new FontAwesomeIconView();
 		socketConfigIcon.setGlyphName("COG");
 		socketConfigIcon.setSize("20");
@@ -2918,6 +2932,95 @@ public class HomepageController implements Initializable {
 			// Đóng form gốc (nếu cần)
 			((Node)(event.getSource())).getScene().getWindow().hide();
 			popup.hide();
+		});
+
+		userPathBtn.setOnAction(event -> {
+			popup.hide();
+//			Stage userPathStage = new Stage();
+//			userPathStage.initModality(Modality.APPLICATION_MODAL);
+//			userPathStage.setTitle("Cấu hình đường dẫn người dùng");
+//
+//			userPathStage.initStyle(StageStyle.UTILITY);
+//
+//			BorderPane userPathLayout = new BorderPane();
+//			userPathLayout.setPadding(new Insets(10));
+//
+//			Label userPathLabel = new Label("Đường dẫn");
+//			TextField userPathTextField = new TextField();
+//			userPathTextField.setPromptText("Đường dẫn");
+//
+//			Task<String> getUserPath = new Task<String>() {
+//				@Override
+//				protected String call() throws Exception {
+//					try {
+//						UserService userService = new UserService();
+//						return userService.getUserPath(userId);
+//					} catch (Exception e) {
+//						e.printStackTrace();
+//						return "";
+//					}
+//				}
+//			};
+//
+//			getUserPath.setOnSucceeded(e -> {
+//				userPathTextField.setText(getUserPath.getValue());
+//			});
+//
+//			getUserPath.setOnFailed(e -> {
+//				userPathTextField.setText("");
+//			});
+//
+//			Thread thread = new Thread(getUserPath);
+//			thread.start();
+//
+//			userPathTextField.setText(MainApp.USER_PATH);
+//
+//			GridPane gridPane = new GridPane();
+//			gridPane.setHgap(10);
+//			gridPane.setVgap(10);
+//			gridPane.add(userPathLabel, 0, 0);
+//			gridPane.add(userPathTextField, 1, 0);
+//
+//			userPathLayout.setCenter(gridPane);
+//
+//			Button userPathBtn = new Button("Cập nhật");
+//			userPathBtn.setPrefWidth(100);
+//			userPathBtn.setPrefHeight(30);
+//			userPathBtn.setStyle("-fx-background-color: white");
+//			userPathBtn.setStyle("-fx-border-color: gray");
+//			userPathBtn.setStyle("-fx-border-width: 1px");
+//
+//			userPathBtn.setOnAction(e -> {
+//				userPathStage.close();
+//				try{
+//					MainApp.USER_PATH = userPathTextField.getText();
+//					Toast.showToast((Stage) dataTable.getScene().getWindow(), 1, "Cấu hình đường dẫn thành công");
+//				} catch (Exception ex) {
+//					ex.printStackTrace();
+//					Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Cấu hình đường dẫn thất bại");
+//				}
+//			});
+//
+//			Button cancelBtn = new Button("Hủy");
+//			cancelBtn.setPrefWidth(100);
+//			cancelBtn.setPrefHeight(30);
+//			cancelBtn.setStyle("-fx-background-color: white");
+//			cancelBtn.setStyle("-fx-border-color: gray");
+//			cancelBtn.setStyle("-fx-border-width: 1px");
+//
+//			cancelBtn.setOnAction(e -> userPathStage.close());
+//
+//			HBox footerLabel = new HBox();
+//			footerLabel.setSpacing(10);
+//			footerLabel.setPadding(new Insets(10));
+//			footerLabel.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
+//			footerLabel.getChildren().addAll(userPathBtn, cancelBtn);
+//
+//			userPathLayout.setBottom(footerLabel);
+//
+//			Scene userPathScene = new Scene(userPathLayout, 250, 150);
+//			userPathStage.setScene(userPathScene);
+//			userPathStage.showAndWait();
 		});
 
 		socketConfigBtn.setOnAction(event -> {
