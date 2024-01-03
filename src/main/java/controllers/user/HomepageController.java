@@ -2939,91 +2939,126 @@ public class HomepageController implements Initializable {
 
 		userPathBtn.setOnAction(event -> {
 			popup.hide();
-//			Stage userPathStage = new Stage();
-//			userPathStage.initModality(Modality.APPLICATION_MODAL);
-//			userPathStage.setTitle("Cấu hình đường dẫn người dùng");
-//
-//			userPathStage.initStyle(StageStyle.UTILITY);
-//
-//			BorderPane userPathLayout = new BorderPane();
-//			userPathLayout.setPadding(new Insets(10));
-//
-//			Label userPathLabel = new Label("Đường dẫn");
-//			TextField userPathTextField = new TextField();
-//			userPathTextField.setPromptText("Đường dẫn");
-//
-//			Task<String> getUserPath = new Task<String>() {
-//				@Override
-//				protected String call() throws Exception {
-//					try {
-//						UserService userService = new UserService();
-//						return userService.getUserPath(userId);
-//					} catch (Exception e) {
-//						e.printStackTrace();
-//						return "";
-//					}
-//				}
-//			};
-//
-//			getUserPath.setOnSucceeded(e -> {
-//				userPathTextField.setText(getUserPath.getValue());
-//			});
-//
-//			getUserPath.setOnFailed(e -> {
-//				userPathTextField.setText("");
-//			});
-//
-//			Thread thread = new Thread(getUserPath);
-//			thread.start();
-//
-//			userPathTextField.setText(MainApp.USER_PATH);
-//
-//			GridPane gridPane = new GridPane();
-//			gridPane.setHgap(10);
-//			gridPane.setVgap(10);
-//			gridPane.add(userPathLabel, 0, 0);
-//			gridPane.add(userPathTextField, 1, 0);
-//
-//			userPathLayout.setCenter(gridPane);
-//
-//			Button userPathBtn = new Button("Cập nhật");
-//			userPathBtn.setPrefWidth(100);
-//			userPathBtn.setPrefHeight(30);
-//			userPathBtn.setStyle("-fx-background-color: white");
-//			userPathBtn.setStyle("-fx-border-color: gray");
-//			userPathBtn.setStyle("-fx-border-width: 1px");
-//
-//			userPathBtn.setOnAction(e -> {
-//				userPathStage.close();
-//				try{
-//					MainApp.USER_PATH = userPathTextField.getText();
-//					Toast.showToast((Stage) dataTable.getScene().getWindow(), 1, "Cấu hình đường dẫn thành công");
-//				} catch (Exception ex) {
-//					ex.printStackTrace();
-//					Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Cấu hình đường dẫn thất bại");
-//				}
-//			});
-//
-//			Button cancelBtn = new Button("Hủy");
-//			cancelBtn.setPrefWidth(100);
-//			cancelBtn.setPrefHeight(30);
-//			cancelBtn.setStyle("-fx-background-color: white");
-//			cancelBtn.setStyle("-fx-border-color: gray");
-//			cancelBtn.setStyle("-fx-border-width: 1px");
-//
-//			cancelBtn.setOnAction(e -> userPathStage.close());
-//
-//			HBox footerLabel = new HBox();
-//			footerLabel.setSpacing(10);
-//			footerLabel.setPadding(new Insets(10));
-//			footerLabel.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
-//			footerLabel.getChildren().addAll(userPathBtn, cancelBtn);
-//
-//			userPathLayout.setBottom(footerLabel);
-//
-//			Scene userPathScene = new Scene(userPathLayout, 250, 150);
-//			userPathStage.setScene(userPathScene);
-//			userPathStage.showAndWait();
+			Stage userPathStage = new Stage();
+			userPathStage.initModality(Modality.APPLICATION_MODAL);
+			userPathStage.setTitle("Cấu hình đường dẫn người dùng");
+
+			userPathStage.initStyle(StageStyle.UTILITY);
+
+			BorderPane userPathLayout = new BorderPane();
+			userPathLayout.setPadding(new Insets(10));
+
+			Label userPathLabel = new Label("Đường dẫn");
+			TextField userPathTextField = new TextField();
+			userPathTextField.setPromptText("Đường dẫn");
+
+			final String[] originalUserPath = new String[1];
+			Task<String> getUserPath = new Task<String>() {
+				@Override
+				protected String call() throws Exception {
+					try {
+						UserService userService = new UserService();
+						return userService.getUserPath(userId);
+					} catch (Exception e) {
+						e.printStackTrace();
+						return "";
+					}
+				}
+			};
+
+			getUserPath.setOnSucceeded(e -> {
+				userPathTextField.setText(getUserPath.getValue());
+				originalUserPath[0] = getUserPath.getValue();
+			});
+
+			getUserPath.setOnFailed(e -> {
+				userPathTextField.setText("");
+			});
+
+			Thread thread = new Thread(getUserPath);
+			thread.start();
+
+			// Button to show Folder chooser
+			Button chooseFolderBtn = new Button("Chọn thư mục");
+			chooseFolderBtn.setPrefWidth(100);
+			chooseFolderBtn.setPrefHeight(30);
+			chooseFolderBtn.setStyle("-fx-background-color: white");
+			chooseFolderBtn.setStyle("-fx-border-color: gray");
+			chooseFolderBtn.setStyle("-fx-border-width: 1px");
+
+			chooseFolderBtn.setOnAction(e -> {
+				DirectoryChooser directoryChooser = new DirectoryChooser();
+				File selectedDirectory = directoryChooser.showDialog(userPathStage);
+				if(selectedDirectory != null){
+					userPathTextField.setText(selectedDirectory.getAbsolutePath());
+				}
+			});
+
+			GridPane gridPane = new GridPane();
+			gridPane.setHgap(10);
+			gridPane.setVgap(10);
+			gridPane.add(userPathLabel, 0, 0);
+			gridPane.add(userPathTextField, 1, 0);
+			gridPane.add(chooseFolderBtn, 2, 0);
+
+			userPathLayout.setCenter(gridPane);
+
+			Button userPathUpdateBtn = new Button("Cập nhật");
+			userPathUpdateBtn.setPrefWidth(100);
+			userPathUpdateBtn.setPrefHeight(30);
+			userPathUpdateBtn.setStyle("-fx-background-color: white");
+			userPathUpdateBtn.setStyle("-fx-border-color: gray");
+			userPathUpdateBtn.setStyle("-fx-border-width: 1px");
+
+			userPathUpdateBtn.setOnAction(e -> {
+				if(userPathTextField.getText() == null || userPathTextField.getText().isEmpty()) {
+					Toast.showToast(userPathStage, 0, "Đường dẫn không được để trống");
+					return;
+				} else if (userPathTextField.getText().equals(originalUserPath[0])) {
+					Toast.showToast(userPathStage, 0, "Đường dẫn trùng với đường dẫn hiện tại");
+					return;
+				}
+				userPathStage.close();
+				try{
+					// check if user path is changed
+					if(!originalUserPath[0].equals(userPathTextField.getText())) {
+						// update user path to Server
+						UserService userService = new UserService();
+						boolean rs = userService.updateUserPath(userId, userPathTextField.getText());
+						if(rs) {
+							Toast.showToast((Stage) dataTable.getScene().getWindow(), 1, "Cấu hình đường dẫn thành công");
+						}
+						else Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Cấu hình đường dẫn thất bại");
+					}
+					else {
+						Toast.showToast((Stage) dataTable.getScene().getWindow(), 1, "Cấu hình đường dẫn thành công");
+					}
+				} catch (Exception ex) {
+					ex.printStackTrace();
+					Toast.showToast((Stage) dataTable.getScene().getWindow(), 0, "Cấu hình đường dẫn thất bại");
+				}
+			});
+
+			Button cancelBtn = new Button("Hủy");
+			cancelBtn.setPrefWidth(100);
+			cancelBtn.setPrefHeight(30);
+			cancelBtn.setStyle("-fx-background-color: white");
+			cancelBtn.setStyle("-fx-border-color: gray");
+			cancelBtn.setStyle("-fx-border-width: 1px");
+
+			cancelBtn.setOnAction(e -> userPathStage.close());
+
+			HBox footerLabel = new HBox();
+			footerLabel.setSpacing(10);
+			footerLabel.setPadding(new Insets(10));
+			footerLabel.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
+			footerLabel.getChildren().addAll(userPathUpdateBtn, cancelBtn);
+
+			userPathLayout.setBottom(footerLabel);
+
+			Scene userPathScene = new Scene(userPathLayout, 350, 150);
+			userPathStage.setScene(userPathScene);
+			userPathStage.showAndWait();
 		});
 
 		socketConfigBtn.setOnAction(event -> {
@@ -3128,7 +3163,7 @@ public class HomepageController implements Initializable {
 		options.setStyle("-fx-background-color: white; -fx-border-color: gray; -fx-border-radius: 15px; -fx-border-width: 1px; -fx-background-radius: 15px;");
 
 		options.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
-		for (Button button : Arrays.asList(updateBtn, socketConfigBtn, logoutBtn)) {
+		for (Button button : Arrays.asList(updateBtn, userPathBtn, socketConfigBtn, logoutBtn)) {
 			if (button != null) {
 				button.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
 				button.setPadding(new Insets(5, 5, 5, 15));
@@ -3144,7 +3179,7 @@ public class HomepageController implements Initializable {
 			}
 		}
 
-		options.getChildren().addAll(updateBtn, socketConfigBtn, logoutBtn);
+		options.getChildren().addAll(updateBtn, userPathBtn, socketConfigBtn, logoutBtn);
 		popup.getContent().add(options);
 
 		popup.show(settingBtn.getScene().getWindow(), mouseEvent.getScreenX() - 140, mouseEvent.getScreenY() + 14);

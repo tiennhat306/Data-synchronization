@@ -64,6 +64,17 @@ public class ClientHandler implements Runnable{
                     UserAccountDTO response = new AccountService().getUserAccountInfo(userId);
                     sendResponse(response);
                 }
+                case "GET_USER_PATH" -> {
+                    int userId = Integer.parseInt((String) receiveRequest());
+                    String response = new UserService().getUserPath(userId);
+                    sendResponse(response);
+                }
+                case "UPDATE_USER_PATH" -> {
+                    int userId = Integer.parseInt((String) receiveRequest());
+                    String text = (String) receiveRequest();
+                    boolean response = new UserService().updateUserPath(userId, text);
+                    sendResponse(response);
+                }
                 case "UPDATE_PASSWORD" -> {
                     int userId = Integer.parseInt((String) receiveRequest());
                     String oldPassword = (String) receiveRequest();

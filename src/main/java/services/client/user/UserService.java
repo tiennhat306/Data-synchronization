@@ -17,4 +17,20 @@ public class UserService {
             return "";
         }
     }
+
+    public boolean updateUserPath(int userId, String text) {
+        try{
+            SocketClientHelper socketClientHelper = new SocketClientHelper();
+            socketClientHelper.sendRequest("UPDATE_USER_PATH");
+            socketClientHelper.sendRequest(String.valueOf(userId));
+            socketClientHelper.sendRequest(text);
+
+            boolean response = (boolean) socketClientHelper.receiveResponse();
+            socketClientHelper.close();
+            return response;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
 }
