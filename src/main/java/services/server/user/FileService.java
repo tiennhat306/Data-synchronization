@@ -687,7 +687,7 @@ public class FileService {
 
     public int getFileIdByFileNameAndFolderId(String fileName, int folderId) {
         try(Session session = HibernateUtil.getSessionFactory().openSession()) {
-            int indexOfDot = fileName.indexOf(".");
+            int indexOfDot = fileName.lastIndexOf(".");
             String nameOfFile = fileName.substring(0, indexOfDot);
             String typeOfFile = fileName.substring(indexOfDot + 1);
 

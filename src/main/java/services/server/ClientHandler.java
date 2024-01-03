@@ -829,7 +829,7 @@ public class ClientHandler implements Runnable{
     
     private int uploadFile(String fileName, int userId, int folderId, long size){
         try{
-            int indexOfDot = fileName.indexOf(".");
+            int indexOfDot = fileName.lastIndexOf(".");
             String nameOfFile = fileName.substring(0, indexOfDot);
             String typeOfFile = fileName.substring(indexOfDot + 1);
 
