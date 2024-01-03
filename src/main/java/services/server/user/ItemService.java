@@ -97,13 +97,13 @@ public class ItemService {
         }
     }
 
-    private String getSizeName(int size) {
+    private String getSizeName(long size) {
         String sizeName;
         sizeName = getString(size);
         return sizeName;
     }
 
-    public static String getString(int size) {
+    public static String getString(long size) {
         String sizeName;
         if (size < 1024) {
             sizeName = size + " bytes";

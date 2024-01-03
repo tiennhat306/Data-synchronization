@@ -73,9 +73,13 @@ public class FolderService {
 
     public static String getFolderNameById(int itemId) {
         try(Session session = HibernateUtil.getSessionFactory().openSession()) {
-            Folder folder = session.find(Folder.class, itemId);
-            if (folder == null) return null;
-            return folder.getFolderName();
+            try {
+                Folder folder = session.find(Folder.class, itemId);
+                if (folder == null) return null;
+                return folder.getFolderName();
+            } catch (NoResultException e) {
+                return null;
+            }
         } catch (Exception e) {
             e.printStackTrace();
             return null;
@@ -514,6 +518,8 @@ public class FolderService {
     }
 
     public static boolean checkFolderExist(String folderName, int parentId) {
+        if(folderName == null || folderName.isEmpty()) return false;
+        if(parentId == -1) return false;
         try(Session session = HibernateUtil.getSessionFactory().openSession()){
             return session.createQuery("select count(*) from Folder fd where fd.folderName = :folderName AND fd.parentId = :parentId", Long.class)
                     .setParameter("folderName", folderName)
@@ -950,6 +956,7 @@ public class FolderService {
     }
 
     private boolean deleteSameFolderIfExist(String folderName, int targetId) {
+        if (targetId == -1) return false;
         try(Session session = HibernateUtil.getSessionFactory().openSession()){
             Transaction transaction = session.beginTransaction();
             try {

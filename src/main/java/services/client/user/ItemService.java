@@ -148,7 +148,7 @@ public class ItemService {
         }
     }
 
-    public int uploadFile(int userId, String fileName, int folderId, int size, String filePath){
+    public int uploadFile(int userId, String fileName, int folderId, long size, String filePath){
         try {
             SocketClientHelper socketClientHelper = new SocketClientHelper();
             socketClientHelper.sendRequest("UPLOAD_FILE");
@@ -258,7 +258,7 @@ public class ItemService {
             socketClientHelper.sendRequest(String.valueOf(fileId));
 
             String filePath = (String) socketClientHelper.receiveResponse();
-            int size = Integer.parseInt((String)socketClientHelper.receiveResponse());
+            long size = Integer.parseInt((String)socketClientHelper.receiveResponse());
 
             Files.deleteIfExists(Paths.get(filePath));
             java.io.File file = new java.io.File(filePath);
@@ -328,7 +328,7 @@ public class ItemService {
             socketClientHelper.sendRequest(String.valueOf(itemId));
 
             String fileName = (String) socketClientHelper.receiveResponse();
-            int size = Integer.parseInt((String)socketClientHelper.receiveResponse());
+            long size = Integer.parseInt((String)socketClientHelper.receiveResponse());
 
             socketClientHelper.downloadFile(path + java.io.File.separator + fileName, size);
 
@@ -349,7 +349,7 @@ public class ItemService {
             socketClientHelper.sendRequest(String.valueOf(currentFolderId));
 
             String folderName = (String) socketClientHelper.receiveResponse();
-            int size = Integer.parseInt((String)socketClientHelper.receiveResponse());
+            long size = Integer.parseInt((String)socketClientHelper.receiveResponse());
 
             socketClientHelper.downloadFolder(absolutePath + java.io.File.separator + folderName, size);
 
@@ -618,7 +618,7 @@ public class ItemService {
             socketClientHelper.sendRequest(String.valueOf(fileId));
 
             String filePath = (String) socketClientHelper.receiveResponse();
-            int size = Integer.parseInt((String)socketClientHelper.receiveResponse());
+            long size = Integer.parseInt((String)socketClientHelper.receiveResponse());
 
             Files.deleteIfExists(Paths.get(filePath));
             java.io.File file = new java.io.File(filePath);

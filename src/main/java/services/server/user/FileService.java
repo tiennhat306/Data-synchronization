@@ -30,21 +30,24 @@ public class FileService {
     }
 
     public static boolean checkFileExist(String fileName, int folderId) {
+        if(fileName == null || fileName.isEmpty()) return false;
         if(folderId == -1) return false;
         try(Session session = HibernateUtil.getSessionFactory().openSession()) {
-            int indexOfDot = fileName.indexOf(".");
-            String nameOfFile = fileName.substring(0, indexOfDot);
-            String typeOfFile = fileName.substring(indexOfDot + 1);
+            try {
+                int indexOfDot = fileName.indexOf(".");
+                String nameOfFile = fileName.substring(0, indexOfDot);
+                String typeOfFile = fileName.substring(indexOfDot + 1);
 
-            int typeId = new TypeService().getTypeId(typeOfFile);
+                int typeId = new TypeService().getTypeId(typeOfFile);
 
-            return session.createQuery("select f from File f where f.name = :nameOfFile AND f.typeId = :typeId AND f.folderId = :folderId", File.class)
-                    .setParameter("nameOfFile", nameOfFile)
-                    .setParameter("typeId", typeId)
-                    .setParameter("folderId", folderId)
-                    .getSingleResult() != null;
-        } catch (NoResultException e) {
-            return false;
+                return session.createQuery("select count(*) from File f where f.name = :nameOfFile AND f.typeId = :typeId AND f.folderId = :folderId", Long.class)
+                        .setParameter("nameOfFile", nameOfFile)
+                        .setParameter("typeId", typeId)
+                        .setParameter("folderId", folderId)
+                        .getSingleResult() > 0;
+            } catch (NoResultException e) {
+                return false;
+            }
         } catch (Exception e) {
             e.printStackTrace();
             return false;
@@ -434,6 +437,7 @@ public class FileService {
     }
 
     public boolean deleteSameFileIfExist(String name, int typeId, int folderId) {
+        if(folderId == -1) return false;
         try (Session session = HibernateUtil.getSessionFactory().openSession()){
             Transaction transaction = session.beginTransaction();
             try {
@@ -542,7 +546,7 @@ public class FileService {
         }
     }
 
-    public boolean uploadFile(String fileName, int fileType, int folderId, int ownerId, int size) {
+    public boolean uploadFile(String fileName, int fileType, int folderId, int ownerId, long size) {
         try(Session session = HibernateUtil.getSessionFactory().openSession()){
             Transaction transaction = session.beginTransaction();
 
@@ -572,7 +576,7 @@ public class FileService {
         }
     }
 
-    public int sizeOfFile(int fileId) {
+    public long sizeOfFile(int fileId) {
         try(Session session = HibernateUtil.getSessionFactory().openSession()){
             return session.createQuery("select f.size from File f where f.id = :fileId", Integer.class)
                     .setParameter("fileId", fileId)
@@ -670,7 +674,7 @@ public class FileService {
         }
     }
 
-    public int getSize(int fileId) {
+    public long getSize(int fileId) {
         try(Session session = HibernateUtil.getSessionFactory().openSession()) {
             File file = session.find(File.class, fileId);
             if (file == null) return -1;
@@ -808,15 +812,17 @@ public class FileService {
 
     public String getFullNameById(int itemId) {
         try(Session session = HibernateUtil.getSessionFactory().openSession()){
-            String nameOfFile = session.createQuery("select f.name from File f where f.id = :itemId", String.class)
-                    .setParameter("itemId", itemId)
-                    .getSingleResult();
+            try {
+                File file = session.find(File.class, itemId);
+                if(file == null) return "";
+                String nameOfFile = file.getName();
+                String typeOfFile = TypeService.getTypeName(file.getTypeId());
 
-            String typeOfFile = session.createQuery("select t.name from Type t where t.id = (select f.typeId from File f where f.id = :itemId)", String.class)
-                    .setParameter("itemId", itemId)
-                    .getSingleResult();
-
-            return nameOfFile + "." + typeOfFile;
+                return nameOfFile + "." + typeOfFile;
+            } catch (Exception e) {
+                e.printStackTrace();
+                return "";
+            }
         } catch (Exception e){
             e.printStackTrace();
             return "";

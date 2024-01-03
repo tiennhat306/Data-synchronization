@@ -206,7 +206,7 @@ public class HomepageController implements Initializable {
             return new SimpleStringProperty(((ItemDTO)column.getValue()).getUpdatedPersonName() == null ? "" : ((ItemDTO)column.getValue()).getUpdatedPersonName());
         });
         sizeColumn.setCellValueFactory(column -> {
-            int size = ((ItemDTO)column.getValue()).getSize();
+            long size = ((ItemDTO)column.getValue()).getSize();
             String sizeStr = ((ItemDTO)column.getValue()).getSizeName();
 			return new SimpleStringProperty(sizeStr);
         });
@@ -2197,7 +2197,7 @@ public class HomepageController implements Initializable {
 			return new SimpleStringProperty(((ItemDTO)column.getValue()).getUpdatedPersonName() == null ? "" : ((ItemDTO)column.getValue()).getUpdatedPersonName());
 		});
 		sizeColumn.setCellValueFactory(column -> {
-			int size = ((ItemDTO)column.getValue()).getSize();
+			long size = ((ItemDTO)column.getValue()).getSize();
 			String sizeStr = ((ItemDTO)column.getValue()).getSizeName();
 			return new SimpleStringProperty(sizeStr);
 		});
@@ -2315,7 +2315,7 @@ public class HomepageController implements Initializable {
 			return new SimpleStringProperty(((ItemDeletedDTO)column.getValue()).getDeletedPersonName() == null ? "" : ((ItemDeletedDTO)column.getValue()).getDeletedPersonName());
 		});
 		sizeColumn.setCellValueFactory(column -> {
-			int size = ((ItemDeletedDTO)column.getValue()).getSize();
+			long size = ((ItemDeletedDTO)column.getValue()).getSize();
 			String sizeStr = ((ItemDeletedDTO)column.getValue()).getSizeName();
 			return new SimpleStringProperty(sizeStr);
 		});
