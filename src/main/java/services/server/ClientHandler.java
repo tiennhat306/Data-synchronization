@@ -131,24 +131,68 @@ public class ClientHandler implements Runnable{
                     int itemId = Integer.parseInt((String) receiveRequest());
                     boolean isFolder = Boolean.parseBoolean((String) receiveRequest());
                     String newName = (String) receiveRequest();
-                    boolean response = false;
+                    int permission = new PermissionService().checkUserPermission(userId, itemId, isFolder);
+                    if (permission <= PermissionType.READ.getValue()) {
+                        sendResponse(UploadStatus.PERMISSION_DENIED.getValue());
+                        break;
+                    }
+                    if (isFolder) {
+                        if (FolderService.checkFolderNameExist(newName, itemId)) {
+                            sendResponse(UploadStatus.EXISTED.getValue());
+                            break;
+                        }
+                    } else {
+                        if (FileService.checkFileNameExist(newName, itemId)) {
+                            sendResponse(UploadStatus.EXISTED.getValue());
+                            break;
+                        }
+                    }
+                    int response = UploadStatus.FAILED.getValue();
                     if(isFolder){
                         String pathBefore = FolderService.getFolderPath(itemId);
-                        boolean isRenameInDB = new FolderService().renameFolder(userId, itemId, newName);
+                        boolean isRenameInDB = new FolderService().renameFolder(itemId, newName);
                         if(isRenameInDB){
                             FolderService.renameFolderInPath(itemId, pathBefore);
-                            response = true;
+                            response = UploadStatus.SUCCESS.getValue();
                         }
                     } else {
                         String beforePath = FileService.getFilePath(itemId);
-                        boolean isRenameInDB = new FileService().renameFile(userId, itemId, newName);
+                        boolean isRenameInDB = new FileService().renameFile(itemId, newName);
                         if(isRenameInDB){
                             FileService.renameFileInPath(itemId, beforePath);
-                            response = true;
+                            response = UploadStatus.SUCCESS.getValue();
                         }
                     }
     				sendResponse(response);
     			}
+                case "RENAME_AND_REPLACE" -> {
+                    int userId = Integer.parseInt((String) receiveRequest());
+                    int itemId = Integer.parseInt((String) receiveRequest());
+                    boolean isFolder = Boolean.parseBoolean((String) receiveRequest());
+                    String newName = (String) receiveRequest();
+                    int permission = new PermissionService().checkUserPermission(userId, itemId, isFolder);
+                    if (permission <= PermissionType.READ.getValue()) {
+                        sendResponse(UploadStatus.PERMISSION_DENIED.getValue());
+                        break;
+                    }
+                    int response = UploadStatus.FAILED.getValue();
+                    if(isFolder){
+                        String pathBefore = FolderService.getFolderPath(itemId);
+                        boolean isRenameInDB = new FolderService().renameFolder(itemId, newName);
+                        if(isRenameInDB){
+                            FolderService.renameFolderInPath(itemId, pathBefore);
+                            response = UploadStatus.SUCCESS.getValue();
+                        }
+                    } else {
+                        String beforePath = FileService.getFilePath(itemId);
+                        boolean isRenameInDB = new FileService().renameFile(itemId, newName);
+                        if(isRenameInDB){
+                            FileService.renameFileInPath(itemId, beforePath);
+                            response = UploadStatus.SUCCESS.getValue();
+                        }
+                    }
+                    sendResponse(response);
+                }
                 case "UPLOAD_FILE" -> {
                     int userId = Integer.parseInt((String) receiveRequest());
                     String fileName = (String) receiveRequest();

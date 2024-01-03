@@ -491,22 +491,26 @@ public class ItemService {
         }
     }
 
-    public boolean rename(int userId, int itemID, boolean isFolder, String fileName) {
+    public int rename(int userId, int itemID, boolean isFolder, String fileName, boolean isReplace) {
 		try {
             SocketClientHelper socketClientHelper = new SocketClientHelper();
-            socketClientHelper.sendRequest("RENAME");
+            if (isReplace) {
+                socketClientHelper.sendRequest("RENAME_AND_REPLACE");
+            } else {
+                socketClientHelper.sendRequest("RENAME");
+            }
 
             socketClientHelper.sendRequest(String.valueOf(userId));
             socketClientHelper.sendRequest(String.valueOf(itemID));
             socketClientHelper.sendRequest(String.valueOf(isFolder));
             socketClientHelper.sendRequest(fileName);
 
-            boolean response = (boolean) socketClientHelper.receiveResponse();
+            int response = (int) socketClientHelper.receiveResponse();
             socketClientHelper.close();
             return response;
         } catch (Exception e) {
             e.printStackTrace();
-            return false;
+            return UploadStatus.FAILED.getValue();
         }
 	}
 

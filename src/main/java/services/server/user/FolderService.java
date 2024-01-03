@@ -28,12 +28,14 @@ public class FolderService {
     }
 
     public static boolean checkFolderExistInPath(String folderName, int parentId) {
+        if(parentId == -1) return false;
         String path = getFolderPath(parentId) + File.separator + folderName;
         File file = new File(path);
         return file.exists();
     }
 
     public static void deleteFolderInPath(String folderName, int parentId) {
+        if(parentId == -1) return;
         String path = getFolderPath(parentId) + File.separator + folderName;
         deleteFolderIfExist(path);
     }
@@ -118,6 +120,40 @@ public class FolderService {
             copyFolder(beforePath, targetPath);
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    public static int getParentId(int itemId) {
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
+            try {
+                Folder folder = session.find(Folder.class, itemId);
+                if (folder == null) return -1;
+                return folder.getParentId();
+            } catch (NoResultException e) {
+                return -1;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return -1;
+        }
+    }
+
+    public static boolean checkFolderNameExist(String newName, int itemId) {
+        if(itemId == -1) return false;
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
+            try {
+                int parentId = FolderService.getParentId(itemId);
+                return session.createQuery("select count(*) from Folder fd where fd.folderName = :newName AND fd.parentId = :parentId AND fd.id <> :itemId", Long.class)
+                        .setParameter("newName", newName)
+                        .setParameter("parentId", parentId)
+                        .setParameter("itemId", itemId)
+                        .getSingleResult() > 0;
+            } catch (NoResultException e) {
+                return false;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
         }
     }
 
@@ -281,13 +317,13 @@ public class FolderService {
         }
     }
     
-    public boolean renameFolder(int userId, int folderId, String newName) {
+    public boolean renameFolder(int folderId, String newName) {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            int permission = new PermissionService().checkUserPermission(userId, folderId, true);
-            if (permission <= PermissionType.READ.getValue()) return false;
-
             Transaction transaction = session.beginTransaction();
             try {
+                boolean isDeletedSameFolder = deleteSameFolderIfExist(newName, FolderService.getParentId(folderId));
+                if(!isDeletedSameFolder) return false;
+
                 Folder folder = session.find(Folder.class, folderId);
 
                 if (folder != null) {
