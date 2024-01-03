@@ -125,7 +125,9 @@ public class ManagementController implements Initializable {
             java.sql.Date date = java.sql.Date.valueOf(selectedDate);
             boolean genderForm = (rdFemale.isSelected()) ? true : false;
             UserService userService = new UserService();
-            boolean success = new AccountService().updateUserInfo(usernameForm, nameForm, mailForm, phoneForm, date, genderForm);
+            UserSession userSession = LoginService.getCurrentSession();
+            int userId = userSession.getUserId();
+            boolean success = new AccountService().updateUserInfo(userId, usernameForm, nameForm, mailForm, phoneForm, date, genderForm);
             if (success) {
                 // Đóng form hiện tại
                 FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/user/dashboard.fxml"));
