@@ -118,6 +118,7 @@ public class FileService {
 //            Files.move(fileToRestore.toPath(), restoreFile.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
 
             String filePath = getFilePath(itemId);
+            System.err.println("Trash to file: " + filePath);
             java.io.File fileToRestore = new java.io.File(filePath);
             java.io.File restoreFile = new java.io.File(trashPath);
             if (!fileToRestore.getParentFile().exists()) {
@@ -756,19 +757,22 @@ public class FileService {
                     String folderName = "";
                     do {
                         index = finalPath.indexOf(java.io.File.separator);
-                        folderName = finalPath.substring(0, index == -1 ? finalPath.length() : index);
+//                        folderName = finalPath.substring(0, index == -1 ? finalPath.length() : index);
+                        folderName = (index == -1 ? finalPath : finalPath.substring(0, index));
                         int nextFolderId = FolderService.getFolderIdByPath(folderId, folderName);
-                        if(folderId == -1) {
+                        if(nextFolderId == -1) {
+                            System.err.println("Bi break o day");
                             break;
                         }
                         folderId = nextFolderId;
-                        finalPath = finalPath.substring(index + 1);
+                        finalPath = (index == -1 ? "" : finalPath.substring(index + 1));
                     } while (index != -1 && !finalPath.isEmpty());
 
                     while(!finalPath.isEmpty()) {
 
                         index = finalPath.indexOf(java.io.File.separator);
-                        folderName = finalPath.substring(0, index == -1 ? finalPath.length() : index);
+//                        folderName = finalPath.substring(0, index == -1 ? finalPath.length() : index);
+                        folderName = (index == -1 ? finalPath : finalPath.substring(0, index));
                         int nextFolderId = FolderService.getFolderIdByPath(folderId, folderName);
                         if(nextFolderId == -1) {
                             Folder folder = new Folder();
