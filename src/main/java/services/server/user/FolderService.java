@@ -71,6 +71,7 @@ public class FolderService {
 //        moveFolder(trashToFolder, finalPath);
 
         String trashToFolder = getFolderPath(itemId);
+        System.err.println("Trash to folder: " + trashToFolder);
         moveFolder(trashPath, trashToFolder);
     }
 
@@ -851,7 +852,8 @@ public class FolderService {
                 ResourceBundle resourceBundle = ResourceBundle.getBundle("application");
                 String generalName = resourceBundle.getString("server.general.name");
                 int generalId = FolderTypeId.GENERAL.getValue();
-                System.out.println("Final Path: " + finalPath);
+//                System.out.println("Final Path: " + finalPath);
+                System.err.println("Path restore: General >>>> ");
 
                 if(finalPath.startsWith(generalName) && finalPath.contains(java.io.File.separator)) {
                     finalPath = finalPath.substring(generalName.length() + 1);
@@ -860,19 +862,21 @@ public class FolderService {
                     String folderName = "";
                     do {
                         index = finalPath.indexOf(java.io.File.separator);
-                        folderName = finalPath.substring(0, index == -1 ? finalPath.length() : index);
+//                        folderName = finalPath.substring(0, index == -1 ? finalPath.length() : index);
+                        folderName = index == -1 ? finalPath : finalPath.substring(0, index);
                         int nextFolderId = FolderService.getFolderIdByPath(folderId, folderName);
                         if(nextFolderId == -1) {
                             break;
                         }
                         folderId = nextFolderId;
-                        finalPath = finalPath.substring(index + 1);
+                        finalPath = (index == -1) ? "" : finalPath.substring(index + 1);
                     } while (index != -1 && !finalPath.isEmpty());
 
                     while(!finalPath.isEmpty()) {
 
                         index = finalPath.indexOf(java.io.File.separator);
-                        folderName = finalPath.substring(0, index == -1 ? finalPath.length() : index);
+//                        folderName = finalPath.substring(0, index == -1 ? finalPath.length() : index);
+                        folderName = index == -1 ? finalPath : finalPath.substring(0, index);
                         int nextFolderId = FolderService.getFolderIdByPath(folderId, folderName);
                         if(nextFolderId == -1) {
                             Folder newFolder = new Folder();
